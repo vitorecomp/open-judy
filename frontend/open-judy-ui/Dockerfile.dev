@@ -1,0 +1,13 @@
+FROM docker.io/node:22-alpine
+
+WORKDIR /app
+
+ENV WATCHPACK_POLLING=true
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+EXPOSE 3000
+
+# When starting, run dev mode using the mounted workspace
+CMD ["sh", "-c", "if [ ! -d node_modules ]; then npm install; fi && npm run dev -- -H 0.0.0.0 -p 3000"]

@@ -1,0 +1,155 @@
+services:
+  # =================================================================
+  # 1. INFRASTRUCTURE SERVICES
+  # =================================================================
+
+  # AlloyDB-compatible PostgreSQL with pgvector extension
+  alloydb-local:
+    image: docker.io/pgvector/pgvector:pg16
+    container_name: open-judy-alloydb
+    environment:
+      POSTGRES_DB: open_judy_db
+      POSTGRES_USER: judy_user
+      POSTGRES_PASSWORD: judy_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - alloydb_data:/var/lib/postgresql/data:z
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro,z
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "judy_user", "-d", "open_judy_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Apache Kafka with KRaft (no ZooKeeper required)
+  kafka:
+    image: docker.io/confluentinc/cp-kafka:7.6.0
+    container_name: open-judy-kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs:z
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # MinIO (S3-compatible Object Storage for Court Audio/Video)
+  minio:
+    image: docker.io/minio/minio:RELEASE.2024-03-05T04-48-44Z
+    container_name: open-judy-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: judy_minio_admin
+      MINIO_ROOT_PASSWORD: judy_minio_password
+    entrypoint: ["/bin/sh", "-c", "mkdir -p /data/open-judy-audio && exec minio server /data --console-address :9001"]
+    volumes:
+      - minio_data:/data:z
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =================================================================
+  # 2. BACKEND MICROSERVICES (QUARKUS DEV MODE WITH HOT RELOAD)
+  # =================================================================
+
+  # Gemini Audio Transcription & Diarization Service
+  transcription-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    container_name: open-judy-transcription-service
+    ports:
+      - "8083:8083"
+      - "5007:5005"
+    environment:
+      SERVICE_NAME: transcription-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
+      GEMINI_MODEL: gemini-2.0-flash
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./backend:/workspace/backend:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+      - kafka
+
+  # User & Configuration Management Service (IAP Auth)
+  user-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    container_name: open-judy-user-service
+    ports:
+      - "8085:8085"
+      - "5009:5005"
+    environment:
+      SERVICE_NAME: user-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./backend:/workspace/backend:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+      - kafka
+
+  # =================================================================
+  # 3. FRONTEND PORTAL (NEXT.JS 15 DEV MODE WITH FAST REFRESH)
+  # =================================================================
+  open-judy-ui:
+    build:
+      context: ./frontend/open-judy-ui
+      dockerfile: Dockerfile.dev
+    container_name: open-judy-ui
+    ports:
+      - "3000:3000"
+    environment:
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
+      USER_SERVICE_URL: http://user-service:8085
+      WATCHPACK_POLLING: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - ./frontend/open-judy-ui:/app:z
+    depends_on:
+      - transcription-service
+      - user-service
+
+volumes:
+  alloydb_data:
+  kafka_data:
+  minio_data:
+  maven_cache:

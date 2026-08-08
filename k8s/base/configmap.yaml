@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open-judy-config
+  labels:
+    app.kubernetes.io/part-of: open-judy
+data:
+  DB_HOST: "127.0.0.1"
+  DB_PORT: "5432"
+  DB_NAME: "open_judy_db"
+  DB_USER: "judy_user"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  GEMINI_MODEL: "gemini-2.0-flash"
+  GEMINI_EMBEDDING_MODEL: "text-embedding-004"
+  S3_ENDPOINT: "http://minio:9000"
+  S3_BUCKET: "open-judy-audio"
+  AWS_REGION: "us-east-1"

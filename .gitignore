@@ -1,0 +1,15 @@
+# Node & Next.js
+frontend/open-judy-ui/node_modules/
+frontend/open-judy-ui/.next/
+frontend/open-judy-ui/out/
+
+# Maven & Java
+**/target/
+**/.m2/
+.idea/
+*.iml
+*.log
+
+# Podman & Docker
+volumes/
+.env.local

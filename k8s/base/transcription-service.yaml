@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcription-service
+  labels:
+    app.kubernetes.io/name: transcription-service
+    app.kubernetes.io/part-of: open-judy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transcription-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: transcription-service
+    spec:
+      containers:
+        - name: transcription-service
+          image: open-judy/transcription-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+              name: http
+          envFrom:
+            - configMapRef:
+                name: open-judy-config
+            - secretRef:
+                name: open-judy-secrets
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8083
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 1024Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transcription-service
+  labels:
+    app.kubernetes.io/name: transcription-service
+    app.kubernetes.io/part-of: open-judy
+spec:
+  ports:
+    - port: 8083
+      targetPort: 8083
+      name: http
+  selector:
+    app.kubernetes.io/name: transcription-service

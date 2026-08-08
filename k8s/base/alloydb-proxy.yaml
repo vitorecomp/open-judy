@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloydb-auth-proxy
+  labels:
+    app.kubernetes.io/name: alloydb-auth-proxy
+    app.kubernetes.io/part-of: open-judy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alloydb-auth-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alloydb-auth-proxy
+    spec:
+      containers:
+        - name: alloydb-proxy
+          image: gcr.io/alloydb-connectors/alloydb-auth-proxy:1.3.0
+          command:
+            - "/alloydb-auth-proxy"
+            - "projects/YOUR_PROJECT_ID/locations/YOUR_REGION/clusters/YOUR_CLUSTER/instances/YOUR_PRIMARY_INSTANCE"
+            - "--address=0.0.0.0"
+            - "--port=5432"
+          ports:
+            - name: postgres
+              containerPort: 5432
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloydb-proxy-service
+  labels:
+    app.kubernetes.io/name: alloydb-auth-proxy
+    app.kubernetes.io/part-of: open-judy
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app.kubernetes.io/name: alloydb-auth-proxy

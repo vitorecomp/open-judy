@@ -40,11 +40,12 @@ graph TB
         MS["media-service<br/>(Ingestão & Streaming de Áudio S3/MinIO)"]
         TS["transcription-service<br/>(Transcrição Multimodal Gemini 2.0)"]
         AS["judy-ai-service<br/>(Geração de Ata, Contradições & RAG pgvector)"]
-        US["user-service<br/>(Usuários, Perfis Judiciais & Configurações)"]
+        US["user-service<br/>(Usuários, Perfis Judiciais & IAP)"]
+        CFS["config-service<br/>(Prompts, Modelos IA, Dashboards & Notificações)"]
     end
 
     subgraph Messaging ["Mensageria Reativa"]
-        KAFKA["Apache Kafka<br/>(Topics: judy.audio.uploaded, judy.transcription.completed, judy.user.events)"]
+        KAFKA["Apache Kafka<br/>(Topics: judy.audio.uploaded, judy.transcription.completed, judy.user.events, judy.config.events)"]
     end
 
     subgraph Persistence ["Dados & IA"]
@@ -59,9 +60,11 @@ graph TB
     ING --> TS
     ING --> AS
     ING --> US
+    ING --> CFS
 
     CS --> ALLOYDB
     US --> ALLOYDB
+    CFS --> ALLOYDB
     MS --> GCS
     MS -->|AudioUploadedEvent| KAFKA
     
@@ -88,7 +91,8 @@ open-judy/
 │   ├── media-service/                            # Microsserviço Quarkus (Mídia e S3/GCS)
 │   ├── transcription-service/                    # Microsserviço Quarkus (Transcrição Gemini)
 │   ├── judy-ai-service/                          # Microsserviço Quarkus (Atas, RAG e Copilot)
-│   └── user-service/                             # Microsserviço Quarkus (Usuários e Configurações)
+│   ├── user-service/                             # Microsserviço Quarkus (Usuários e Autenticação IAP)
+│   └── config-service/                           # Microsserviço Quarkus (Prompts, Modelos, Dashboards, Notificações)
 ├── frontend/
 │   └── open-judy-ui/                             # Portal Next.js 15 (TypeScript, Tailwind CSS)
 ├── k8s/
@@ -97,6 +101,7 @@ open-judy/
 │       ├── local/                                # Overlay Kustomize para desenvolvimento local
 │       └── gke-alloydb/                          # Overlay Kustomize para produção no GKE + AlloyDB
 ├── docker-compose.yml                            # Ambiente local (Postgres+pgvector, Kafka, MinIO)
+├── podman-compose.yml                            # Ambiente local com Podman
 └── README.md
 ```
 
@@ -138,6 +143,14 @@ cd backend/transcription-service
 
 # Terminal 4: Judy AI Service (Porta 8084)
 cd backend/judy-ai-service
+./mvnw quarkus:dev
+
+# Terminal 5: User Service (Porta 8085)
+cd backend/user-service
+./mvnw quarkus:dev
+
+# Terminal 6: Config Service (Porta 8086)
+cd backend/config-service
 ./mvnw quarkus:dev
 ```
 

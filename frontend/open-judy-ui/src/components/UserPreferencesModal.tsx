@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth, applyAccentColorToDOM } from '@/lib/auth-context';
 import { UserConfiguration, SystemConfiguration } from '@/lib/types';
 import {
   X,
@@ -24,7 +24,9 @@ import {
   Database,
   Cpu,
   Lock,
-  HardDrive
+  HardDrive,
+  Palette,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface UserPreferencesModalProps {
@@ -46,12 +48,17 @@ export default function UserPreferencesModal({
     updateSystemConfig,
     role,
     permissions,
-    preferencesInitialTab
+    preferencesInitialTab,
+    openAdminConfig,
+    accentColor,
+    setAccentColor
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'ui' | 'audio' | 'ai' | 'notifications' | 'system'>('ui');
   const [formData, setFormData] = useState<UserConfiguration>(config);
   const [sysFormData, setSysFormData] = useState<SystemConfiguration>(systemConfig);
+  const [selectedAccent, setSelectedAccent] = useState<string>(config.accentColor || accentColor || '#e63946');
+  const [customHex, setCustomHex] = useState<string>(config.accentColor || accentColor || '#e63946');
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -60,12 +67,15 @@ export default function UserPreferencesModal({
   useEffect(() => {
     setFormData(config);
     setSysFormData(systemConfig);
+    const color = config.accentColor || systemConfig.accentColor || accentColor || '#e63946';
+    setSelectedAccent(color);
+    setCustomHex(color);
     if (preferencesInitialTab) {
       setActiveTab(preferencesInitialTab);
     } else if (initialTab) {
       setActiveTab(initialTab);
     }
-  }, [config, systemConfig, isOpen, preferencesInitialTab, initialTab]);
+  }, [config, systemConfig, accentColor, isOpen, preferencesInitialTab, initialTab]);
 
   if (!isOpen) return null;
 
@@ -78,6 +88,24 @@ export default function UserPreferencesModal({
           : 'light'
         : theme.toLowerCase();
     document.documentElement.setAttribute('data-theme', effectiveTheme);
+  };
+
+  const handleSelectAccent = (color: string) => {
+    setSelectedAccent(color);
+    setCustomHex(color);
+    setFormData((prev) => ({ ...prev, accentColor: color }));
+    setSysFormData((prev) => ({ ...prev, accentColor: color }));
+    applyAccentColorToDOM(color);
+  };
+
+  const handleCustomHexChange = (hex: string) => {
+    setCustomHex(hex);
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
+      setSelectedAccent(hex);
+      setFormData((prev) => ({ ...prev, accentColor: hex }));
+      setSysFormData((prev) => ({ ...prev, accentColor: hex }));
+      applyAccentColorToDOM(hex);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -318,6 +346,98 @@ export default function UserPreferencesModal({
                     <div className="h-10 rounded-lg bg-dark-card border border-dark-border p-1.5 flex items-center justify-center text-[10px] text-dark-muted font-mono">
                       Sincronizado com SO
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accent Color Selection (Teal, Red, Orange, Custom HEX) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-200 mb-2.5 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-crimson" />
+                  Cor de Destaque do Sistema (Accent Color)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Preset 1: Teal */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAccent('#0d9488')}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all text-left ${
+                      selectedAccent?.toLowerCase() === '#0d9488' || selectedAccent?.toLowerCase() === 'teal'
+                        ? 'bg-dark-input border-teal-500 ring-2 ring-teal-500/50 shadow-md shadow-teal-500/10'
+                        : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-[#0d9488] shrink-0 ring-2 ring-white/20 shadow" />
+                      <span className="text-xs font-bold text-white truncate">Teal</span>
+                    </div>
+                    {(selectedAccent?.toLowerCase() === '#0d9488' || selectedAccent?.toLowerCase() === 'teal') && (
+                      <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Preset 2: Red / Crimson */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAccent('#e63946')}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all text-left ${
+                      selectedAccent?.toLowerCase() === '#e63946' || selectedAccent?.toLowerCase() === 'red'
+                        ? 'bg-dark-input border-rose-500 ring-2 ring-rose-500/50 shadow-md shadow-rose-500/10'
+                        : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-[#e63946] shrink-0 ring-2 ring-white/20 shadow" />
+                      <span className="text-xs font-bold text-white truncate">Red</span>
+                    </div>
+                    {(selectedAccent?.toLowerCase() === '#e63946' || selectedAccent?.toLowerCase() === 'red') && (
+                      <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Preset 3: Orange */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAccent('#ea580c')}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all text-left ${
+                      selectedAccent?.toLowerCase() === '#ea580c' || selectedAccent?.toLowerCase() === 'orange'
+                        ? 'bg-dark-input border-orange-500 ring-2 ring-orange-500/50 shadow-md shadow-orange-500/10'
+                        : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-[#ea580c] shrink-0 ring-2 ring-white/20 shadow" />
+                      <span className="text-xs font-bold text-white truncate">Orange</span>
+                    </div>
+                    {(selectedAccent?.toLowerCase() === '#ea580c' || selectedAccent?.toLowerCase() === 'orange') && (
+                      <Check className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Custom Hex Color Option */}
+                  <div
+                    className={`p-2 sm:p-2.5 rounded-xl border flex items-center gap-2 transition-all ${
+                      selectedAccent &&
+                      !['#0d9488', '#e63946', '#ea580c', 'teal', 'red', 'orange'].includes(selectedAccent.toLowerCase())
+                        ? 'bg-dark-input border-crimson ring-2 ring-crimson/50'
+                        : 'bg-dark-bg/60 border-dark-border'
+                    }`}
+                  >
+                    <input
+                      type="color"
+                      value={customHex.startsWith('#') && (customHex.length === 7 || customHex.length === 4) ? customHex : '#e63946'}
+                      onChange={(e) => handleCustomHexChange(e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 shrink-0 p-0"
+                      title="Escolher cor personalizada"
+                    />
+                    <input
+                      type="text"
+                      value={customHex}
+                      onChange={(e) => handleCustomHexChange(e.target.value)}
+                      placeholder="#HEX"
+                      className="w-full bg-transparent text-[11px] font-mono text-white focus:outline-none uppercase"
+                      maxLength={7}
+                    />
                   </div>
                 </div>
               </div>
@@ -575,13 +695,63 @@ export default function UserPreferencesModal({
           {/* TAB 5: ADMIN SYSTEM CONFIGURATIONS */}
           {activeTab === 'system' && isAdmin && (
             <div className="space-y-5 animate-in fade-in">
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/40 flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                <div className="text-xs">
-                  <p className="font-bold text-emerald-300">Modo de Administração de Infraestrutura Ativo</p>
-                  <p className="text-emerald-400/80 text-[11px]">
-                    Alterações aqui afetam todos os microsserviços do cluster (case, media, transcription, ai e user service).
-                  </p>
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-xs">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-emerald-300">Modo de Administração de Infraestrutura Ativo</p>
+                    <p className="text-emerald-400/80 text-[11px]">
+                      Gerenciamento de Prompts, Modelos de IA, Dashboards e Tipos de Notificações via <strong>config-service</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    openAdminConfig('prompts');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md transition shrink-0"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Abrir Painel do config-service</span>
+                </button>
+              </div>
+
+              {/* System Branding & Identity */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-emerald-400" />
+                  Identidade Visual & Marca do Sistema
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Nome do Sistema
+                    </label>
+                    <input
+                      type="text"
+                      value={sysFormData.systemName || 'Open Judy'}
+                      onChange={(e) => setSysFormData({ ...sysFormData, systemName: e.target.value })}
+                      placeholder="Ex: Open Judy"
+                      className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      URL da Logo (Opcional)
+                    </label>
+                    <input
+                      type="url"
+                      value={sysFormData.logoUrl || ''}
+                      onChange={(e) => setSysFormData({ ...sysFormData, logoUrl: e.target.value })}
+                      placeholder="https://exemplo.gov.br/logo.svg"
+                      className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -52,9 +52,71 @@ export const PROFILE_PRESETS: ProfilePreset[] = [
   },
 ];
 
+export const ACCENT_PRESETS = [
+  { id: 'teal', name: 'Teal', color: '#0d9488', dark: '#0f766e', light: '#2dd4bf', glow: 'rgba(13, 148, 136, 0.25)' },
+  { id: 'red', name: 'Red', color: '#e63946', dark: '#be123c', light: '#fb7185', glow: 'rgba(230, 57, 70, 0.25)' },
+  { id: 'orange', name: 'Orange', color: '#ea580c', dark: '#c2410c', light: '#fb923c', glow: 'rgba(234, 88, 12, 0.25)' },
+];
+
+export function hexToRgba(hex: string, alpha: number = 0.25): string {
+  let clean = hex.replace('#', '');
+  if (clean.length === 3) clean = clean.split('').map((c) => c + c).join('');
+  const num = parseInt(clean, 16) || 0;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function adjustHexBrightness(hex: string, percent: number): string {
+  let clean = hex.replace('#', '');
+  if (clean.length === 3) clean = clean.split('').map((c) => c + c).join('');
+  const num = parseInt(clean, 16) || 0;
+  let r = (num >> 16) + Math.round(255 * (percent / 100));
+  let g = ((num >> 8) & 255) + Math.round(255 * (percent / 100));
+  let b = (num & 255) + Math.round(255 * (percent / 100));
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+export function applyAccentColorToDOM(colorOrPreset: string) {
+  if (typeof document === 'undefined') return;
+  const preset = ACCENT_PRESETS.find(
+    (p) =>
+      p.id === colorOrPreset?.toLowerCase() ||
+      p.color.toLowerCase() === colorOrPreset?.toLowerCase()
+  );
+
+  let primary = colorOrPreset || '#e63946';
+  let dark = '#be123c';
+  let light = '#fb7185';
+  let glow = 'rgba(230, 57, 70, 0.25)';
+
+  if (preset) {
+    primary = preset.color;
+    dark = preset.dark;
+    light = preset.light;
+    glow = preset.glow;
+  } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorOrPreset)) {
+    primary = colorOrPreset;
+    dark = adjustHexBrightness(colorOrPreset, -20);
+    light = adjustHexBrightness(colorOrPreset, 25);
+    glow = hexToRgba(colorOrPreset, 0.25);
+  }
+
+  document.documentElement.style.setProperty('--accent-color', primary);
+  document.documentElement.style.setProperty('--accent-color-dark', dark);
+  document.documentElement.style.setProperty('--accent-color-light', light);
+  document.documentElement.style.setProperty('--accent-color-glow', glow);
+  document.documentElement.setAttribute('data-accent', colorOrPreset || 'red');
+}
+
 const DEFAULT_CONFIG: UserConfiguration = {
   userId: 'a0000000-0000-0000-0000-000000000001',
   theme: 'DARK',
+  accentColor: '#e63946',
   language: 'pt-BR',
   fontSize: 'MEDIUM',
   highContrast: false,
@@ -82,6 +144,10 @@ const DEFAULT_CONFIG: UserConfiguration = {
 };
 
 const DEFAULT_SYSTEM_CONFIG: SystemConfiguration = {
+  systemName: 'Open Judy',
+  systemTagline: 'IA Judiciária Zero-Trust',
+  logoUrl: '',
+  accentColor: '#e63946',
   geminiModel: 'gemini-2.0-flash',
   geminiEmbeddingModel: 'text-embedding-004',
   maxAudioDurationMinutes: 240,
@@ -110,10 +176,19 @@ interface AuthContextType {
   resetConfig: () => Promise<void>;
   systemConfig: SystemConfiguration;
   updateSystemConfig: (newSysConfig: Partial<SystemConfiguration>) => Promise<void>;
+  systemName: string;
+  systemTagline: string;
+  logoUrl: string;
+  accentColor: string;
+  setAccentColor: (color: string) => Promise<void>;
   isPreferencesOpen: boolean;
   setIsPreferencesOpen: (open: boolean) => void;
   preferencesInitialTab?: 'ui' | 'audio' | 'ai' | 'notifications' | 'system';
   openPreferencesWithTab: (tab?: 'ui' | 'audio' | 'ai' | 'notifications' | 'system') => void;
+  isAdminConfigOpen: boolean;
+  setIsAdminConfigOpen: (open: boolean) => void;
+  adminConfigInitialTab?: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings';
+  openAdminConfig: (tab?: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings') => void;
   isLoading: boolean;
 }
 
@@ -125,6 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [systemConfig, setSystemConfig] = useState<SystemConfiguration>(DEFAULT_SYSTEM_CONFIG);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [preferencesInitialTab, setPreferencesInitialTab] = useState<'ui' | 'audio' | 'ai' | 'notifications' | 'system'>('ui');
+  const [isAdminConfigOpen, setIsAdminConfigOpen] = useState(false);
+  const [adminConfigInitialTab, setAdminConfigInitialTab] = useState<'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings'>('prompts');
   const [isLoading, setIsLoading] = useState(false);
 
   const [user, setUser] = useState<UserProfile>(() => {
@@ -170,11 +247,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Load configurations from localStorage or API
     const savedConfig = localStorage.getItem('openjudy_user_config');
+    const savedAccent = localStorage.getItem('openjudy_accent_color');
+    if (savedAccent) {
+      applyAccentColorToDOM(savedAccent);
+    }
+
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
         setConfig(parsed);
         applyThemeToDOM(parsed.theme || 'DARK');
+        if (parsed.accentColor) {
+          applyAccentColorToDOM(parsed.accentColor);
+        }
       } catch (_) {
         applyThemeToDOM('dark');
       }
@@ -185,6 +270,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const merged = { ...DEFAULT_CONFIG, ...userData.configuration };
           setConfig(merged);
           applyThemeToDOM(merged.theme);
+          if (merged.accentColor) {
+            applyAccentColorToDOM(merged.accentColor);
+          }
         } else {
           applyThemeToDOM('dark');
         }
@@ -195,6 +283,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.getSystemConfig().then((sysData) => {
       if (sysData) {
         setSystemConfig((prev) => ({ ...prev, ...sysData }));
+        if (sysData.accentColor && !savedAccent) {
+          applyAccentColorToDOM(sysData.accentColor);
+        }
       }
     });
   }, []);
@@ -244,6 +335,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       applyThemeToDOM(updated.theme);
     }
 
+    if (updated.accentColor) {
+      applyAccentColorToDOM(updated.accentColor);
+      localStorage.setItem('openjudy_accent_color', updated.accentColor);
+    }
+
     try {
       await api.updateUserConfig(user.id, updated);
     } catch (e) {
@@ -251,10 +347,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setAccentColor = async (color: string) => {
+    applyAccentColorToDOM(color);
+    localStorage.setItem('openjudy_accent_color', color);
+    await updateConfig({ accentColor: color });
+    if (user.role === 'ADMIN') {
+      await updateSystemConfig({ accentColor: color });
+      try {
+        await api.updateSystemSetting('system.accent_color', { value: color });
+      } catch (_) {}
+    }
+  };
+
   const resetConfig = async () => {
     setConfig(DEFAULT_CONFIG);
     localStorage.setItem('openjudy_user_config', JSON.stringify(DEFAULT_CONFIG));
     applyThemeToDOM(DEFAULT_CONFIG.theme);
+    applyAccentColorToDOM(DEFAULT_CONFIG.accentColor || '#e63946');
     try {
       await api.updateUserConfig(user.id, DEFAULT_CONFIG);
     } catch (e) {}
@@ -263,6 +372,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateSystemConfig = async (newSysConfig: Partial<SystemConfiguration>) => {
     const updated = { ...systemConfig, ...newSysConfig, updatedAt: new Date().toISOString() };
     setSystemConfig(updated);
+    if (updated.accentColor) {
+      applyAccentColorToDOM(updated.accentColor);
+      localStorage.setItem('openjudy_accent_color', updated.accentColor);
+    }
     try {
       await api.updateSystemConfig(updated);
     } catch (e) {
@@ -273,6 +386,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const openPreferencesWithTab = (tab: 'ui' | 'audio' | 'ai' | 'notifications' | 'system' = 'ui') => {
     setPreferencesInitialTab(tab);
     setIsPreferencesOpen(true);
+  };
+
+  const openAdminConfig = (tab: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings' = 'prompts') => {
+    setAdminConfigInitialTab(tab);
+    setIsAdminConfigOpen(true);
   };
 
   const currentPreset =
@@ -295,10 +413,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetConfig,
         systemConfig,
         updateSystemConfig,
+        systemName: systemConfig.systemName || 'Open Judy',
+        systemTagline: systemConfig.systemTagline || 'IA Judiciária Zero-Trust',
+        logoUrl: systemConfig.logoUrl || '',
+        accentColor: config.accentColor || systemConfig.accentColor || '#e63946',
+        setAccentColor,
         isPreferencesOpen,
         setIsPreferencesOpen,
         preferencesInitialTab,
         openPreferencesWithTab,
+        isAdminConfigOpen,
+        setIsAdminConfigOpen,
+        adminConfigInitialTab,
+        openAdminConfig,
         isLoading,
       }}
     >

@@ -7,6 +7,12 @@ module.exports = {
   ],
   theme: {
     extend: {
+      borderColor: {
+        DEFAULT: 'var(--color-border, #23252d)',
+      },
+      divideColor: {
+        DEFAULT: 'var(--color-border, #23252d)',
+      },
       colors: {
         dark: {
           bg: 'var(--color-bg, #0d0e12)',
@@ -22,18 +28,18 @@ module.exports = {
           muted: 'var(--color-muted, #7e8594)',
         },
         crimson: {
-          DEFAULT: '#e63946',
-          50: '#fff1f2',
-          100: '#ffe4e6',
-          200: '#fecdd3',
-          300: '#fda4af',
-          400: '#fb7185',
-          500: '#f43f5e',
-          600: '#e63946',
-          700: '#be123c',
-          800: '#9f1239',
-          900: '#881337',
-          glow: 'rgba(230, 57, 70, 0.25)',
+          DEFAULT: 'var(--accent-color, #e63946)',
+          50: 'var(--accent-color-50, #fff1f2)',
+          100: 'var(--accent-color-100, #ffe4e6)',
+          200: 'var(--accent-color-200, #fecdd3)',
+          300: 'var(--accent-color-300, #fda4af)',
+          400: 'var(--accent-color-light, #fb7185)',
+          500: 'var(--accent-color, #f43f5e)',
+          600: 'var(--accent-color, #e63946)',
+          700: 'var(--accent-color-dark, #be123c)',
+          800: 'var(--accent-color-800, #9f1239)',
+          900: 'var(--accent-color-900, #881337)',
+          glow: 'var(--accent-color-glow, rgba(230, 57, 70, 0.25))',
         },
         judy: {
           50: '#f0f7ff',

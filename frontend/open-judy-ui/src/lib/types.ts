@@ -238,6 +238,7 @@ export interface UserConfiguration {
   id?: string;
   userId: string;
   theme: string;
+  accentColor?: string;
   language: string;
   fontSize: string;
   highContrast: boolean;
@@ -284,6 +285,10 @@ export interface UserProfile {
 
 export interface SystemConfiguration {
   id?: string;
+  systemName?: string;
+  systemTagline?: string;
+  logoUrl?: string;
+  accentColor?: string;
   geminiModel: string;
   geminiEmbeddingModel: string;
   maxAudioDurationMinutes: number;
@@ -295,6 +300,130 @@ export interface SystemConfiguration {
   audioStorageBucket: string;
   systemProperties?: Record<string, any>;
   updatedAt?: string;
+}
+
+export type PromptCategory =
+  | 'DOCUMENT_GENERATION'
+  | 'LEGAL_ANALYSIS'
+  | 'COPILOT'
+  | 'TRANSCRIPTION'
+  | 'SUMMARIZATION'
+  | 'GENERAL';
+
+export interface PromptTemplate {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  category: PromptCategory;
+  systemInstruction?: string;
+  userPromptTemplate: string;
+  variables: string[];
+  defaultModel?: string;
+  defaultTemperature?: number;
+  defaultMaxTokens?: number;
+  version: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AiModelProvider =
+  | 'GOOGLE_GEMINI'
+  | 'VERTEX_AI'
+  | 'OPENAI'
+  | 'ANTHROPIC'
+  | 'LOCAL_OLLAMA';
+
+export type AiModelType =
+  | 'LLM_MULTIMODAL'
+  | 'LLM_TEXT'
+  | 'EMBEDDING'
+  | 'AUDIO_SPEECH'
+  | 'RERANKER';
+
+export interface AiModel {
+  id: string;
+  modelId: string;
+  name: string;
+  provider: AiModelProvider;
+  modelType: AiModelType;
+  description?: string;
+  contextWindowTokens: number;
+  maxOutputTokens: number;
+  supportsMultimodal: boolean;
+  supportsAudio: boolean;
+  supportsStreaming: boolean;
+  supportsSystemInstruction: boolean;
+  costPer1kInputTokens?: number;
+  costPer1kOutputTokens?: number;
+  isDefault: boolean;
+  active: boolean;
+  parameters?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DashboardType {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  targetRole: string;
+  layoutType: string;
+  widgets: Array<Record<string, any>>;
+  defaultLanding: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationCategory =
+  | 'AUDIO_PROCESSING'
+  | 'LEGAL_ANALYSIS'
+  | 'DOCUMENT_WORKFLOW'
+  | 'SECURITY_AUDIT'
+  | 'SYSTEM';
+
+export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'WEBSOCKET' | 'WEBHOOK';
+
+export interface NotificationType {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  category: NotificationCategory;
+  defaultPriority: NotificationPriority;
+  supportedChannels: NotificationChannel[];
+  templateTitle: string;
+  templateBody: string;
+  allowUserOverride: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SystemSetting {
+  id: string;
+  category: string;
+  key: string;
+  value: string;
+  valueType: string;
+  description?: string;
+  isSecret: boolean;
+  isReadOnly: boolean;
+  updatedAt: string;
+}
+
+export interface SystemConfigOverview {
+  prompts: PromptTemplate[];
+  models: AiModel[];
+  dashboards: DashboardType[];
+  notifications: NotificationType[];
+  settings: Record<string, string>;
+  generatedAt: string;
 }
 
 

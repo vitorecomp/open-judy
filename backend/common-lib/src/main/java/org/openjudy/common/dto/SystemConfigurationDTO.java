@@ -6,6 +6,8 @@ import java.util.UUID;
 
 public record SystemConfigurationDTO(
         UUID id,
+        String systemName,
+        String logoUrl,
         String geminiModel,
         String geminiEmbeddingModel,
         int maxAudioDurationMinutes,
@@ -20,6 +22,8 @@ public record SystemConfigurationDTO(
 ) {
     public static SystemConfigurationDTO createDefault() {
         return new SystemConfigurationDTO(
+                null,
+                "Open Judy",
                 null,
                 "gemini-2.0-flash",
                 "text-embedding-004",

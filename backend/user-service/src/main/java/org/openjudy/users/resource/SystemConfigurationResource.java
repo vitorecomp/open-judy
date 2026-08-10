@@ -30,6 +30,12 @@ public class SystemConfigurationResource {
     public Response updateSystemConfig(SystemConfigurationDTO dto) {
         SystemConfigurationEntity entity = SystemConfigurationEntity.getOrCreate();
 
+        if (dto.systemName() != null && !dto.systemName().isBlank()) {
+            entity.systemName = dto.systemName();
+        }
+        if (dto.logoUrl() != null) {
+            entity.logoUrl = dto.logoUrl();
+        }
         if (dto.geminiModel() != null && !dto.geminiModel().isBlank()) {
             entity.geminiModel = dto.geminiModel();
         }

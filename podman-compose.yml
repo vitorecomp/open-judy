@@ -102,7 +102,7 @@ services:
       - alloydb-local
       - kafka
 
-  # User & Configuration Management Service (IAP Auth)
+  # User Management Service (IAP Auth)
   user-service:
     build:
       context: .
@@ -113,6 +113,31 @@ services:
       - "5009:5005"
     environment:
       SERVICE_NAME: user-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./backend:/workspace/backend:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+      - kafka
+
+  # System Configuration Service (Prompts, Models, Dashboards, Notification Types)
+  config-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    container_name: open-judy-config-service
+    ports:
+      - "8086:8086"
+      - "5011:5005"
+    environment:
+      SERVICE_NAME: config-service
       DB_HOST: alloydb-local
       DB_PORT: "5432"
       DB_NAME: open_judy_db
@@ -140,6 +165,7 @@ services:
     environment:
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       USER_SERVICE_URL: http://user-service:8085
+      CONFIG_SERVICE_URL: http://config-service:8086
       WATCHPACK_POLLING: "true"
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:
@@ -147,6 +173,7 @@ services:
     depends_on:
       - transcription-service
       - user-service
+      - config-service
 
 volumes:
   alloydb_data:

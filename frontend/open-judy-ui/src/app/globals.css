@@ -3,6 +3,27 @@
 @tailwind utilities;
 
 :root {
+  --accent-color: #e63946;
+  --accent-color-dark: #be123c;
+  --accent-color-light: #fb7185;
+  --accent-color-glow: rgba(230, 57, 70, 0.25);
+  --color-bg: #0d0e12;
+  --color-sidebar: #111216;
+  --color-header: #111216;
+  --color-card: #17181d;
+  --color-card-hover: #1e2027;
+  --color-border: #23252d;
+  --color-border-subtle: #1a1b21;
+  --color-input: #1e2026;
+  --color-pill: #25272e;
+  --color-pill-hover: #2f323c;
+  --color-muted: #7e8594;
+  --foreground: #f3f4f6;
+  --scrollbar-track: #111216;
+  --scrollbar-thumb: #23252d;
+}
+
+[data-theme="dark"], .theme-dark {
   --color-bg: #0d0e12;
   --color-sidebar: #111216;
   --color-header: #111216;
@@ -34,6 +55,14 @@
   --foreground: #0f172a;
   --scrollbar-track: #f1f5f9;
   --scrollbar-thumb: #cbd5e1;
+}
+
+*, ::before, ::after {
+  border-color: var(--color-border, #23252d);
+}
+
+hr {
+  border-color: var(--color-border, #23252d);
 }
 
 body {

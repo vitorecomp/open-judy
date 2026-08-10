@@ -5,19 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  FileText,
-  Calendar,
+  Scale,
   Headphones,
   Settings,
-  Scale,
-  Briefcase,
-  ShieldAlert,
-  UserCog,
-  ChevronLeft,
-  ChevronRight,
-  Server
+  SlidersHorizontal,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import JudyLogo from './JudyLogo';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -28,8 +23,7 @@ interface SidebarProps {
 
 interface NavItem {
   name: string;
-  href?: string;
-  onClick?: () => void;
+  href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   active?: boolean;
@@ -42,9 +36,22 @@ export default function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { user, role, permissions, currentPreset, openPreferencesWithTab, switchProfile, availablePresets } = useAuth();
+  const {
+    user,
+    role,
+    permissions,
+    systemName,
+    systemTagline,
+    logoUrl,
+    openPreferencesWithTab,
+    openAdminConfig,
+    switchProfile,
+    availablePresets,
+    currentPreset,
+  } = useAuth();
+  const isAdmin = role === 'ADMIN' || permissions.canEditSystemConfig;
 
-  const baseNavItems: NavItem[] = [
+  const navItems: NavItem[] = [
     {
       name: 'Dashboard',
       href: '/',
@@ -53,59 +60,12 @@ export default function Sidebar({
     },
     {
       name: 'Audiências',
-      href: '/#hearings-table',
+      href: '/hearings',
       icon: Scale,
       badge: '5',
       active: pathname.startsWith('/hearings'),
     },
-    {
-      name: 'Minutas de Atas',
-      href: '#',
-      icon: FileText,
-      badge: role === 'MAGISTRADO' ? '2' : '3',
-      active: false,
-    },
-    {
-      name: 'Processos & Varas',
-      href: '#',
-      icon: Briefcase,
-      active: false,
-    },
-    {
-      name: 'Pauta do Gabinete',
-      href: '#',
-      icon: Calendar,
-      active: false,
-    },
   ];
-
-  // Admin-only nav items
-  const adminNavItems: NavItem[] = (permissions.canEditSystemConfig || permissions.canManageUsers || role === 'ADMIN')
-    ? [
-        {
-          name: 'Configurações do Sistema',
-          onClick: () => openPreferencesWithTab('system'),
-          icon: Server,
-          badge: 'Admin',
-          active: false,
-        },
-        {
-          name: 'Gestão de Usuários (IAP)',
-          href: '#',
-          icon: UserCog,
-          badge: 'Admin',
-          active: false,
-        },
-        {
-          name: 'Logs de Auditoria',
-          href: '#',
-          icon: ShieldAlert,
-          active: false,
-        },
-      ]
-    : [];
-
-  const navItems: NavItem[] = [...baseNavItems, ...adminNavItems];
 
   return (
     <>
@@ -124,72 +84,50 @@ export default function Sidebar({
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand Header */}
+        {/* Top Section */}
         <div>
-          <div className="h-16 px-4 flex items-center justify-between border-b border-dark-border/60">
-            <Link
-              href="/"
-              className={`flex items-center gap-3 group min-w-0 ${
-                isCollapsed ? 'justify-center w-full' : ''
-              }`}
+          {/* Brand Header */}
+          <div className="relative h-16 border-b border-dark-border/60">
+          <Link
+            href="/"
+            className={`h-full flex items-center group min-w-0 ${
+              isCollapsed ? 'justify-center w-full px-0' : 'px-4 gap-3'
+            }`}
+          >
+            {/* Hanging Top Banner */}
+            <div
+              className={`absolute top-0 ${
+                isCollapsed ? 'left-1/2 -translate-x-1/2' : 'left-4'
+              } transition-all duration-300 z-10`}
             >
-              <div className="w-8 h-8 rounded-lg bg-crimson shrink-0 flex items-center justify-center text-white font-black text-base shadow-md shadow-crimson/30 group-hover:scale-105 transition-transform">
-                <span>J</span>
-              </div>
-              {!isCollapsed && (
-                <div className="flex flex-col min-w-0 truncate">
-                  <span className="font-bold text-base text-white tracking-tight truncate">
-                    Open Judy
-                  </span>
-                  <span className="text-[10px] text-dark-muted font-medium -mt-0.5 truncate">
-                    IA Judiciária Zero-Trust
-                  </span>
-                </div>
-              )}
-            </Link>
-
-            {/* Desktop Collapse / Expand Toggle Button */}
-            {!isCollapsed && onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                className="hidden lg:flex p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-pill transition"
-                title="Recolher barra lateral"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Expand Button when collapsed */}
-          {isCollapsed && onToggleCollapse && (
-            <div className="hidden lg:flex justify-center py-2 border-b border-dark-border/30">
-              <button
-                onClick={onToggleCollapse}
-                className="p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-pill transition"
-                title="Expandir barra lateral"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <JudyLogo
+                size="md"
+                showText={false}
+                systemName={systemName}
+                logoUrl={logoUrl}
+              />
             </div>
-          )}
 
-          {/* Main Navigation Links */}
+            {/* Brand Title */}
+            {!isCollapsed && (
+              <div className="pl-14 flex flex-col min-w-0 truncate">
+                <span className="font-bold text-base text-white tracking-tight truncate">
+                  {systemName || 'Open Judy'}
+                </span>
+              </div>
+            )}
+          </Link>
+        </div>
+
+          {/* Main Navigation Links (Dashboard & Audiências only) */}
           <nav className="px-2.5 py-4 space-y-1.5">
             {navItems.map((item, idx) => {
               const Icon = item.icon;
-              const handleClick = (e: React.MouseEvent) => {
-                if (item.onClick) {
-                  e.preventDefault();
-                  item.onClick();
-                }
-                if (onClose) onClose();
-              };
-
               return (
                 <Link
                   key={idx}
-                  href={item.href || '#'}
-                  onClick={handleClick}
+                  href={item.href}
+                  onClick={onClose}
                   title={isCollapsed ? item.name : undefined}
                   className={`flex items-center rounded-xl text-xs font-medium transition-all group relative ${
                     isCollapsed
@@ -222,15 +160,11 @@ export default function Sidebar({
                   {item.badge && (
                     <>
                       {!isCollapsed ? (
-                        <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full text-white shadow-sm shrink-0 ${
-                          item.badge === 'Admin' ? 'bg-emerald-600/90 shadow-emerald-600/30' : 'bg-crimson/80 shadow-crimson/30'
-                        }`}>
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-crimson/80 text-white shadow-sm shadow-crimson/30 shrink-0">
                           {item.badge}
                         </span>
                       ) : (
-                        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-dark-sidebar ${
-                          item.badge === 'Admin' ? 'bg-emerald-500' : 'bg-crimson'
-                        }`} />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-crimson ring-2 ring-dark-sidebar" />
                       )}
                     </>
                   )}
@@ -262,6 +196,27 @@ export default function Sidebar({
               <Settings className="w-4 h-4 text-dark-muted shrink-0" />
               {!isCollapsed && <span className="truncate">Preferências</span>}
             </button>
+
+            {/* ADMIN ONLY SYSTEM CONFIGURATION BUTTON */}
+            {isAdmin && (
+              <button
+                onClick={() => openAdminConfig('prompts')}
+                title={isCollapsed ? 'Configurações do Sistema (Admin)' : undefined}
+                className={`w-full flex items-center rounded-xl text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/40 transition shadow-sm ${
+                  isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <SlidersHorizontal className="w-4 h-4 text-emerald-400 shrink-0" />
+                  {!isCollapsed && <span className="truncate">Configurações do Sistema</span>}
+                </div>
+                {!isCollapsed && (
+                  <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                    Admin
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           {/* User Profile Card with Profile Switcher */}
@@ -307,10 +262,10 @@ export default function Sidebar({
               )}
             </div>
 
-            {/* Quick Profile Switcher for Pair Programming & Testing */}
+            {/* Quick Profile Switcher */}
             {!isCollapsed && (
               <div className="mt-2 flex items-center justify-between gap-1 px-1">
-                <span className="text-[9px] text-dark-muted font-semibold uppercase">Alternar Perfil:</span>
+                <span className="text-[9px] text-dark-muted font-semibold uppercase">Perfil:</span>
                 <div className="flex items-center gap-1">
                   {availablePresets.map((p) => (
                     <button

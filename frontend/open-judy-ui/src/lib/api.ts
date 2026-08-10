@@ -448,6 +448,9 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (_) {}
     return {
+      systemName: 'Open Judy',
+      systemTagline: '',
+      logoUrl: '',
       geminiModel: 'gemini-2.0-flash',
       geminiEmbeddingModel: 'text-embedding-004',
       maxAudioDurationMinutes: 240,
@@ -475,6 +478,480 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (_) {}
     return config;
+  },
+
+  async getConfigOverview(): Promise<any> {
+    try {
+      const res = await fetch('/api/v1/config/overview', { cache: 'no-store' });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return {
+      prompts: MOCK_PROMPTS,
+      models: MOCK_MODELS,
+      dashboards: MOCK_DASHBOARDS,
+      notifications: MOCK_NOTIFICATIONS,
+      settings: MOCK_SETTINGS,
+      generatedAt: new Date().toISOString()
+    };
+  },
+
+  async getPromptTemplates(category?: string): Promise<any[]> {
+    try {
+      const url = category ? `/api/v1/config/prompts?category=${category}` : '/api/v1/config/prompts';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return category ? MOCK_PROMPTS.filter(p => p.category === category) : MOCK_PROMPTS;
+  },
+
+  async updatePromptTemplate(id: string, data: any): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/prompts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const index = MOCK_PROMPTS.findIndex(p => p.id === id);
+    if (index !== -1) {
+      MOCK_PROMPTS[index] = { ...MOCK_PROMPTS[index], ...data, version: (MOCK_PROMPTS[index].version || 1) + 1, updatedAt: new Date().toISOString() };
+      return MOCK_PROMPTS[index];
+    }
+    return data;
+  },
+
+  async renderPromptTemplate(promptCode: string, variables: any): Promise<any> {
+    try {
+      const res = await fetch('/api/v1/config/prompts/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promptCode, variables })
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const prompt = MOCK_PROMPTS.find(p => p.code === promptCode) || MOCK_PROMPTS[0];
+    let userPrompt = prompt.userPromptTemplate;
+    for (const [k, v] of Object.entries(variables || {})) {
+      userPrompt = userPrompt.replaceAll(`{{${k}}}`, String(v));
+    }
+    return {
+      promptCode: prompt.code,
+      defaultModel: prompt.defaultModel,
+      defaultTemperature: prompt.defaultTemperature,
+      renderedSystemInstruction: prompt.systemInstruction,
+      renderedUserPrompt: userPrompt,
+      missingVariables: []
+    };
+  },
+
+  async getAiModels(type?: string): Promise<any[]> {
+    try {
+      const url = type ? `/api/v1/config/models?type=${type}` : '/api/v1/config/models';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return type ? MOCK_MODELS.filter(m => m.modelType === type) : MOCK_MODELS;
+  },
+
+  async setDefaultAiModel(id: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/models/${id}/set-default`, { method: 'PATCH' });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const model = MOCK_MODELS.find(m => m.id === id);
+    if (model) {
+      MOCK_MODELS.forEach(m => {
+        if (m.modelType === model.modelType) m.isDefault = (m.id === id);
+      });
+      return model;
+    }
+    return null;
+  },
+
+  async updateAiModel(id: string, data: any): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/models/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const index = MOCK_MODELS.findIndex(m => m.id === id);
+    if (index !== -1) {
+      MOCK_MODELS[index] = { ...MOCK_MODELS[index], ...data, updatedAt: new Date().toISOString() };
+      return MOCK_MODELS[index];
+    }
+    return data;
+  },
+
+  async getDashboardTypes(role?: string): Promise<any[]> {
+    try {
+      const url = role ? `/api/v1/config/dashboards?role=${role}` : '/api/v1/config/dashboards';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return role ? MOCK_DASHBOARDS.filter(d => d.targetRole === role || d.targetRole === 'ALL') : MOCK_DASHBOARDS;
+  },
+
+  async updateDashboardType(id: string, data: any): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/dashboards/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const index = MOCK_DASHBOARDS.findIndex(d => d.id === id);
+    if (index !== -1) {
+      MOCK_DASHBOARDS[index] = { ...MOCK_DASHBOARDS[index], ...data, updatedAt: new Date().toISOString() };
+      return MOCK_DASHBOARDS[index];
+    }
+    return data;
+  },
+
+  async getNotificationTypes(category?: string): Promise<any[]> {
+    try {
+      const url = category ? `/api/v1/config/notifications?category=${category}` : '/api/v1/config/notifications';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return category ? MOCK_NOTIFICATIONS.filter(n => n.category === category) : MOCK_NOTIFICATIONS;
+  },
+
+  async updateNotificationType(id: string, data: any): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/notifications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const index = MOCK_NOTIFICATIONS.findIndex(n => n.id === id);
+    if (index !== -1) {
+      MOCK_NOTIFICATIONS[index] = { ...MOCK_NOTIFICATIONS[index], ...data, updatedAt: new Date().toISOString() };
+      return MOCK_NOTIFICATIONS[index];
+    }
+    return data;
+  },
+
+  async getSystemSettings(category?: string): Promise<any[]> {
+    try {
+      const url = category ? `/api/v1/config/settings?category=${category}` : '/api/v1/config/settings';
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return Object.entries(MOCK_SETTINGS).map(([key, value]) => ({
+      key,
+      value,
+      category: key.startsWith('gemini') ? 'AI_CORE' : key.startsWith('security') ? 'SECURITY' : 'GENERAL',
+      valueType: typeof value === 'boolean' ? 'BOOLEAN' : typeof value === 'number' ? 'INTEGER' : 'STRING'
+    }));
+  },
+
+  async updateSystemSetting(key: string, data: any): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/config/settings/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    MOCK_SETTINGS[key] = data.value;
+    return { key, value: data.value, description: data.description };
   }
+};
+
+const MOCK_PROMPTS = [
+  {
+    id: 'p0000000-0000-0000-0000-000000000001',
+    code: 'PROMPT_ATA_GENERATION',
+    name: 'Geração Oficial de Ata de Audiência',
+    description: 'Gera o termo oficial da audiência judicial conforme normas do CPC/CPP.',
+    category: 'DOCUMENT_GENERATION',
+    systemInstruction: 'Você é o assistente judiciário oficial do Open Judy especializado na elaboração formal de Atas de Audiências Judiciais do Poder Judiciário Brasileiro.',
+    userPromptTemplate: 'Processo: {{case_number}}\nVara / Comarca: {{court_jurisdiction}}\nTipo de Audiência: {{hearing_type}}\nMagistrado Presidente: {{judge_name}}\nParticipantes Presentes: {{participants_list}}\n\nTranscrição Integral Diarizada da Audiência:\n{{transcript_content}}\n\nElabore a minuta completa do Termo de Audiência.',
+    variables: ['case_number', 'court_jurisdiction', 'hearing_type', 'judge_name', 'participants_list', 'transcript_content'],
+    defaultModel: 'gemini-2.0-flash',
+    defaultTemperature: 0.2,
+    defaultMaxTokens: 8192,
+    version: 1,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'p0000000-0000-0000-0000-000000000002',
+    code: 'PROMPT_CONTRADICTION_DETECTION',
+    name: 'Detector de Contradições e Teses Conflitantes',
+    description: 'Identifica divergências fáticas e contradições entre depoimentos com fundamentação jurídica.',
+    category: 'LEGAL_ANALYSIS',
+    systemInstruction: 'Você é um auditor jurídico analítico do Open Judy. Analise os depoimentos colhidos na audiência e identifique pontos fáticos controvertidos e versões conflitantes.',
+    userPromptTemplate: 'Processo Nº: {{case_number}}\nRamo do Direito: {{legal_branch}}\nTese do Autor: {{plaintiff_claim}}\nTese do Réu: {{defendant_claim}}\n\nTranscrição Segmentada:\n{{transcript_content}}\n\nIdentifique e liste detalhadamente todas as contradições fáticas.',
+    variables: ['case_number', 'legal_branch', 'plaintiff_claim', 'defendant_claim', 'transcript_content'],
+    defaultModel: 'gemini-2.0-flash',
+    defaultTemperature: 0.1,
+    defaultMaxTokens: 6144,
+    version: 1,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'p0000000-0000-0000-0000-000000000003',
+    code: 'PROMPT_COPILOT_SYSTEM',
+    name: 'Copilot Judicial RAG com Links de Áudio',
+    description: 'Assistente interativo judiciário com busca semântica vetorial no AlloyDB pgvector.',
+    category: 'COPILOT',
+    systemInstruction: 'Você é Judy Copilot, a inteligência artificial do magistrado brasileiro. Responda às perguntas sobre os autos estritamente com base nos trechos recuperados do AlloyDB pgvector.',
+    userPromptTemplate: 'Contexto dos Autos e Depoimentos Recuperados:\n{{rag_context}}\n\nHistórico da Conversa:\n{{chat_history}}\n\nPergunta do Usuário:\n{{user_query}}',
+    variables: ['rag_context', 'chat_history', 'user_query'],
+    defaultModel: 'gemini-2.0-flash',
+    defaultTemperature: 0.2,
+    defaultMaxTokens: 4096,
+    version: 1,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'p0000000-0000-0000-0000-000000000004',
+    code: 'PROMPT_DIARIZATION_REFINEMENT',
+    name: 'Refinamento de Diarização de Falas Judiciais',
+    description: 'Classifica e refina a identificação de oradores na audiência em papéis jurídicos formais.',
+    category: 'TRANSCRIPTION',
+    systemInstruction: 'Você é um classificador de papéis jurídicos em audiências. Analise o fluxo de diálogo e atribua a cada orador o seu papel correto.',
+    userPromptTemplate: 'Participantes Cadastrados na Pauta: {{registered_participants}}\n\nTrecho da Transcrição Bruta com Oradores Desconhecidos:\n{{raw_transcript}}\n\nClassifique os oradores mantendo rigorosamente os timestamps.',
+    variables: ['registered_participants', 'raw_transcript'],
+    defaultModel: 'gemini-2.0-flash',
+    defaultTemperature: 0.1,
+    defaultMaxTokens: 4096,
+    version: 1,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  }
+];
+
+const MOCK_MODELS = [
+  {
+    id: 'm0000000-0000-0000-0000-000000000001',
+    modelId: 'gemini-2.0-flash',
+    name: 'Google Gemini 2.0 Flash',
+    provider: 'GOOGLE_GEMINI',
+    modelType: 'LLM_MULTIMODAL',
+    description: 'Modelo multimodal ultra-rápido com 1M tokens de janela para transcrição de áudio, atas e RAG.',
+    contextWindowTokens: 1048576,
+    maxOutputTokens: 8192,
+    supportsMultimodal: true,
+    supportsAudio: true,
+    supportsStreaming: true,
+    supportsSystemInstruction: true,
+    costPer1kInputTokens: 0.0001,
+    costPer1kOutputTokens: 0.0004,
+    isDefault: true,
+    active: true,
+    parameters: { temperature: 0.2, topP: 0.95, topK: 40 },
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'm0000000-0000-0000-0000-000000000002',
+    modelId: 'gemini-1.5-pro',
+    name: 'Google Gemini 1.5 Pro',
+    provider: 'GOOGLE_GEMINI',
+    modelType: 'LLM_MULTIMODAL',
+    description: 'Modelo de raciocínio profundo com 2M tokens de contexto para análise de processos complexos.',
+    contextWindowTokens: 2097152,
+    maxOutputTokens: 8192,
+    supportsMultimodal: true,
+    supportsAudio: true,
+    supportsStreaming: true,
+    supportsSystemInstruction: true,
+    costPer1kInputTokens: 0.00125,
+    costPer1kOutputTokens: 0.005,
+    isDefault: false,
+    active: true,
+    parameters: { temperature: 0.1, topP: 0.95, topK: 40 },
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'm0000000-0000-0000-0000-000000000003',
+    modelId: 'text-embedding-004',
+    name: 'Google Text Embedding 004',
+    provider: 'GOOGLE_GEMINI',
+    modelType: 'EMBEDDING',
+    description: 'Modelo oficial de geração de embeddings vetoriais com 768 dimensões compatível com AlloyDB pgvector.',
+    contextWindowTokens: 2048,
+    maxOutputTokens: 768,
+    supportsMultimodal: false,
+    supportsAudio: false,
+    supportsStreaming: false,
+    supportsSystemInstruction: false,
+    costPer1kInputTokens: 0.00002,
+    costPer1kOutputTokens: 0.0,
+    isDefault: true,
+    active: true,
+    parameters: { dimensions: 768, taskType: 'RETRIEVAL_DOCUMENT' },
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'm0000000-0000-0000-0000-000000000004',
+    modelId: 'whisper-large-v3',
+    name: 'OpenAI Whisper Large v3',
+    provider: 'LOCAL_OLLAMA',
+    modelType: 'AUDIO_SPEECH',
+    description: 'Modelo open-source de reconhecimento de fala e transcrição para ambientes on-premise ou fallback.',
+    contextWindowTokens: 448,
+    maxOutputTokens: 448,
+    supportsMultimodal: true,
+    supportsAudio: true,
+    supportsStreaming: false,
+    supportsSystemInstruction: false,
+    costPer1kInputTokens: 0.0,
+    costPer1kOutputTokens: 0.0,
+    isDefault: false,
+    active: true,
+    parameters: { language: 'pt', temperature: 0.0 },
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  }
+];
+
+const MOCK_DASHBOARDS = [
+  {
+    id: 'd0000000-0000-0000-0000-000000000001',
+    code: 'DASHBOARD_MAGISTRADO',
+    name: 'Painel do Magistrado(a)',
+    description: 'Visão panorâmica para juízes com pauta de audiências do dia, atas aguardando assinatura e contradições.',
+    targetRole: 'MAGISTRADO',
+    layoutType: 'GRID',
+    widgets: [
+      { id: 'widget_today_hearings', title: 'Audiências de Hoje', type: 'HEARING_LIST', colSpan: 8, refreshSec: 30 },
+      { id: 'widget_pending_signatures', title: 'Atas Pendentes de Assinatura', type: 'PENDING_MINUTES', colSpan: 4, refreshSec: 60 },
+      { id: 'widget_contradictions_alert', title: 'Contradições Recentes', type: 'CONTRADICTION_SUMMARY', colSpan: 6, refreshSec: 120 }
+    ],
+    defaultLanding: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'd0000000-0000-0000-0000-000000000002',
+    code: 'DASHBOARD_ASSESSOR',
+    name: 'Painel do Assessor de Gabinete',
+    description: 'Foco na redação de minutas de atas, pesquisa com Copilot RAG e revisão de depoimentos transcritos.',
+    targetRole: 'ASSESSOR',
+    layoutType: 'GRID',
+    widgets: [
+      { id: 'widget_drafts_in_progress', title: 'Minutas de Atas em Elaboração', type: 'DRAFTS_LIST', colSpan: 6, refreshSec: 45 },
+      { id: 'widget_recent_transcriptions', title: 'Transcrições Concluídas', type: 'TRANSCRIPTION_FEED', colSpan: 6, refreshSec: 30 }
+    ],
+    defaultLanding: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'd0000000-0000-0000-0000-000000000003',
+    code: 'DASHBOARD_ADMIN_METRICS',
+    name: 'Painel de Métricas e Administração de TI',
+    description: 'Telemetria de processamento de IA, latência do Gemini, consumo de tokens e saúde do cluster.',
+    targetRole: 'ADMIN',
+    layoutType: 'GRID',
+    widgets: [
+      { id: 'widget_gemini_latency', title: 'Latência Média de Transcrição', type: 'METRIC_LATENCY', colSpan: 4, refreshSec: 15 },
+      { id: 'widget_token_usage', title: 'Consumo de Tokens Gemini', type: 'METRIC_TOKENS', colSpan: 4, refreshSec: 30 }
+    ],
+    defaultLanding: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  }
+];
+
+const MOCK_NOTIFICATIONS = [
+  {
+    id: 'n0000000-0000-0000-0000-000000000001',
+    code: 'NOTIF_AUDIO_TRANSCRIPTION_COMPLETED',
+    name: 'Transcrição de Audiência Concluída',
+    description: 'Notifica quando o processamento e diarização de fala da audiência pelo Gemini é finalizado.',
+    category: 'AUDIO_PROCESSING',
+    defaultPriority: 'NORMAL',
+    supportedChannels: ['IN_APP', 'EMAIL', 'WEBSOCKET'],
+    templateTitle: 'Transcrição concluída: Processo {{case_number}}',
+    templateBody: 'A gravação da audiência do processo {{case_number}} foi transcrita com sucesso.',
+    allowUserOverride: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'n0000000-0000-0000-0000-000000000002',
+    code: 'NOTIF_CONTRADICTION_DETECTED',
+    name: 'Contradição Relevante Detectada',
+    description: 'Alerta sobre depoimentos conflitantes ou teses contraditórias identificadas pela IA.',
+    category: 'LEGAL_ANALYSIS',
+    defaultPriority: 'HIGH',
+    supportedChannels: ['IN_APP', 'EMAIL'],
+    templateTitle: 'Alerta: Contradição detectada no processo {{case_number}}',
+    templateBody: 'Foram encontradas {{contradiction_count}} divergência(s) relevante(s) nos depoimentos.',
+    allowUserOverride: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'n0000000-0000-0000-0000-000000000003',
+    code: 'NOTIF_ATA_DRAFT_READY',
+    name: 'Minuta da Ata de Audiência Disponível',
+    description: 'Avisa que a minuta automatizada do termo oficial de audiência foi gerada e está pronta para revisão.',
+    category: 'DOCUMENT_WORKFLOW',
+    defaultPriority: 'NORMAL',
+    supportedChannels: ['IN_APP', 'WEBSOCKET'],
+    templateTitle: 'Minuta da Ata Pronta: Processo {{case_number}}',
+    templateBody: 'A minuta automática da ata do processo {{case_number}} foi elaborada pelo modelo {{gemini_model}}.',
+    allowUserOverride: true,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'n0000000-0000-0000-0000-000000000004',
+    code: 'NOTIF_SIGNATURE_REQUIRED',
+    name: 'Assinatura Digital ICP-Brasil Necessária',
+    description: 'Notifica o magistrado quando um termo de audiência aprovado aguarda assinatura digital.',
+    category: 'DOCUMENT_WORKFLOW',
+    defaultPriority: 'HIGH',
+    supportedChannels: ['IN_APP', 'EMAIL'],
+    templateTitle: 'Ata aguardando assinatura do Magistrado(a) - {{case_number}}',
+    templateBody: 'O termo de audiência do processo {{case_number}} aguarda a assinatura digital de Vossa Excelência.',
+    allowUserOverride: false,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-08-06T10:00:00Z'
+  }
+];
+
+const MOCK_SETTINGS: Record<string, any> = {
+  'system.name': 'Open Judy',
+  'system.tagline': 'IA Judiciária Zero-Trust',
+  'system.logo_url': '',
+  'system.accent_color': '#e63946',
+  'gemini.default.model': 'gemini-2.0-flash',
+  'gemini.default.embedding_model': 'text-embedding-004',
+  'vector.similarity_threshold': '0.75',
+  'audio.max_duration_minutes': '240',
+  'storage.audio_bucket': 'open-judy-audio-archive',
+  'security.zero_trust_enforced': 'true',
+  'security.audit_retention_days': '365',
+  'system.maintenance_mode': 'false',
+  'system.default_language': 'pt-BR'
 };
 

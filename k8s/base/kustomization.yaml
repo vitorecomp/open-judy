@@ -7,5 +7,6 @@ resources:
   - alloydb-proxy.yaml
   - transcription-service.yaml
   - user-service.yaml
+  - config-service.yaml
   - open-judy-ui.yaml
   - ingress.yaml

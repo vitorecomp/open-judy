@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import UserPreferencesModal from '@/components/UserPreferencesModal';
+import AdminConfigModal from '@/components/AdminConfigModal';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 
@@ -13,7 +14,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const { isPreferencesOpen, setIsPreferencesOpen } = useAuth();
+  const { isPreferencesOpen, setIsPreferencesOpen, isAdminConfigOpen, setIsAdminConfigOpen } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -68,6 +69,12 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
       <UserPreferencesModal
         isOpen={isPreferencesOpen}
         onClose={() => setIsPreferencesOpen(false)}
+      />
+
+      {/* Global Admin System Configuration Modal */}
+      <AdminConfigModal
+        isOpen={isAdminConfigOpen}
+        onClose={() => setIsAdminConfigOpen(false)}
       />
     </div>
   );

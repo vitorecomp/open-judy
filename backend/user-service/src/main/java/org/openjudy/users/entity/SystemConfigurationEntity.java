@@ -21,6 +21,12 @@ public class SystemConfigurationEntity extends PanacheEntityBase {
     @GeneratedValue(strategy = GenerationType.UUID)
     public UUID id;
 
+    @Column(name = "system_name", nullable = false, length = 128)
+    public String systemName = "Open Judy";
+
+    @Column(name = "logo_url", length = 512)
+    public String logoUrl;
+
     @Column(name = "gemini_model", nullable = false, length = 64)
     public String geminiModel = "gemini-2.0-flash";
 
@@ -64,6 +70,7 @@ public class SystemConfigurationEntity extends PanacheEntityBase {
         SystemConfigurationEntity config = find("order by updatedAt desc").firstResult();
         if (config == null) {
             config = new SystemConfigurationEntity();
+            config.systemName = "Open Judy";
             config.systemPropertiesJson = "{\"copilotMaxHistoryTurns\":20,\"enableMultimodalDiarization\":true,\"alloyDbVectorDimensions\":768}";
             config.persist();
         }
@@ -96,6 +103,8 @@ public class SystemConfigurationEntity extends PanacheEntityBase {
     public SystemConfigurationDTO toDTO() {
         return new SystemConfigurationDTO(
                 id,
+                systemName,
+                logoUrl,
                 geminiModel,
                 geminiEmbeddingModel,
                 maxAudioDurationMinutes,

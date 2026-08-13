@@ -71,15 +71,100 @@ services:
       timeout: 5s
       retries: 5
 
+  # Keycloak IAM & OIDC Authentication Server
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: open-judy-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: "/"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro,z
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # RabbitMQ Message Broker & Management Console
+  rabbitmq:
+    image: docker.io/rabbitmq:3.13-management
+    container_name: open-judy-rabbitmq
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c", "chown -R rabbitmq:rabbitmq /var/lib/rabbitmq 2>/dev/null || true; exec rabbitmq-server"]
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: judy_user
+      RABBITMQ_DEFAULT_PASS: judy_password
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_ERLANG_COOKIE: "open_judy_secret_cookie_12345"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia:z
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch Full-Text Search Engine
+  elasticsearch:
+    image: docker.io/elasticsearch:8.13.0
+    container_name: open-judy-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data:z
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # =================================================================
   # 2. BACKEND MICROSERVICES (QUARKUS DEV MODE WITH HOT RELOAD)
   # =================================================================
+
+  # Legal Lawsuits & Case Documents Service
+  case-service:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-case-service
+    ports:
+      - "8081:8081"
+      - "5006:5005"
+    environment:
+      SERVICE_NAME: case-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
 
   # Gemini Audio Transcription & Diarization Service
   transcription-service:
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: services/Dockerfile.dev
     container_name: open-judy-transcription-service
     ports:
       - "8083:8083"
@@ -92,21 +177,29 @@ services:
       DB_USER: judy_user
       DB_PASSWORD: judy_password
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
       GEMINI_MODEL: gemini-2.0-flash
       QUARKUS_HTTP_HOST: "0.0.0.0"
     volumes:
-      - ./backend:/workspace/backend:z
+      - ./services:/workspace/services:z
       - maven_cache:/root/.m2:z
     depends_on:
       - alloydb-local
       - kafka
+      - rabbitmq
+      - keycloak
 
-  # User Management Service (IAP Auth)
+  # User Management Service (Keycloak OIDC Auth & JIT Provisioning)
   user-service:
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: services/Dockerfile.dev
     container_name: open-judy-user-service
     ports:
       - "8085:8085"
@@ -119,19 +212,22 @@ services:
       DB_USER: judy_user
       DB_PASSWORD: judy_password
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
       QUARKUS_HTTP_HOST: "0.0.0.0"
     volumes:
-      - ./backend:/workspace/backend:z
+      - ./services:/workspace/services:z
       - maven_cache:/root/.m2:z
     depends_on:
       - alloydb-local
       - kafka
+      - keycloak
 
   # System Configuration Service (Prompts, Models, Dashboards, Notification Types)
   config-service:
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: services/Dockerfile.dev
     container_name: open-judy-config-service
     ports:
       - "8086:8086"
@@ -144,16 +240,154 @@ services:
       DB_USER: judy_user
       DB_PASSWORD: judy_password
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
       QUARKUS_HTTP_HOST: "0.0.0.0"
     volumes:
-      - ./backend:/workspace/backend:z
+      - ./services:/workspace/services:z
       - maven_cache:/root/.m2:z
     depends_on:
       - alloydb-local
       - kafka
+      - keycloak
+
+  # Real-Time Judicial Notification Service (RabbitMQ, SSE, DB)
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-notification-service
+    ports:
+      - "8087:8087"
+      - "5013:5005"
+    environment:
+      SERVICE_NAME: notification-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+      - kafka
+      - rabbitmq
+
+  # Judicial Notebook & Open Multi-Context Chat Service
+  notebook-service:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-notebook-service
+    ports:
+      - "8090:8090"
+      - "5015:5005"
+    environment:
+      SERVICE_NAME: notebook-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8090"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+
+  # Gemini Enterprise Agent Garden Service (StreamAssist Gateway, Enterprise Agents)
+  agent-garden:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-agent-garden
+    ports:
+      - "8088:8088"
+      - "5014:5005"
+    environment:
+      SERVICE_NAME: agent-garden
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-open-judy-cloud}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GCP_ENDPOINT_LOCATION: ${GCP_ENDPOINT_LOCATION:-global}
+      GCP_APP_ID: ${GCP_APP_ID:-judy-legal-agents}
+      GCP_ASSISTANT_ID: ${GCP_ASSISTANT_ID:-default_assistant}
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - alloydb-local
+
+  # Unified Elasticsearch Full-Text Indexer & Search Service
+  indexer-service:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-indexer-service
+    ports:
+      - "8089:8089"
+      - "5016:5005"
+    environment:
+      SERVICE_NAME: indexer-service
+      ELASTICSEARCH_HOSTS: elasticsearch:9200
+      CASE_SERVICE_URL: http://case-service:8081
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
+      AGENT_GARDEN_SERVICE_URL: http://agent-garden:8088
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2:z
+    depends_on:
+      - elasticsearch
+      - alloydb-local
 
   # =================================================================
-  # 3. FRONTEND PORTAL (NEXT.JS 15 DEV MODE WITH FAST REFRESH)
+  # 3. ASYNC PIPELINES & WORKERS (PYTHON RESILIENT CONSUMERS)
+  # =================================================================
+
+  # Multimodal Gemini Transcription & Diarization Pipeline
+  transcription-pipeline:
+    build:
+      context: .
+      dockerfile: pipelines/transcription-pipeline/Dockerfile
+    container_name: open-judy-transcription-pipeline
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
+      GEMINI_MODEL: gemini-2.0-flash
+      MAX_RETRIES: "3"
+      RETRY_BACKOFF_SECONDS: "5"
+    volumes:
+      - ./pipelines/transcription-pipeline:/app:z
+    depends_on:
+      - rabbitmq
+      - alloydb-local
+      - minio
+
+  # =================================================================
+  # 4. FRONTEND PORTAL (NEXT.JS 15 DEV MODE WITH FAST REFRESH)
   # =================================================================
   open-judy-ui:
     build:
@@ -166,6 +400,15 @@ services:
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       USER_SERVICE_URL: http://user-service:8085
       CONFIG_SERVICE_URL: http://config-service:8086
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      AGENT_GARDEN_SERVICE_URL: http://agent-garden:8088
+      INDEXER_SERVICE_URL: http://indexer-service:8089
+      CASE_SERVICE_URL: http://case-service:8081
+      NOTEBOOK_SERVICE_URL: http://notebook-service:8090
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8080
+      NEXT_PUBLIC_KEYCLOAK_REALM: open-judy
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: open-judy-ui
+      KEYCLOAK_URL: http://keycloak:8080
       WATCHPACK_POLLING: "true"
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:
@@ -174,9 +417,17 @@ services:
       - transcription-service
       - user-service
       - config-service
+      - notification-service
+      - agent-garden
+      - case-service
+      - indexer-service
+      - notebook-service
+      - keycloak
 
 volumes:
   alloydb_data:
   kafka_data:
   minio_data:
+  rabbitmq_data:
+  elasticsearch_data:
   maven_cache:

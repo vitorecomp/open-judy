@@ -1,0 +1,198 @@
+{
+  "realm": "open-judy",
+  "displayName": "Open Judy - Autenticação Judiciária Zero-Trust",
+  "displayNameHtml": "<b>Open Judy</b> ⚖️🤖 IAM Judiciário",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrador do Sistema Open Judy - Acesso irrestrito",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "MAGISTRADO",
+        "description": "Magistrado / Juiz de Direito - Condução de audiências, aprovação e assinatura de atas",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ASSESSOR",
+        "description": "Assessor de Gabinete - Minutas de atas, análise de contradições e pesquisas jurídicas",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "ADVOGADO",
+        "description": "Advogado constituído nos autos",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "groups": [],
+  "defaultRoles": [
+    "ASSESSOR"
+  ],
+  "clients": [
+    {
+      "clientId": "open-judy-ui",
+      "name": "Open Judy Frontend Portal",
+      "description": "Next.js 15 Single Page Application",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "http://localhost:3000",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "http://localhost:3000/api/auth/callback/keycloak"
+      ],
+      "webOrigins": [
+        "+",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://127.0.0.1:3000/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email"
+      ]
+    },
+    {
+      "clientId": "open-judy-backend",
+      "name": "Open Judy Microservices Backend",
+      "description": "Quarkus Backend Services (user-service, transcription-service, config-service)",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "defaultClientScopes": [
+        "profile",
+        "roles",
+        "email"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "u0000000-0000-0000-0000-000000000001",
+      "username": "camila.vasconcelos",
+      "email": "camila.vasconcelos@tjsp.jus.br",
+      "firstName": "Camila",
+      "lastName": "Vasconcelos de Albuquerque",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "judy123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MAGISTRADO"
+      ],
+      "attributes": {
+        "courtJurisdiction": ["3ª Vara Cível Central da Comarca de São Paulo/SP"],
+        "documentNumber": ["TJSP-44910"],
+        "title": ["Juíza de Direito Titular"],
+        "avatarUrl": ["https://ui-avatars.com/api/?name=Camila+Vasconcelos&background=e63946&color=fff"]
+      }
+    },
+    {
+      "id": "u0000000-0000-0000-0000-000000000002",
+      "username": "marcos.assessor",
+      "email": "marcos.assessor@tjsp.jus.br",
+      "firstName": "Marcos Vinicius",
+      "lastName": "de Souza",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "judy123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ASSESSOR"
+      ],
+      "attributes": {
+        "courtJurisdiction": ["3ª Vara Cível Central da Comarca de São Paulo/SP"],
+        "documentNumber": ["ASSESS-8831"],
+        "title": ["Assessor de Gabinete"],
+        "avatarUrl": ["https://ui-avatars.com/api/?name=Marcos+Souza&background=4f46e5&color=fff"]
+      }
+    },
+    {
+      "id": "u0000000-0000-0000-0000-000000000003",
+      "username": "admin.judy",
+      "email": "admin@openjudy.org",
+      "firstName": "Administrador Geral",
+      "lastName": "Open Judy",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "judy123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "attributes": {
+        "courtJurisdiction": ["Tribunal de Justiça - Coordenação de TI e IA"],
+        "documentNumber": ["SYS-001"],
+        "title": ["Administrador do Sistema"],
+        "avatarUrl": ["https://ui-avatars.com/api/?name=Open+Judy+Admin&background=10b981&color=fff"]
+      }
+    },
+    {
+      "id": "u0000000-0000-0000-0000-000000000004",
+      "username": "lucas.menezes",
+      "email": "lucas.menezes@advocacia.com.br",
+      "firstName": "Lucas",
+      "lastName": "Menezes Braga",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "judy123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADVOGADO"
+      ],
+      "attributes": {
+        "courtJurisdiction": ["São Paulo/SP"],
+        "documentNumber": ["OAB/SP 389.122"],
+        "title": ["Advogado Constituído"],
+        "avatarUrl": ["https://ui-avatars.com/api/?name=Lucas+Menezes&background=0284c7&color=fff"]
+      }
+    }
+  ]
+}

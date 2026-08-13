@@ -1,0 +1,14 @@
+FROM docker.io/maven:3.9.9-eclipse-temurin-21
+
+WORKDIR /workspace/services
+
+# Environment settings for hot reload and container network binding
+ENV QUARKUS_HTTP_HOST=0.0.0.0
+ENV QUARKUS_ANALYTICS_DISABLED=true
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0"
+
+# Default entrypoint script that ensures common-lib is compiled and starts quarkus:dev
+COPY docker/entrypoint-quarkus-dev.sh /usr/local/bin/entrypoint-quarkus-dev.sh
+RUN chmod +x /usr/local/bin/entrypoint-quarkus-dev.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-quarkus-dev.sh"]

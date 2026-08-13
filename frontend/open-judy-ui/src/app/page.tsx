@@ -18,7 +18,9 @@ import {
   Scale,
   Users,
   MapPin,
-  FileText
+  FileText,
+  Video,
+  Music
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -31,7 +33,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-8 max-w-[1440px] mx-auto animate-in fade-in">
+    <div className="w-full space-y-8 animate-in fade-in">
       {/* ========================================================================= */}
       {/* TOP SECTION: DASHBOARD WIDGETS (Matching Reference Design Top Half) */}
       {/* ========================================================================= */}
@@ -364,9 +366,12 @@ export default function DashboardPage() {
                     <td className="py-2.5 font-mono font-medium text-white">
                       <Link
                         href="/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98"
-                        className="hover:text-crimson transition"
+                        className="hover:text-crimson transition flex items-center gap-1.5"
                       >
-                        0004521-88.2024
+                        <span className="p-0.5 rounded bg-crimson/15 text-crimson border border-crimson/30">
+                          <Video className="w-2.5 h-2.5" />
+                        </span>
+                        <span>0004521-88.2024</span>
                       </Link>
                     </td>
                     <td className="py-2.5">
@@ -386,7 +391,12 @@ export default function DashboardPage() {
                   </tr>
                   <tr className="group hover:bg-dark-pill/30">
                     <td className="py-2.5 font-mono font-medium text-white">
-                      0015782-33.2024
+                      <div className="flex items-center gap-1.5">
+                        <span className="p-0.5 rounded bg-crimson/15 text-crimson border border-crimson/30">
+                          <Video className="w-2.5 h-2.5" />
+                        </span>
+                        <span>0015782-33.2024</span>
+                      </div>
                     </td>
                     <td className="py-2.5">
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#381c22] text-red-400 border border-red-900/40">
@@ -458,10 +468,10 @@ export default function DashboardPage() {
 
             <div className="space-y-1">
               <h4 className="text-xs font-bold text-white">
-                Nova funcionalidade v2.1 integrada!
+                Suporte a Audiências em Vídeo & Áudio!
               </h4>
               <p className="text-[11px] text-dark-muted leading-relaxed">
-                Suporte nativo ao modelo Gemini 2.0 Flash com AlloyDB pgvector para detecção de contradições instantânea.
+                Processamento multimodal de gravações de vídeo e áudio com Gemini 2.0 Flash, sincronização de oradores e player em tempo real.
               </p>
             </div>
           </div>

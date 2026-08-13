@@ -1,4 +1,59 @@
-import { Case, Hearing, TranscriptSegment, AtaDraft, HearingSummary, CopilotResponse } from './types';
+import {
+  Case,
+  Hearing,
+  TranscriptSegment,
+  AtaDraft,
+  HearingSummary,
+  CopilotResponse,
+  JudicialNotification,
+  TranscriptBlock,
+  Notebook,
+  NotebookSource,
+  NotebookNote,
+  NotebookChatMessage
+} from './types';
+
+const MOCK_BLOCKS: TranscriptBlock[] = [
+  {
+    id: 'blk-0001-0000-0000-000000000001',
+    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    blockIndex: 1,
+    title: 'Bloco 1: Abertura e Tentativa de Conciliação',
+    startTimeMs: 0,
+    endTimeMs: 48500,
+    startTimeFormatted: '00:00',
+    endTimeFormatted: '00:48',
+    estimatedTokens: 252000,
+    segmentCount: 3,
+    summary: 'Abertura formal dos trabalhos, verificação dos patronos presentes e frustração da proposta de acordo civil.'
+  },
+  {
+    id: 'blk-0001-0000-0000-000000000002',
+    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    blockIndex: 2,
+    title: 'Bloco 2: Saneamento e Depoimento da Autora',
+    startTimeMs: 49000,
+    endTimeMs: 115000,
+    startTimeFormatted: '00:49',
+    endTimeFormatted: '01:55',
+    estimatedTokens: 256000,
+    segmentCount: 2,
+    summary: 'Fixação judicial dos pontos controvertidos e tomada do depoimento pessoal da autora sobre as notificações.'
+  },
+  {
+    id: 'blk-0001-0000-0000-000000000003',
+    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    blockIndex: 3,
+    title: 'Bloco 3: Encerramento da Instrução e Memoriais',
+    startTimeMs: 116000,
+    endTimeMs: 142000,
+    startTimeFormatted: '01:56',
+    endTimeFormatted: '02:22',
+    estimatedTokens: 248000,
+    segmentCount: 1,
+    summary: 'Encerramento formal da instrução e concessão de 15 dias sucessivos para memoriais de alegações finais.'
+  }
+];
 
 const MOCK_HEARINGS: Hearing[] = [
   {
@@ -9,9 +64,12 @@ const MOCK_HEARINGS: Hearing[] = [
     hearingType: 'INSTRUCAO_E_JULGAMENTO',
     scheduledDateTime: '2026-08-06T14:00:00Z',
     status: 'READY',
-    audioFilename: 'audiencia_0004521_instrucao.mp3',
+    mediaType: 'VIDEO',
+    mediaFilename: 'audiencia_0004521_instrucao.mp4',
+    videoUrl: '',
+    audioFilename: 'audiencia_0004521_instrucao.mp4',
     audioDurationSeconds: 142.0,
-    audioSizeBytes: 19840000,
+    audioSizeBytes: 48500000,
     participants: [
       { id: '1', name: 'Dra. Camila Vasconcelos de Albuquerque', role: 'MAGISTRADO', documentNumber: 'TJSP-44910', isPresent: true },
       { id: '2', name: 'Dr. Lucas Menezes Braga', role: 'ADVOGADO_AUTOR', documentNumber: 'OAB/SP 389.122', isPresent: true },
@@ -30,6 +88,8 @@ const MOCK_HEARINGS: Hearing[] = [
     hearingType: 'CONCILIACAO',
     scheduledDateTime: '2026-08-07T10:30:00Z',
     status: 'READY',
+    mediaType: 'AUDIO',
+    mediaFilename: 'audiencia_0005891_conciliacao.mp3',
     audioFilename: 'audiencia_0005891_conciliacao.mp3',
     audioDurationSeconds: 210.0,
     audioSizeBytes: 24500000,
@@ -49,9 +109,12 @@ const MOCK_HEARINGS: Hearing[] = [
     hearingType: 'UNA',
     scheduledDateTime: '2026-08-07T14:15:00Z',
     status: 'READY',
-    audioFilename: 'audiencia_0009142_trabalhista.mp3',
+    mediaType: 'VIDEO',
+    mediaFilename: 'audiencia_0009142_trabalhista.webm',
+    videoUrl: '',
+    audioFilename: 'audiencia_0009142_trabalhista.webm',
     audioDurationSeconds: 340.0,
-    audioSizeBytes: 42000000,
+    audioSizeBytes: 89000000,
     participants: [
       { id: '1', name: 'Dr. Marcos Valério Silveira', role: 'MAGISTRADO', isPresent: true },
       { id: '2', name: 'Fernando Costa Lima', role: 'AUTOR', isPresent: true },
@@ -68,9 +131,12 @@ const MOCK_HEARINGS: Hearing[] = [
     hearingType: 'CUSTODIA',
     scheduledDateTime: '2026-08-08T09:00:00Z',
     status: 'PENDING',
-    audioFilename: 'audiencia_0012490_custodia.mp3',
+    mediaType: 'VIDEO',
+    mediaFilename: 'audiencia_0012490_custodia.mp4',
+    videoUrl: '',
+    audioFilename: 'audiencia_0012490_custodia.mp4',
     audioDurationSeconds: 180.0,
-    audioSizeBytes: 21000000,
+    audioSizeBytes: 42000000,
     participants: [
       { id: '1', name: 'Dra. Renata Souza', role: 'MAGISTRADO', isPresent: true },
       { id: '2', name: 'Paulo Henrique Guedes', role: 'REU', isPresent: true },
@@ -87,9 +153,12 @@ const MOCK_HEARINGS: Hearing[] = [
     hearingType: 'INTERROGATORIO',
     scheduledDateTime: '2026-08-08T11:00:00Z',
     status: 'PROCESSING_TRANSCRIPTION',
-    audioFilename: 'audiencia_0015782_interrogatorio.mp3',
+    mediaType: 'VIDEO',
+    mediaFilename: 'audiencia_0015782_interrogatorio.mp4',
+    videoUrl: '',
+    audioFilename: 'audiencia_0015782_interrogatorio.mp4',
     audioDurationSeconds: 280.0,
-    audioSizeBytes: 33000000,
+    audioSizeBytes: 75000000,
     participants: [
       { id: '1', name: 'Dra. Camila Vasconcelos de Albuquerque', role: 'MAGISTRADO', isPresent: true },
       { id: '2', name: 'Vitória Kate Santos', role: 'TESTEMUNHA', isPresent: true },
@@ -276,10 +345,33 @@ const MOCK_SUMMARY: HearingSummary = {
   generatedAt: '2026-08-06T14:21:00Z'
 };
 
+function getAuthHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('openjudy_keycloak_token');
+    const profile = localStorage.getItem('openjudy_active_profile');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (profile) {
+      headers['X-Dev-Mock-User'] = profile;
+    }
+  }
+  return headers;
+}
+
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const customHeaders = (options.headers as Record<string, string>) || {};
+  return fetch(url, {
+    ...options,
+    headers: getAuthHeaders(customHeaders),
+  });
+}
+
 export const api = {
   async listHearings(): Promise<Hearing[]> {
     try {
-      const res = await fetch('/api/v1/hearings', { cache: 'no-store' });
+      const res = await authFetch('/api/v1/hearings', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
@@ -290,26 +382,38 @@ export const api = {
 
   async getHearing(id: string): Promise<Hearing> {
     try {
-      const res = await fetch(`/api/v1/hearings/${id}`, { cache: 'no-store' });
+      const res = await authFetch(`/api/v1/hearings/${id}`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return MOCK_HEARINGS.find((h) => h.id === id) || MOCK_DEMO_HEARING;
   },
 
-  async getTranscript(hearingId: string): Promise<TranscriptSegment[]> {
+  async getTranscript(hearingId: string, blockIndex?: number): Promise<TranscriptSegment[]> {
     try {
-      const res = await fetch(`/api/v1/transcriptions/hearing/${hearingId}`, { cache: 'no-store' });
+      const url = blockIndex ? `/api/v1/transcriptions/hearing/${hearingId}?blockIndex=${blockIndex}` : `/api/v1/transcriptions/hearing/${hearingId}`;
+      const res = await authFetch(url, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (_) {}
-    return MOCK_SEGMENTS;
+    return blockIndex ? MOCK_SEGMENTS.filter(s => s.blockIndex === blockIndex) : MOCK_SEGMENTS;
+  },
+
+  async getBlocks(hearingId: string): Promise<TranscriptBlock[]> {
+    try {
+      const res = await authFetch(`/api/v1/transcriptions/hearing/${hearingId}/blocks`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (_) {}
+    return MOCK_BLOCKS;
   },
 
   async getAta(hearingId: string): Promise<AtaDraft> {
     try {
-      const res = await fetch(`/api/v1/ai/hearings/${hearingId}/ata`, { cache: 'no-store' });
+      const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/ata`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return MOCK_ATA;
@@ -317,7 +421,7 @@ export const api = {
 
   async generateAta(hearingId: string): Promise<AtaDraft> {
     try {
-      const res = await fetch(`/api/v1/ai/hearings/${hearingId}/generate-ata`, { method: 'POST' });
+      const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/generate-ata`, { method: 'POST' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return MOCK_ATA;
@@ -325,27 +429,46 @@ export const api = {
 
   async getAnalysis(hearingId: string): Promise<HearingSummary> {
     try {
-      const res = await fetch(`/api/v1/ai/hearings/${hearingId}/analysis`, { cache: 'no-store' });
+      const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/analysis`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return MOCK_SUMMARY;
   },
 
-  async chatCopilot(hearingId: string, question: string): Promise<CopilotResponse> {
+  async chatCopilot(
+    hearingId: string,
+    question: string,
+    blockIndices?: number[],
+    useFullTranscript?: boolean
+  ): Promise<CopilotResponse> {
+    const sanitizedBlockIndices = (blockIndices || []).slice(0, 2); // Max 2 blocks
     try {
-      const res = await fetch(`/api/v1/ai/hearings/${hearingId}/chat`, {
+      const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hearingId, question, conversationHistory: [] })
+        body: JSON.stringify({
+          hearingId,
+          question,
+          blockIndices: sanitizedBlockIndices,
+          useFullTranscript: Boolean(useFullTranscript),
+          conversationHistory: []
+        })
       });
       if (res.ok) return await res.json();
     } catch (_) {}
 
-    // Smart realistic fallback answering legal questions based on transcript
+    // Smart realistic fallback answering legal questions based on transcript and selected 256k blocks
     const qLower = question.toLowerCase();
+    let blockPrefix = '';
+    if (sanitizedBlockIndices.length > 0) {
+      blockPrefix = `[Contexto: Bloco(s) ${sanitizedBlockIndices.join(', ')} | ~${sanitizedBlockIndices.length * 256}k tokens] `;
+    } else if (useFullTranscript) {
+      blockPrefix = `[Contexto: Transcrição Integral | < 512k tokens] `;
+    }
+
     if (qLower.includes('notific') || qLower.includes('março') || qLower.includes('chave')) {
       return {
-        answer: 'De acordo com o depoimento prestado pela Autora (Mariana Ribeiro Silva) às 01:18, foram enviadas três notificações extrajudiciais solicitando a devolução das quantias pagas após a paralisação das obras prevista para março de 2023.',
+        answer: `${blockPrefix}De acordo com o depoimento prestado pela Autora (Mariana Ribeiro Silva) às 01:18 (Bloco 2), foram enviadas três notificações extrajudiciais solicitando a devolução das quantias pagas após a paralisação das obras prevista para março de 2023.`,
         citations: [
           {
             segmentIndex: 5,
@@ -404,7 +527,7 @@ export const api = {
 
   async getCurrentUser(): Promise<any> {
     try {
-      const res = await fetch('/api/v1/users/me', { cache: 'no-store' });
+      const res = await authFetch('/api/v1/users/me', { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return {
@@ -432,7 +555,7 @@ export const api = {
 
   async updateUserConfig(userId: string, config: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/users/${userId}/config`, {
+      const res = await authFetch(`/api/v1/users/${userId}/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -444,7 +567,7 @@ export const api = {
 
   async getSystemConfig(): Promise<any> {
     try {
-      const res = await fetch('/api/v1/system/config', { cache: 'no-store' });
+      const res = await authFetch('/api/v1/system/config', { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return {
@@ -470,7 +593,7 @@ export const api = {
 
   async updateSystemConfig(config: any): Promise<any> {
     try {
-      const res = await fetch('/api/v1/system/config', {
+      const res = await authFetch('/api/v1/system/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -482,14 +605,14 @@ export const api = {
 
   async getConfigOverview(): Promise<any> {
     try {
-      const res = await fetch('/api/v1/config/overview', { cache: 'no-store' });
+      const res = await authFetch('/api/v1/config/overview', { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return {
       prompts: MOCK_PROMPTS,
       models: MOCK_MODELS,
       dashboards: MOCK_DASHBOARDS,
-      notifications: MOCK_NOTIFICATIONS,
+      notifications: MOCK_NOTIFICATION_TYPES,
       settings: MOCK_SETTINGS,
       generatedAt: new Date().toISOString()
     };
@@ -498,7 +621,7 @@ export const api = {
   async getPromptTemplates(category?: string): Promise<any[]> {
     try {
       const url = category ? `/api/v1/config/prompts?category=${category}` : '/api/v1/config/prompts';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) return await res.json();
     } catch (_) {}
     return category ? MOCK_PROMPTS.filter(p => p.category === category) : MOCK_PROMPTS;
@@ -506,7 +629,7 @@ export const api = {
 
   async updatePromptTemplate(id: string, data: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/prompts/${id}`, {
+      const res = await authFetch(`/api/v1/config/prompts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -523,7 +646,7 @@ export const api = {
 
   async renderPromptTemplate(promptCode: string, variables: any): Promise<any> {
     try {
-      const res = await fetch('/api/v1/config/prompts/render', {
+      const res = await authFetch('/api/v1/config/prompts/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ promptCode, variables })
@@ -548,7 +671,7 @@ export const api = {
   async getAiModels(type?: string): Promise<any[]> {
     try {
       const url = type ? `/api/v1/config/models?type=${type}` : '/api/v1/config/models';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) return await res.json();
     } catch (_) {}
     return type ? MOCK_MODELS.filter(m => m.modelType === type) : MOCK_MODELS;
@@ -556,7 +679,7 @@ export const api = {
 
   async setDefaultAiModel(id: string): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/models/${id}/set-default`, { method: 'PATCH' });
+      const res = await authFetch(`/api/v1/config/models/${id}/set-default`, { method: 'PATCH' });
       if (res.ok) return await res.json();
     } catch (_) {}
     const model = MOCK_MODELS.find(m => m.id === id);
@@ -571,7 +694,7 @@ export const api = {
 
   async updateAiModel(id: string, data: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/models/${id}`, {
+      const res = await authFetch(`/api/v1/config/models/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -589,7 +712,7 @@ export const api = {
   async getDashboardTypes(role?: string): Promise<any[]> {
     try {
       const url = role ? `/api/v1/config/dashboards?role=${role}` : '/api/v1/config/dashboards';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) return await res.json();
     } catch (_) {}
     return role ? MOCK_DASHBOARDS.filter(d => d.targetRole === role || d.targetRole === 'ALL') : MOCK_DASHBOARDS;
@@ -597,7 +720,7 @@ export const api = {
 
   async updateDashboardType(id: string, data: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/dashboards/${id}`, {
+      const res = await authFetch(`/api/v1/config/dashboards/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -615,25 +738,25 @@ export const api = {
   async getNotificationTypes(category?: string): Promise<any[]> {
     try {
       const url = category ? `/api/v1/config/notifications?category=${category}` : '/api/v1/config/notifications';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) return await res.json();
     } catch (_) {}
-    return category ? MOCK_NOTIFICATIONS.filter(n => n.category === category) : MOCK_NOTIFICATIONS;
+    return category ? MOCK_NOTIFICATION_TYPES.filter(n => n.category === category) : MOCK_NOTIFICATION_TYPES;
   },
 
   async updateNotificationType(id: string, data: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/notifications/${id}`, {
+      const res = await authFetch(`/api/v1/config/notifications/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       if (res.ok) return await res.json();
     } catch (_) {}
-    const index = MOCK_NOTIFICATIONS.findIndex(n => n.id === id);
+    const index = MOCK_NOTIFICATION_TYPES.findIndex(n => n.id === id);
     if (index !== -1) {
-      MOCK_NOTIFICATIONS[index] = { ...MOCK_NOTIFICATIONS[index], ...data, updatedAt: new Date().toISOString() };
-      return MOCK_NOTIFICATIONS[index];
+      MOCK_NOTIFICATION_TYPES[index] = { ...MOCK_NOTIFICATION_TYPES[index], ...data, updatedAt: new Date().toISOString() };
+      return MOCK_NOTIFICATION_TYPES[index];
     }
     return data;
   },
@@ -641,7 +764,7 @@ export const api = {
   async getSystemSettings(category?: string): Promise<any[]> {
     try {
       const url = category ? `/api/v1/config/settings?category=${category}` : '/api/v1/config/settings';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) return await res.json();
     } catch (_) {}
     return Object.entries(MOCK_SETTINGS).map(([key, value]) => ({
@@ -654,7 +777,7 @@ export const api = {
 
   async updateSystemSetting(key: string, data: any): Promise<any> {
     try {
-      const res = await fetch(`/api/v1/config/settings/${key}`, {
+      const res = await authFetch(`/api/v1/config/settings/${key}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -663,6 +786,395 @@ export const api = {
     } catch (_) {}
     MOCK_SETTINGS[key] = data.value;
     return { key, value: data.value, description: data.description };
+  },
+
+  async listEnterpriseAgents(): Promise<any[]> {
+    try {
+      const res = await authFetch('/api/v1/agent-garden/agents');
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return [
+      {
+        id: 'agent-juris-01',
+        code: 'AGENT_JURISPRUDENCE_SEARCH',
+        name: 'Pesquisa Jurisprudencial & Súmulas',
+        description: 'Agente especialista em recuperação de julgados, teses de repercussão geral do STF e recursos repetitivos do STJ.',
+        category: 'JURISPRUDENCE',
+        icon: 'Scale',
+        agentType: 'GEMINI_ENTERPRISE_USER_AGENT',
+        capabilities: ['Busca Semântica Multitribunal', 'Validação de Súmulas Vinculantes', 'Análise de Distinguishing'],
+        dataStores: ['stf_jurisprudencia_store', 'stj_repetitivos_store', 'tjsp_acordaos_store'],
+        defaultModel: 'gemini-2.0-flash',
+        status: 'ACTIVE',
+        isDefault: true
+      },
+      {
+        id: 'agent-contradiction-02',
+        code: 'AGENT_CONTRADICTION_AUDITOR',
+        name: 'Auditor de Contradições & Depoimentos',
+        description: 'Agente que cruza depoimentos colhidos em audiência com peças processuais para apontar divergências fáticas.',
+        category: 'CONTRADICTION_AUDIT',
+        icon: 'AlertTriangle',
+        agentType: 'ADK',
+        capabilities: ['Cruzamento de Depoimentos', 'Detecção de Inconsistências', 'Mapeamento Fático'],
+        dataStores: ['hearings_transcripts_store', 'case_documents_store'],
+        defaultModel: 'gemini-2.0-flash',
+        status: 'ACTIVE',
+        isDefault: false
+      },
+      {
+        id: 'agent-drafter-03',
+        code: 'AGENT_DECISION_DRAFTER',
+        name: 'Redator de Decisões & Termos',
+        description: 'Agente voltado para elaboração formal de minutas de sentenças, despachos e termos de audiência.',
+        category: 'DOCUMENT_GENERATION',
+        icon: 'FileText',
+        agentType: 'GEMINI_ENTERPRISE_USER_AGENT',
+        capabilities: ['Minutas de Atas Judiciais', 'Padronização CNJ', 'Dosimetria e Dispositivo'],
+        dataStores: ['judicial_templates_store', 'legal_codes_store'],
+        defaultModel: 'gemini-2.0-flash',
+        status: 'ACTIVE',
+        isDefault: false
+      },
+      {
+        id: 'agent-docket-04',
+        code: 'AGENT_DOCKET_MANAGEMENT',
+        name: 'Gestor de Pautas & Deliberações',
+        description: 'Agente que monitora compromissos assumidos em audiência, prazos peremptórios e intimações.',
+        category: 'PROCESS_MANAGEMENT',
+        icon: 'Calendar',
+        agentType: 'A2A',
+        capabilities: ['Extrator de Prazos', 'Gestão de Pautas', 'Notificações aos Advogados'],
+        dataStores: ['case_dockets_store'],
+        defaultModel: 'gemini-2.0-flash-lite',
+        status: 'ACTIVE',
+        isDefault: false
+      }
+    ];
+  },
+
+  async getEnterpriseAgent(id: string): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/agent-garden/agents/${id}`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const agents = await this.listEnterpriseAgents();
+    return agents.find((a: any) => a.id === id) || agents[0];
+  },
+
+  async getAgentSessions(agentId: string): Promise<any[]> {
+    try {
+      const res = await authFetch(`/api/v1/agent-garden/agents/${agentId}/sessions`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return [
+      {
+        sessionId: `sess-${agentId}-01`,
+        agentId,
+        title: 'Consulta sobre precedente vinculante e alcance fático',
+        turnCount: 4,
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        lastActiveAt: new Date(Date.now() - 1800000).toISOString(),
+        queryHistory: ['Qual o alcance do Tema 1.046 do STF?', 'Como aplicar na minuta?']
+      },
+      {
+        sessionId: `sess-${agentId}-02`,
+        agentId,
+        title: 'Verificação de deliberações e intimações da audiência',
+        turnCount: 2,
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        lastActiveAt: new Date(Date.now() - 82800000).toISOString(),
+        queryHistory: ['Quais os prazos fixados em ata?']
+      }
+    ];
+  },
+
+  async createAgentSession(agentId: string, title?: string): Promise<any> {
+    try {
+      const res = await authFetch('/api/v1/agent-garden/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, title })
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return {
+      sessionId: `sess-${agentId}-${Date.now().toString(36)}`,
+      agentId,
+      title: title || 'Nova Sessão Judicial',
+      turnCount: 0,
+      createdAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+      queryHistory: []
+    };
+  },
+
+  async chatAgentGarden(queryText: string, sessionId?: string, agentId?: string): Promise<any> {
+    try {
+      const res = await authFetch('/api/v1/agent-garden/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queryText, sessionId, agentId })
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return {
+      sessionId: sessionId || 'sess-default',
+      answer: `Resposta do Agente Gemini Enterprise para: "${queryText}". Análise fundamentada com base nos dados do tribunal.`,
+      citations: [
+        {
+          title: 'STF - Tema 1.046 com Repercussão Geral',
+          uri: 'https://portal.stf.jus.br/jurisprudencia/repercussao/tema.asp?num=1046',
+          snippet: 'Validade de norma coletiva de trabalho que limita direitos trabalhistas não assegurados constitucionalmente.',
+          court: 'STF',
+          precedentNumber: 'Tema 1046',
+          confidenceScore: 0.96
+        }
+      ],
+      plannerSteps: [
+        'Formulando estratégia de busca...',
+        'Consultando corpora do Gemini Enterprise...',
+        'Sintetizando fundamentação...'
+      ]
+    };
+  },
+
+  // =========================================================================
+  // Case Service & Case Documents Management
+  // =========================================================================
+  async listCases(search?: string, status?: string): Promise<any[]> {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (status && status !== 'ALL') params.append('status', status);
+      const url = `/api/v1/cases${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await authFetch(url);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return [
+      {
+        id: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
+        legalBranch: 'CIVIL',
+        subject: 'Indenização por Danos Morais e Rescisão Contratual',
+        plaintiffName: 'Carlos Eduardo Mendes',
+        defendantName: 'Construtora e Incorporadora Metrópole S.A.',
+        judgeName: 'Dra. Camila Vasconcelos',
+        prosecutorName: 'Dr. Fernando Meirelles',
+        status: 'EM_ANDAMENTO',
+        documents: [
+          {
+            id: 'doc-001',
+            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+            title: 'Petição Inicial com Pedido Liminar de Urgência',
+            documentType: 'PETICAO_INICIAL',
+            fileName: 'peticao_inicial_0014238.pdf',
+            fileSize: 1420500,
+            mimeType: 'application/pdf',
+            pageCount: 18,
+            ocrStatus: 'COMPLETED',
+            uploadedBy: 'Dra. Luciana Ferreira',
+            uploadedAt: '2024-03-15T10:00:00Z'
+          },
+          {
+            id: 'doc-002',
+            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+            title: 'Contestação com Documentos e Preliminares',
+            documentType: 'CONTESTACAO',
+            fileName: 'contestacao_metropole_sa.pdf',
+            fileSize: 3100200,
+            mimeType: 'application/pdf',
+            pageCount: 34,
+            ocrStatus: 'COMPLETED',
+            uploadedBy: 'Dr. Roberto Silva',
+            uploadedAt: '2024-04-10T14:30:00Z'
+          },
+          {
+            id: 'doc-003',
+            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+            title: 'Laudo Pericial de Engenharia Civil e Segurança da Obra',
+            documentType: 'LAUDO_TECNICO',
+            fileName: 'laudo_pericial_engenharia.pdf',
+            fileSize: 5420100,
+            mimeType: 'application/pdf',
+            pageCount: 42,
+            ocrStatus: 'COMPLETED',
+            uploadedBy: 'Perito Eng. Marcelo Rossi',
+            uploadedAt: '2024-06-20T09:15:00Z'
+          }
+        ],
+        createdAt: '2024-03-15T10:00:00Z',
+        updatedAt: '2026-08-06T14:22:00Z'
+      }
+    ];
+  },
+
+  async getCase(id: string): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${id}`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const cases = await this.listCases();
+    return cases.find((c: any) => c.id === id) || cases[0];
+  },
+
+  async getCaseDocuments(caseId: string): Promise<any[]> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${caseId}/documents`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const c = await this.getCase(caseId);
+    return c?.documents || [];
+  },
+
+  async addCaseDocument(caseId: string, document: any): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${caseId}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(document)
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return {
+      ...document,
+      id: `doc-${Date.now().toString(36)}`,
+      caseId,
+      uploadedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  },
+
+  async deleteCaseDocument(caseId: string, documentId: string): Promise<boolean> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${caseId}/documents/${documentId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) return true;
+    } catch (_) {}
+    return true;
+  },
+
+  // =========================================================================
+  // Unified Elasticsearch Full-Text Search (Indexer Service)
+  // =========================================================================
+  async searchUnified(query: string, entityType: string = 'ALL', limit: number = 20): Promise<any> {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (entityType && entityType !== 'ALL') params.append('type', entityType);
+      params.append('limit', limit.toString());
+
+      const res = await authFetch(`/api/v1/indexer/search?${params.toString()}`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+
+    // Fallback simulation matching query across cases, documents, transcripts
+    const cleanQ = query.toLowerCase().trim();
+    const mockResults = [
+      {
+        id: 'case-0014238',
+        entityType: 'CASE',
+        title: 'Processo 0014238-89.2024.8.26.0100 - Rescisão Contratual e Atraso de Obra',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
+        highlightSnippet: `Ação ordinária de rescisão com restituição de quantias pagas. Autor: Carlos Eduardo Mendes. Réu: Construtora Metrópole S.A.`,
+        score: 18.5,
+        targetUrl: '/cases/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      },
+      {
+        id: 'doc-laudo-0014238',
+        entityType: 'CASE_DOCUMENT',
+        title: 'Laudo Pericial de Engenharia Civil e Cronograma de Obras',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível de São Paulo',
+        highlightSnippet: `Perícia técnica de engenharia constatou atraso de 14 meses no cronograma executivo das fundações e estrutura.`,
+        score: 14.2,
+        targetUrl: '/cases/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      },
+      {
+        id: 'trans-seg-01',
+        entityType: 'HEARING_TRANSCRIPT',
+        title: 'Depoimento Autoral - Mariana Ribeiro Silva (00:49)',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível de São Paulo',
+        speakerName: 'Mariana Ribeiro Silva',
+        highlightSnippet: `Mariana Ribeiro Silva: 'Enviei três notificações extrajudiciais e a ré informou que houve falta de insumos...'`,
+        score: 12.0,
+        targetUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      },
+      {
+        id: 'agent-juris-01',
+        entityType: 'AGENT_KNOWLEDGE',
+        title: 'Agente de Pesquisa Jurisprudencial & Súmulas Vinculantes',
+        caseNumber: 'N/A',
+        courtJurisdiction: 'Tribunais Superiores (STF/STJ)',
+        highlightSnippet: `Agente corporativo do Gemini Enterprise conectado ao Discovery Engine StreamAssist.`,
+        score: 9.8,
+        targetUrl: '/agents/agent-juris-01'
+      },
+      {
+        id: 'chat-notebook-0014238',
+        entityType: 'NOTEBOOK_CONVERSATION',
+        title: 'Caderno: Análise de Teses sobre Súmula 543 STJ e Rescisão Culposa',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
+        highlightSnippet: `Conversa do Caderno: Juíza consultou aplicabilidade da Súmula 543 do STJ quando comprovada a mora da construtora (atraso de 14 meses).`,
+        score: 13.5,
+        targetUrl: '/notebooks/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      },
+      {
+        id: 'chat-hearing-0014238',
+        entityType: 'HEARING_CHAT',
+        title: 'Chat da Audiência: Pergunta sobre Notificações e Paralisação das Obras',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
+        highlightSnippet: `Gemini Chat da Audiência: Aos 00:49 a autora Mariana declarou que enviou 3 notificações extrajudiciais comprovando recusa da ré.`,
+        score: 11.8,
+        targetUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      },
+      {
+        id: 'chat-enterprise-agent-juris',
+        entityType: 'AGENT_CONVERSATION',
+        title: 'Conversa com Agente: Jurisprudência sobre Rescisão Imobiliária e Lucros Cessantes',
+        caseNumber: '0014238-89.2024.8.26.0100',
+        courtJurisdiction: 'Tribunais Superiores (STF/STJ)',
+        highlightSnippet: `Sessão StreamAssist Gemini Enterprise: Consulta sobre cumulação de lucros cessantes com cláusula penal moratória (Tema 970/STJ).`,
+        score: 10.4,
+        targetUrl: '/agents/agent-juris-01'
+      }
+    ];
+
+    const filtered = cleanQ
+      ? mockResults.filter((r) =>
+          r.title.toLowerCase().includes(cleanQ) ||
+          (r.caseNumber && r.caseNumber.toLowerCase().includes(cleanQ)) ||
+          r.highlightSnippet.toLowerCase().includes(cleanQ) ||
+          (r.speakerName && r.speakerName.toLowerCase().includes(cleanQ))
+        )
+      : mockResults;
+
+    return {
+      query,
+      totalHits: filtered.length,
+      tookMs: 12,
+      results: filtered,
+      facets: {
+        CASE: filtered.filter(f => f.entityType === 'CASE').length,
+        CASE_DOCUMENT: filtered.filter(f => f.entityType === 'CASE_DOCUMENT').length,
+        HEARING_TRANSCRIPT: filtered.filter(f => f.entityType === 'HEARING_TRANSCRIPT').length,
+        AGENT_KNOWLEDGE: filtered.filter(f => f.entityType === 'AGENT_KNOWLEDGE').length
+      }
+    };
+  },
+
+  async triggerReindex(): Promise<any> {
+    try {
+      const res = await authFetch('/api/v1/indexer/reindex', { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { status: 'COMPLETED', message: 'Reindexação concluída no cluster Elasticsearch' };
   }
 };
 
@@ -876,7 +1388,7 @@ const MOCK_DASHBOARDS = [
   }
 ];
 
-const MOCK_NOTIFICATIONS = [
+const MOCK_NOTIFICATION_TYPES = [
   {
     id: 'n0000000-0000-0000-0000-000000000001',
     code: 'NOTIF_AUDIO_TRANSCRIPTION_COMPLETED',
@@ -940,18 +1452,331 @@ const MOCK_NOTIFICATIONS = [
 ];
 
 const MOCK_SETTINGS: Record<string, any> = {
-  'system.name': 'Open Judy',
-  'system.tagline': 'IA Judiciária Zero-Trust',
-  'system.logo_url': '',
-  'system.accent_color': '#e63946',
-  'gemini.default.model': 'gemini-2.0-flash',
-  'gemini.default.embedding_model': 'text-embedding-004',
-  'vector.similarity_threshold': '0.75',
-  'audio.max_duration_minutes': '240',
-  'storage.audio_bucket': 'open-judy-audio-archive',
-  'security.zero_trust_enforced': 'true',
-  'security.audit_retention_days': '365',
-  'system.maintenance_mode': 'false',
-  'system.default_language': 'pt-BR'
+  'gemini.default_model': 'gemini-2.0-flash',
+  'gemini.embedding_model': 'text-embedding-004',
+  'gemini.temperature': 0.2,
+  'security.jwt_expiration_minutes': 60,
+  'transcription.max_audio_size_mb': 500,
+  'transcription.auto_generate_ata': true,
+  'transcription.enable_speaker_diarization': true,
 };
+
+const MOCK_NOTIFICATIONS: JudicialNotification[] = [
+  {
+    id: 'n1111111-1111-1111-1111-111111111111',
+    title: 'Transcrição de Audiência Concluída',
+    message: 'A gravação da audiência do processo 0014238-19.2024.8.26.0100 foi transcrita e diarizada com sucesso (6 intervenções). A ata já pode ser gerada.',
+    category: 'AUDIO_PROCESSING',
+    priority: 'NORMAL',
+    read: false,
+    actionUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'n2222222-2222-2222-2222-222222222222',
+    title: 'Minuta da Ata de Audiência Pronta',
+    message: 'A minuta da ata do processo 0004521-88.2024.8.26.0100 foi gerada pelo modelo Gemini 2.0 Flash e está pronta para revisão.',
+    category: 'DOCUMENT_WORKFLOW',
+    priority: 'NORMAL',
+    read: true,
+    actionUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+  }
+];
+
+export async function getJudicialNotifications(unreadOnly = false): Promise<JudicialNotification[]> {
+  try {
+    const res = await fetch(`http://localhost:8087/api/v1/notifications?unreadOnly=${unreadOnly}`, {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    // fallback to mock
+  }
+  return unreadOnly ? MOCK_NOTIFICATIONS.filter(n => !n.read) : MOCK_NOTIFICATIONS;
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  try {
+    const res = await fetch('http://localhost:8087/api/v1/notifications/unread-count', {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.unreadCount ?? 0;
+    }
+  } catch (e) {
+    // fallback
+  }
+  return MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+}
+
+export async function markNotificationAsRead(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`http://localhost:8087/api/v1/notifications/${id}/read`, {
+      method: 'PUT'
+    });
+    return res.ok;
+  } catch (e) {
+    const n = MOCK_NOTIFICATIONS.find(item => item.id === id);
+    if (n) n.read = true;
+    return true;
+  }
+}
+
+export async function markAllNotificationsAsRead(): Promise<boolean> {
+  try {
+    const res = await fetch('http://localhost:8087/api/v1/notifications/read-all', {
+      method: 'PUT'
+    });
+    return res.ok;
+  } catch (e) {
+    MOCK_NOTIFICATIONS.forEach(n => { n.read = true; });
+    return true;
+  }
+}
+
+const MOCK_NOTEBOOKS: Notebook[] = [
+  {
+    id: 'a1111111-2222-3333-4444-555555555555',
+    title: 'Caderno de Análise: Rescisão Contratual Imobiliária',
+    description: 'Pesquisa comparativa entre a instrução probatória em vídeo e as teses de retenção de 20% vs 100% de restituição.',
+    caseNumber: '0014238-19.2024.8.26.0100',
+    emoji: '⚖️',
+    color: '#e63946',
+    totalActiveTokens: 512500,
+    sources: [
+      {
+        id: 's1111111-1111-1111-1111-111111111111',
+        notebookId: 'a1111111-2222-3333-4444-555555555555',
+        sourceType: 'VIDEO_BLOCK',
+        title: 'Bloco 1: Abertura e Tentativa de Conciliação',
+        referenceId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        blockIndex: 1,
+        estimatedTokens: 252000,
+        isActiveForChat: true,
+        content: '[00:00 - 00:18] MAGISTRADO: Declaro aberta a audiência... [00:19 - 00:31] ADVOGADO_AUTOR: Tentamos contato prévio... [00:31 - 00:48] ADVOGADO_REU: Mantemos proposta de retenção contratual de 20%...',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 's2222222-2222-2222-2222-222222222222',
+        notebookId: 'a1111111-2222-3333-4444-555555555555',
+        sourceType: 'VIDEO_BLOCK',
+        title: 'Bloco 2: Saneamento e Depoimento da Autora',
+        referenceId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        blockIndex: 2,
+        estimatedTokens: 256000,
+        isActiveForChat: true,
+        content: '[00:49 - 01:18] MAGISTRADO: Fixo como ponto controvertido a culpa pela rescisão... [01:18 - 01:55] AUTOR (Mariana Ribeiro): Enviei três notificações extrajudiciais após expirar o prazo de 180 dias...',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 's3333333-3333-3333-3333-333333333333',
+        notebookId: 'a1111111-2222-3333-4444-555555555555',
+        sourceType: 'JURISPRUDENCE',
+        title: 'STJ - Súmula 543 e Tema Repetitivo 1095',
+        referenceId: 'STJ-S543',
+        estimatedTokens: 4500,
+        isActiveForChat: true,
+        content: 'Súmula 543/STJ: Na hipótese de resolução de contrato de promessa de compra e venda de imóvel submetido ao CDC, deve ocorrer a imediata restituição das parcelas pagas pelo promitente comprador - integralmente, em caso de culpa exclusiva do promitente vendedor/construtor.',
+        createdAt: new Date().toISOString()
+      }
+    ],
+    notes: [
+      {
+        id: 'n1111111-2222-3333-4444-555555555555',
+        notebookId: 'a1111111-2222-3333-4444-555555555555',
+        title: 'Ponto Central: Culpa Exclusiva da Ré pelo Atraso',
+        content: 'A prova oral e a notificação de março/2023 corroboram a mora injustificada da construtora ré. Aplicação direta da Súmula 543 do STJ determinando restituição integral de 100%.',
+        noteType: 'FINDING',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+export async function listNotebooks(): Promise<Notebook[]> {
+  try {
+    const res = await authFetch('/api/v1/notebooks', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {}
+  return MOCK_NOTEBOOKS;
+}
+
+export async function getNotebook(id: string): Promise<Notebook | null> {
+  try {
+    const res = await authFetch(`/api/v1/notebooks/${id}`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  return MOCK_NOTEBOOKS.find((n) => n.id === id) || MOCK_NOTEBOOKS[0];
+}
+
+export async function createNotebook(data: {
+  title: string;
+  description?: string;
+  caseNumber?: string;
+  emoji?: string;
+  color?: string;
+}): Promise<Notebook> {
+  try {
+    const res = await authFetch('/api/v1/notebooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  const created: Notebook = {
+    id: `nb-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    title: data.title,
+    description: data.description || '',
+    caseNumber: data.caseNumber,
+    emoji: data.emoji || '📓',
+    color: data.color || '#e63946',
+    sources: [],
+    notes: [],
+    totalActiveTokens: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const filtered = MOCK_NOTEBOOKS.filter(n => n.id !== created.id);
+  MOCK_NOTEBOOKS.length = 0;
+  MOCK_NOTEBOOKS.push(created, ...filtered);
+  return created;
+}
+
+export async function toggleNotebookSource(
+  notebookId: string,
+  sourceId: string,
+  active: boolean
+): Promise<boolean> {
+  try {
+    const res = await authFetch(
+      `/api/v1/notebooks/${notebookId}/sources/${sourceId}/toggle`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active })
+      }
+    );
+    if (res.ok) return true;
+  } catch (e) {}
+  const nb = MOCK_NOTEBOOKS.find((n) => n.id === notebookId);
+  const src = nb?.sources.find((s) => s.id === sourceId);
+  if (src) src.isActiveForChat = active;
+  return true;
+}
+
+export async function addNotebookSource(
+  notebookId: string,
+  source: Partial<NotebookSource>
+): Promise<NotebookSource> {
+  try {
+    const res = await authFetch(`/api/v1/notebooks/${notebookId}/sources`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(source)
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  const s: NotebookSource = {
+    id: `src-${Date.now()}`,
+    notebookId,
+    sourceType: source.sourceType || 'CUSTOM_TEXT',
+    title: source.title || 'Nova Fonte',
+    referenceId: source.referenceId,
+    blockIndex: source.blockIndex,
+    content: source.content || '',
+    estimatedTokens: source.estimatedTokens || 5000,
+    isActiveForChat: source.isActiveForChat !== false,
+    createdAt: new Date().toISOString()
+  };
+  const nb = MOCK_NOTEBOOKS.find((n) => n.id === notebookId);
+  if (nb) nb.sources.push(s);
+  return s;
+}
+
+export async function deleteNotebookSource(
+  notebookId: string,
+  sourceId: string
+): Promise<boolean> {
+  try {
+    const res = await authFetch(
+      `/api/v1/notebooks/${notebookId}/sources/${sourceId}`,
+      { method: 'DELETE' }
+    );
+    if (res.ok) return true;
+  } catch (e) {}
+  const nb = MOCK_NOTEBOOKS.find((n) => n.id === notebookId);
+  if (nb) nb.sources = nb.sources.filter((s) => s.id !== sourceId);
+  return true;
+}
+
+export async function chatNotebook(
+  notebookId: string,
+  question: string,
+  activeSourceIds?: string[]
+): Promise<any> {
+  try {
+    const res = await authFetch(`/api/v1/notebooks/${notebookId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, activeSourceIds })
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+
+  return {
+    messageId: `msg-${Date.now()}`,
+    answer:
+      'Com base no exame das fontes ativas do caderno:\n\n1. **Frustração da Conciliação (Bloco 1)**: Durante a audiência de instrução, a ré ofertou restituição de 80% dos valores pagos com retenção de 20%, o que foi recusado pela autora.\n2. **Adequação Jurisprudencial (Súmula 543/STJ)**: Como a prova oral aponta culpa exclusiva da construtora pelo atraso na obra após 180 dias de tolerância, a retenção de 20% pretendida é indevida, incidindo o dever de devolução de 100% integral e imediata.',
+    activeSourceTitles: [
+      'Bloco 1: Abertura e Tentativa de Conciliação',
+      'Bloco 2: Saneamento e Depoimento da Autora',
+      'STJ - Súmula 543 e Tema Repetitivo 1095'
+    ],
+    citations: [
+      {
+        sourceTitle: 'STJ - Súmula 543',
+        snippet: 'Na hipótese de resolução de contrato de promessa de compra e venda de imóvel...',
+        referenceUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
+      }
+    ],
+    estimatedTokensUsed: 512500
+  };
+}
+
+export async function createNotebookNote(
+  notebookId: string,
+  data: { title: string; content: string; noteType?: string }
+): Promise<NotebookNote> {
+  try {
+    const res = await authFetch(`/api/v1/notebooks/${notebookId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  const note: NotebookNote = {
+    id: `note-${Date.now()}`,
+    notebookId,
+    title: data.title,
+    content: data.content,
+    noteType: (data.noteType as any) || 'NOTE',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const nb = MOCK_NOTEBOOKS.find((n) => n.id === notebookId);
+  if (nb) nb.notes.unshift(note);
+  return note;
+}
 

@@ -11,20 +11,28 @@ if [ -z "$SERVICE" ]; then
     exit 1
 fi
 
-echo "=========================================================="
-echo " Starting Quarkus Dev Mode for: ${SERVICE}"
-echo " Hot reload enabled - watching /workspace/backend/${SERVICE}"
-echo "=========================================================="
-
-cd /workspace/backend
-
-# Ensure common-lib is compiled into local m2 repository if needed
-if [ ! -d "/root/.m2/repository/org/openjudy/common-lib" ]; then
-    echo "Compiling common-lib dependency..."
-    mvn install -pl common-lib -am -DskipTests
+WORKSPACE_DIR="/workspace/services"
+if [ ! -d "$WORKSPACE_DIR" ] && [ -d "/workspace/backend" ]; then
+    WORKSPACE_DIR="/workspace/backend"
 fi
 
-cd "/workspace/backend/${SERVICE}"
+echo "=========================================================="
+echo " Starting Quarkus Dev Mode for: ${SERVICE}"
+echo " Hot reload enabled - watching ${WORKSPACE_DIR}/${SERVICE}"
+echo "=========================================================="
+
+cd "${WORKSPACE_DIR}"
+
+mkdir -p /root/.m2
+
+# Synchronize common-lib compilation across concurrent containers using flock
+echo "Ensuring common-lib dependency is compiled and up to date..."
+(
+    flock -x 200
+    mvn install -pl common-lib -am -DskipTests -Dquarkus.analytics.disabled=true
+) 200>/root/.m2/.common-lib.lock
+
+cd "${WORKSPACE_DIR}/${SERVICE}"
 
 # Launch Quarkus dev mode with hot reload listening on all container interfaces
 exec mvn quarkus:dev -Dquarkus.http.host=0.0.0.0 "$@"

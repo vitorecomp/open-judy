@@ -44,7 +44,7 @@ export default function AtaEditor({ ata, onRegenerate }: AtaEditorProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-transparent overflow-hidden">
       {/* Action Header */}
       <div className="p-4 border-b border-dark-border bg-dark-bg/40 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

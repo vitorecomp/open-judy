@@ -34,6 +34,20 @@ spec:
                 name: config-service
                 port:
                   number: 8086
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /realms
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:

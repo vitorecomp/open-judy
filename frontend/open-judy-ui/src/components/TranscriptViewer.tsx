@@ -6,6 +6,7 @@ import { Search, Clock, CheckCircle2, Bookmark, Edit2, Sparkles } from 'lucide-r
 
 interface TranscriptViewerProps {
   segments: TranscriptSegment[];
+  blocks?: import('@/lib/types').TranscriptBlock[];
   currentPlaybackMs: number;
   onSeek: (ms: number) => void;
 }
@@ -26,14 +27,19 @@ const ROLE_COLORS: Record<ParticipantRole, { bg: string; text: string; border: s
 
 export default function TranscriptViewer({
   segments,
+  blocks = [],
   currentPlaybackMs,
   onSeek,
 }: TranscriptViewerProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedSpeakers, setEditedSpeakers] = useState<Record<string, string>>({});
+  const [activeBlockFilter, setActiveBlockFilter] = useState<number | null>(null);
 
   const filteredSegments = segments.filter((s) => {
+    if (activeBlockFilter !== null && s.blockIndex !== activeBlockFilter) {
+      return false;
+    }
     const textMatch = s.text.toLowerCase().includes(searchTerm.toLowerCase());
     const speakerMatch = (editedSpeakers[s.id] || s.speakerName)
       .toLowerCase()
@@ -46,31 +52,69 @@ export default function TranscriptViewer({
   };
 
   return (
-    <div className="flex flex-col h-full bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-transparent overflow-hidden">
       {/* Header & Search */}
-      <div className="p-4 border-b border-dark-border bg-dark-bg/40 flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <span>Transcrição Diarizada</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-crimson/10 border border-crimson/20 text-red-400 font-semibold">
-              Gemini 2.0
-            </span>
-          </h2>
-          <p className="text-xs text-dark-muted">
-            {segments.length} segmentos identificados com precisão temporal
-          </p>
+      <div className="p-4 border-b border-dark-border bg-dark-bg/40 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>Transcrição Diarizada</span>
+              {blocks.length > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-dark-input text-slate-300 border border-dark-border font-mono">
+                  {blocks.length} blocos ~256k tokens
+                </span>
+              )}
+            </h2>
+            <p className="text-xs text-dark-muted">
+              {segments.length} falas identificadas e particionadas em blocos de vídeo
+            </p>
+          </div>
+
+          <div className="relative w-full sm:w-60">
+            <Search className="w-3.5 h-3.5 text-dark-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Filtrar falas, nomes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition"
+            />
+          </div>
         </div>
 
-        <div className="relative w-full sm:w-60">
-          <Search className="w-3.5 h-3.5 text-dark-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Filtrar falas, nomes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition"
-          />
-        </div>
+        {/* 256k Token Block Filter Pills */}
+        {blocks.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+            <button
+              onClick={() => setActiveBlockFilter(null)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                activeBlockFilter === null
+                  ? 'bg-crimson text-white'
+                  : 'bg-dark-input text-dark-muted hover:text-white border border-dark-border'
+              }`}
+            >
+              Todos os Segmentos ({segments.length})
+            </button>
+            {blocks.map((blk) => (
+              <button
+                key={blk.id}
+                onClick={() => {
+                  setActiveBlockFilter(blk.blockIndex);
+                  onSeek(blk.startTimeMs);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                  activeBlockFilter === blk.blockIndex
+                    ? 'bg-crimson text-white'
+                    : 'bg-dark-input text-dark-muted hover:text-white border border-dark-border'
+                }`}
+                title={`Pular para ${blk.title} (${blk.startTimeFormatted} - ${blk.endTimeFormatted})`}
+              >
+                <span>Bloco {blk.blockIndex}</span>
+                <span className="text-[10px] font-mono opacity-80">({blk.startTimeFormatted})</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Segment List */}

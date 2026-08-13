@@ -9,7 +9,9 @@ import {
   Headphones,
   Settings,
   SlidersHorizontal,
-  ShieldCheck
+  Bot,
+  Layers,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import JudyLogo from './JudyLogo';
@@ -59,11 +61,32 @@ export default function Sidebar({
       active: pathname === '/',
     },
     {
+      name: 'Processos',
+      href: '/cases',
+      icon: Layers,
+      badge: '3',
+      active: pathname.startsWith('/cases'),
+    },
+    {
       name: 'Audiências',
       href: '/hearings',
       icon: Scale,
       badge: '5',
       active: pathname.startsWith('/hearings'),
+    },
+    {
+      name: 'Cadernos',
+      href: '/notebooks',
+      icon: BookOpen,
+      badge: 'Novo',
+      active: pathname.startsWith('/notebooks'),
+    },
+    {
+      name: 'Agent Garden',
+      href: '/agents',
+      icon: Bot,
+      badge: 'Gemini',
+      active: pathname.startsWith('/agents'),
     },
   ];
 

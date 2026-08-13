@@ -98,13 +98,14 @@ export default function AdminConfigModal({
   const [editingNotification, setEditingNotification] = useState<NotificationType | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     setBrandingName(systemName || 'Open Judy');
     setBrandingTagline(systemTagline || 'IA Judiciária Zero-Trust');
     setBrandingLogoUrl(logoUrl || '');
     const color = systemConfig.accentColor || '#e63946';
     setBrandingAccentColor(color);
     setBrandingCustomHex(color);
-  }, [systemName, systemTagline, logoUrl, systemConfig, isOpen]);
+  }, [systemName, systemTagline, logoUrl, systemConfig.accentColor, isOpen]);
 
   const handleSaveBranding = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

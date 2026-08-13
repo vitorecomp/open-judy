@@ -5,8 +5,13 @@ resources:
   - configmap.yaml
   - secret.yaml
   - alloydb-proxy.yaml
+  - keycloak.yaml
+  - rabbitmq.yaml
   - transcription-service.yaml
+  - transcription-pipeline.yaml
   - user-service.yaml
   - config-service.yaml
+  - notification-service.yaml
+  - notebook-service.yaml
   - open-judy-ui.yaml
   - ingress.yaml

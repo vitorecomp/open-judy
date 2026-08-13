@@ -1,8 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile, UserRole, UserPermissions, UserConfiguration, SystemConfiguration, getUserPermissions } from './types';
 import { api } from './api';
+import {
+  KEYCLOAK_CONFIG,
+  extractUserFromKeycloakToken,
+  loginWithKeycloakDirect,
+  getKeycloakLoginUrl,
+  getKeycloakLogoutUrl,
+  generateMockKeycloakToken,
+  getStoredKeycloakToken,
+  setStoredKeycloakToken,
+  clearStoredKeycloakToken,
+} from './keycloak';
 
 export interface ProfilePreset {
   role: UserRole;
@@ -76,7 +87,7 @@ export function adjustHexBrightness(hex: string, percent: number): string {
   let g = ((num >> 8) & 255) + Math.round(255 * (percent / 100));
   let b = (num & 255) + Math.round(255 * (percent / 100));
   r = Math.min(255, Math.max(0, r));
-  g = Math.min(255, Math.max(0, g));
+  g = Math.min(255, Math.max(0, r));
   b = Math.min(255, Math.max(0, b));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
@@ -141,11 +152,12 @@ const DEFAULT_CONFIG: UserConfiguration = {
   dailyDigest: false,
   autoSignApprovedMinutes: false,
   judgeSignatureTitle: 'Juíza de Direito Titular da 3ª Vara Cível Central',
+  hearingsViewMode: 'TABLE',
 };
 
 const DEFAULT_SYSTEM_CONFIG: SystemConfiguration = {
   systemName: 'Open Judy',
-  systemTagline: 'IA Judiciária Zero-Trust',
+  systemTagline: 'IA Judiciária Zero-Trust (Keycloak IAM)',
   logoUrl: '',
   accentColor: '#e63946',
   geminiModel: 'gemini-2.0-flash',
@@ -160,9 +172,13 @@ const DEFAULT_SYSTEM_CONFIG: SystemConfiguration = {
   systemProperties: {
     copilotMaxHistoryTurns: 20,
     enableMultimodalDiarization: true,
-    alloyDbVectorDimensions: 768
+    alloyDbVectorDimensions: 768,
+    keycloakRealm: 'open-judy',
+    keycloakAuthServerUrl: 'http://localhost:8080/realms/open-judy',
   }
 };
+
+export type KeycloakStatus = 'AUTHENTICATED' | 'DEV_MODE' | 'CONNECTING' | 'UNAUTHENTICATED';
 
 interface AuthContextType {
   user: UserProfile;
@@ -190,6 +206,17 @@ interface AuthContextType {
   adminConfigInitialTab?: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings';
   openAdminConfig: (tab?: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings') => void;
   isLoading: boolean;
+
+  // Keycloak OIDC Authentication Additions
+  authProvider: 'KEYCLOAK';
+  isAuthenticated: boolean;
+  keycloakToken: string | null;
+  keycloakStatus: KeycloakStatus;
+  isKeycloakModalOpen: boolean;
+  setIsKeycloakModalOpen: (open: boolean) => void;
+  loginWithKeycloak: (username?: string, password?: string) => Promise<boolean>;
+  loginWithKeycloakRedirect: () => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -204,10 +231,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [adminConfigInitialTab, setAdminConfigInitialTab] = useState<'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings'>('prompts');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Keycloak States
+  const [keycloakToken, setKeycloakToken] = useState<string | null>(null);
+  const [keycloakStatus, setKeycloakStatus] = useState<KeycloakStatus>('DEV_MODE');
+  const [isKeycloakModalOpen, setIsKeycloakModalOpen] = useState(false);
+
   const [user, setUser] = useState<UserProfile>(() => {
     const preset = PROFILE_PRESETS[0];
     return {
       id: 'a0000000-0000-0000-0000-000000000001',
+      keycloakId: 'u0000000-0000-0000-0000-000000000001',
       username: preset.username,
       email: preset.email,
       fullName: preset.name,
@@ -232,16 +265,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
   };
 
+  const applyPreset = useCallback((preset: ProfilePreset) => {
+    const keycloakSub =
+      preset.username === 'camila.vasconcelos'
+        ? 'u0000000-0000-0000-0000-000000000001'
+        : preset.username === 'marcos.assessor'
+        ? 'u0000000-0000-0000-0000-000000000002'
+        : 'u0000000-0000-0000-0000-000000000003';
+
+    const userId =
+      preset.username === 'camila.vasconcelos'
+        ? 'a0000000-0000-0000-0000-000000000001'
+        : preset.username === 'marcos.assessor'
+        ? 'a0000000-0000-0000-0000-000000000002'
+        : 'a0000000-0000-0000-0000-000000000004';
+
+    setUser((prev) => ({
+      id: userId,
+      keycloakId: keycloakSub,
+      username: preset.username,
+      email: preset.email,
+      fullName: preset.name,
+      role: preset.role,
+      courtJurisdiction: preset.jurisdiction,
+      status: 'ACTIVE',
+      avatarUrl: preset.avatarUrl,
+      configuration: prev.configuration,
+      createdAt: '2026-08-06T10:00:00Z',
+      updatedAt: '2026-08-06T10:00:00Z',
+    }));
+
+    // Generate simulated Keycloak JWT token so outgoing API requests pass valid Keycloak OIDC headers
+    const mockToken = generateMockKeycloakToken(preset);
+    setKeycloakToken(mockToken);
+    setStoredKeycloakToken(mockToken);
+    setKeycloakStatus('DEV_MODE');
+  }, []);
+
   useEffect(() => {
-    // 1. Load active profile from storage
-    const savedProfile = localStorage.getItem('openjudy_active_profile');
-    if (savedProfile) {
-      const match = PROFILE_PRESETS.find(
-        (p) => p.username === savedProfile || p.role.toUpperCase() === savedProfile.toUpperCase()
-      );
-      if (match) {
-        setActiveUsername(match.username);
-        applyPreset(match);
+    // 1. Check for stored Keycloak token or active profile
+    const storedToken = getStoredKeycloakToken();
+    if (storedToken) {
+      const extracted = extractUserFromKeycloakToken(storedToken);
+      if (extracted) {
+        setKeycloakToken(storedToken);
+        setKeycloakStatus('AUTHENTICATED');
+        setActiveUsername(extracted.username);
+        setUser((prev) => ({
+          ...prev,
+          keycloakId: extracted.keycloakId,
+          username: extracted.username,
+          email: extracted.email,
+          fullName: extracted.fullName,
+          role: extracted.role,
+          courtJurisdiction: extracted.courtJurisdiction,
+          documentNumber: extracted.documentNumber,
+          avatarUrl: extracted.avatarUrl,
+        }));
+      }
+    } else {
+      const savedProfile = localStorage.getItem('openjudy_active_profile');
+      if (savedProfile) {
+        const match = PROFILE_PRESETS.find(
+          (p) => p.username === savedProfile || p.role.toUpperCase() === savedProfile.toUpperCase()
+        );
+        if (match) {
+          setActiveUsername(match.username);
+          applyPreset(match);
+        }
+      } else {
+        applyPreset(PROFILE_PRESETS[0]);
       }
     }
 
@@ -288,27 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     });
-  }, []);
-
-  const applyPreset = (preset: ProfilePreset) => {
-    setUser({
-      id: preset.username === 'camila.vasconcelos'
-        ? 'a0000000-0000-0000-0000-000000000001'
-        : preset.username === 'marcos.assessor'
-        ? 'a0000000-0000-0000-0000-000000000002'
-        : 'a0000000-0000-0000-0000-000000000004',
-      username: preset.username,
-      email: preset.email,
-      fullName: preset.name,
-      role: preset.role,
-      courtJurisdiction: preset.jurisdiction,
-      status: 'ACTIVE',
-      avatarUrl: preset.avatarUrl,
-      configuration: config,
-      createdAt: '2026-08-06T10:00:00Z',
-      updatedAt: '2026-08-06T10:00:00Z',
-    });
-  };
+  }, [applyPreset]);
 
   const switchProfile = (roleOrUsername: string) => {
     const target = roleOrUsername.toLowerCase();
@@ -324,6 +397,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('openjudy_active_profile', match.username);
       applyPreset(match);
     }
+  };
+
+  const loginWithKeycloak = async (username: string = 'camila.vasconcelos', password: string = 'judy123'): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const result = await loginWithKeycloakDirect(username, password);
+      if (result && result.user) {
+        setKeycloakToken(result.accessToken);
+        setKeycloakStatus('AUTHENTICATED');
+        setActiveUsername(result.user.username);
+        setUser((prev) => ({
+          ...prev,
+          keycloakId: result.user.keycloakId,
+          username: result.user.username,
+          email: result.user.email,
+          fullName: result.user.fullName,
+          role: result.user.role,
+          courtJurisdiction: result.user.courtJurisdiction,
+          documentNumber: result.user.documentNumber,
+          avatarUrl: result.user.avatarUrl,
+        }));
+        localStorage.setItem('openjudy_active_profile', result.user.username);
+        setIsKeycloakModalOpen(false);
+        return true;
+      }
+    } catch (e) {
+      console.error('Keycloak login error:', e);
+    } finally {
+      setIsLoading(false);
+    }
+    return false;
+  };
+
+  const loginWithKeycloakRedirect = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = getKeycloakLoginUrl();
+    }
+  };
+
+  const logout = () => {
+    clearStoredKeycloakToken();
+    setKeycloakToken(null);
+    setKeycloakStatus('UNAUTHENTICATED');
+    // Re-initialize to default preset in dev mode
+    applyPreset(PROFILE_PRESETS[0]);
   };
 
   const updateConfig = async (newConfig: Partial<UserConfiguration>) => {
@@ -414,7 +532,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         systemConfig,
         updateSystemConfig,
         systemName: systemConfig.systemName || 'Open Judy',
-        systemTagline: systemConfig.systemTagline || 'IA Judiciária Zero-Trust',
+        systemTagline: systemConfig.systemTagline || 'IA Judiciária Zero-Trust (Keycloak IAM)',
         logoUrl: systemConfig.logoUrl || '',
         accentColor: config.accentColor || systemConfig.accentColor || '#e63946',
         setAccentColor,
@@ -427,6 +545,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         adminConfigInitialTab,
         openAdminConfig,
         isLoading,
+
+        // Keycloak Additions
+        authProvider: 'KEYCLOAK',
+        isAuthenticated: !!keycloakToken,
+        keycloakToken,
+        keycloakStatus,
+        isKeycloakModalOpen,
+        setIsKeycloakModalOpen,
+        loginWithKeycloak,
+        loginWithKeycloakRedirect,
+        logout,
       }}
     >
       {children}

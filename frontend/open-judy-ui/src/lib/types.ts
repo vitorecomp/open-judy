@@ -39,6 +39,37 @@ export interface Participant {
   isPresent: boolean;
 }
 
+export type DocumentType =
+  | 'PETICAO_INICIAL'
+  | 'CONTESTACAO'
+  | 'PROCURACAO'
+  | 'LAUDO_TECNICO'
+  | 'PROVA_DOCUMENTAL'
+  | 'DESPACHO'
+  | 'DECISAO_INTERLOCUTORIA'
+  | 'ATA_AUDIENCIA'
+  | 'SENTENCA'
+  | 'RECURSO'
+  | 'CERTIDAO'
+  | 'OUTROS';
+
+export interface CaseDocument {
+  id: string;
+  caseId: string;
+  title: string;
+  documentType: DocumentType;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  storageUri?: string;
+  pageCount?: number;
+  ocrStatus?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  extractedText?: string;
+  uploadedBy?: string;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
 export interface Case {
   id: string;
   caseNumber: string;
@@ -49,6 +80,8 @@ export interface Case {
   defendantName: string;
   judgeName: string;
   prosecutorName?: string;
+  status?: string;
+  documents?: CaseDocument[];
   participants: Participant[];
   createdAt: string;
   updatedAt: string;
@@ -67,6 +100,83 @@ export interface TranscriptSegment {
   confidenceScore: number;
   isKeyStatement: boolean;
   topicTag?: string;
+  blockIndex?: number;
+}
+
+export interface TranscriptBlock {
+  id: string;
+  hearingId: string;
+  blockIndex: number;
+  title: string;
+  startTimeMs: number;
+  endTimeMs: number;
+  startTimeFormatted: string;
+  endTimeFormatted: string;
+  estimatedTokens: number;
+  segmentCount: number;
+  summary?: string;
+}
+
+export type NotebookSourceType =
+  | 'VIDEO_BLOCK'
+  | 'HEARING_TRANSCRIPT'
+  | 'CASE_PETICAO'
+  | 'DOCUMENT_PDF'
+  | 'JURISPRUDENCE'
+  | 'CUSTOM_TEXT';
+
+export interface NotebookSource {
+  id: string;
+  notebookId: string;
+  sourceType: NotebookSourceType;
+  title: string;
+  referenceId?: string;
+  blockIndex?: number;
+  content?: string;
+  estimatedTokens: number;
+  isActiveForChat: boolean;
+  createdAt: string;
+}
+
+export interface NotebookNote {
+  id: string;
+  notebookId: string;
+  title: string;
+  content: string;
+  noteType: 'NOTE' | 'DRAFT_DESPACHO' | 'DRAFT_SENTENCA' | 'FINDING';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotebookChatMessage {
+  id: string;
+  notebookId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  activeSourceTitles?: string[];
+  citations?: {
+    sourceTitle: string;
+    snippet: string;
+    referenceUrl?: string;
+  }[];
+  tokensUsed?: number;
+  createdAt: string;
+}
+
+export interface Notebook {
+  id: string;
+  title: string;
+  description?: string;
+  userId?: string;
+  caseId?: string;
+  caseNumber?: string;
+  emoji: string;
+  color: string;
+  sources: NotebookSource[];
+  notes: NotebookNote[];
+  totalActiveTokens: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AtaDraft {
@@ -131,6 +241,8 @@ export interface HearingSummary {
   generatedAt: string;
 }
 
+export type MediaType = 'AUDIO' | 'VIDEO';
+
 export interface Hearing {
   id: string;
   caseId: string;
@@ -139,6 +251,10 @@ export interface Hearing {
   hearingType: HearingType;
   scheduledDateTime: string;
   status: AudioProcessingStatus;
+  mediaType?: MediaType;
+  mediaUrl?: string;
+  mediaFilename?: string;
+  videoUrl?: string;
   audioUrl?: string;
   audioFilename?: string;
   audioDurationSeconds?: number;
@@ -152,13 +268,18 @@ export interface Hearing {
 }
 
 export interface Citation {
-  segmentIndex: number;
-  startTimeMs: number;
-  endTimeMs: number;
-  timestampFormatted: string;
-  speakerName: string;
-  snippet: string;
-  relevanceScore: number;
+  segmentIndex?: number;
+  startTimeMs?: number;
+  endTimeMs?: number;
+  timestampFormatted?: string;
+  speakerName?: string;
+  snippet?: string;
+  relevanceScore?: number;
+  title?: string;
+  uri?: string;
+  court?: string;
+  precedentNumber?: string;
+  confidenceScore?: number;
 }
 
 export interface CopilotResponse {
@@ -264,12 +385,14 @@ export interface UserConfiguration {
   digitalCertificateSubject?: string;
   autoSignApprovedMinutes: boolean;
   judgeSignatureTitle?: string;
+  hearingsViewMode?: 'TABLE' | 'CARDS';
   customPreferences?: Record<string, any>;
   updatedAt?: string;
 }
 
 export interface UserProfile {
   id: string;
+  keycloakId?: string;
   username: string;
   email: string;
   fullName: string;
@@ -424,6 +547,90 @@ export interface SystemConfigOverview {
   notifications: NotificationType[];
   settings: Record<string, string>;
   generatedAt: string;
+}
+
+export interface JudicialNotification {
+  id: string;
+  userId?: string;
+  targetRole?: string;
+  title: string;
+  message: string;
+  category: 'AUDIO_PROCESSING' | 'LEGAL_ANALYSIS' | 'DOCUMENT_WORKFLOW' | 'SECURITY_AUDIT' | 'SYSTEM';
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+  read: boolean;
+  actionUrl?: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface EnterpriseAgent {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  icon?: string;
+  agentType: 'GEMINI_ENTERPRISE_USER_AGENT' | 'A2A' | 'ADK' | 'DIALOGFLOW_CX' | 'MCP_SERVER';
+  capabilities: string[];
+  dataStores: string[];
+  systemInstruction?: string;
+  defaultModel?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'DEPRECATED';
+  isDefault?: boolean;
+  createdAt?: string;
+}
+
+export interface StreamAssistChunk {
+  eventType: 'PLANNER_STEP' | 'GROUNDED_CHUNK' | 'CITATION' | 'COMPLETE' | 'ERROR';
+  text?: string;
+  plannerStep?: string;
+  planStepId?: string;
+  sessionId?: string;
+  agentId?: string;
+  citations?: Citation[];
+  timestamp?: string;
+}
+
+export interface AgentGardenSession {
+  sessionId: string;
+  gcpSessionPath?: string;
+  agentId: string;
+  title: string;
+  turnCount: number;
+  createdAt: string;
+  lastActiveAt: string;
+  queryHistory: string[];
+}
+
+export interface UnifiedSearchResultItem {
+  id: string;
+  entityType:
+    | 'CASE'
+    | 'CASE_DOCUMENT'
+    | 'HEARING_TRANSCRIPT'
+    | 'HEARING_CHAT'
+    | 'ATA_DRAFT'
+    | 'LEGAL_ANALYSIS'
+    | 'AGENT_KNOWLEDGE'
+    | 'AGENT_CONVERSATION'
+    | 'NOTEBOOK_CONVERSATION';
+  title: string;
+  caseNumber?: string;
+  courtJurisdiction?: string;
+  highlightSnippet?: string;
+  score?: number;
+  targetUrl: string;
+  speakerName?: string;
+  metadata?: Record<string, any>;
+  indexedAt?: string;
+}
+
+export interface UnifiedSearchResponse {
+  query: string;
+  totalHits: number;
+  tookMs: number;
+  results: UnifiedSearchResultItem[];
+  facets?: Record<string, number>;
 }
 
 

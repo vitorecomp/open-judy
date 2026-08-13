@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Hearing, TranscriptSegment, AtaDraft, HearingSummary } from '@/lib/types';
-import AudioPlayer from '@/components/AudioPlayer';
+import MediaPlayer from '@/components/MediaPlayer';
 import TranscriptViewer from '@/components/TranscriptViewer';
 import AtaEditor from '@/components/AtaEditor';
 import LegalAnalysisView from '@/components/LegalAnalysisView';
@@ -21,7 +21,10 @@ import {
   CheckCircle2,
   Calendar,
   Building2,
-  Clock
+  Clock,
+  Video,
+  Music,
+  MessageSquare
 } from 'lucide-react';
 
 export default function HearingWorkspacePage() {
@@ -30,19 +33,21 @@ export default function HearingWorkspacePage() {
 
   const [hearing, setHearing] = useState<Hearing | null>(null);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
+  const [blocks, setBlocks] = useState<import('@/lib/types').TranscriptBlock[]>([]);
   const [ata, setAta] = useState<AtaDraft | null>(null);
   const [summary, setSummary] = useState<HearingSummary | null>(null);
 
-  // Audio Playback & Timestamp synchronization state
+  // Audio/Video Playback & Timestamp synchronization state
   const [currentPlaybackMs, setCurrentPlaybackMs] = useState<number>(0);
   const [seekTargetMs, setSeekTargetMs] = useState<number | null>(null);
 
-  // Right Panel Active Tab: 'ata' | 'analysis' | 'copilot'
-  const [activeTab, setActiveTab] = useState<'ata' | 'analysis' | 'copilot'>('ata');
+  // Unified Workspace Active Tab: 'transcription' | 'ata' | 'analysis' | 'copilot'
+  const [activeTab, setActiveTab] = useState<'transcription' | 'ata' | 'analysis' | 'copilot'>('transcription');
 
   useEffect(() => {
     api.getHearing(hearingId).then(setHearing);
     api.getTranscript(hearingId).then(setSegments);
+    api.getBlocks(hearingId).then(setBlocks);
     api.getAta(hearingId).then(setAta);
     api.getAnalysis(hearingId).then(setSummary);
   }, [hearingId]);
@@ -69,120 +74,153 @@ export default function HearingWorkspacePage() {
     );
   }
 
+  const isVideo = hearing.mediaType === 'VIDEO' || (hearing.audioFilename && (
+    hearing.audioFilename.endsWith('.mp4') || hearing.audioFilename.endsWith('.webm') || hearing.audioFilename.endsWith('.mkv')
+  ));
+
   return (
-    <div className="flex-1 flex flex-col space-y-4 max-w-[1440px] mx-auto w-full">
-      {/* Top Dossier Header Card */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-dark-card border border-dark-border rounded-2xl p-4 shadow-xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <Link
-              href="/"
-              className="p-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition"
-              title="Voltar para o Dashboard"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <span className="font-mono text-sm font-bold text-white tracking-tight">
-              {hearing.caseNumber}
-            </span>
-            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-dark-input text-slate-200 border border-dark-border uppercase">
-              {hearing.hearingType.replace(/_/g, ' ')}
-            </span>
+    <div className="flex-1 flex flex-col space-y-4 w-full">
+      {/* ========================================================================= */}
+      {/* CARD 1: Top Dossier Header & Synchronized Media Player */}
+      {/* ========================================================================= */}
+      <div className="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl">
+        {/* Dossier Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-b border-dark-border/80">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Link
+                href="/hearings"
+                className="p-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition"
+                title="Voltar para a Lista de Audiências"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+              <span className="font-mono text-sm font-bold text-white tracking-tight">
+                {hearing.caseNumber}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-dark-input text-slate-200 border border-dark-border uppercase">
+                {hearing.hearingType.replace(/_/g, ' ')}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold border ${
+                isVideo
+                  ? 'bg-crimson/15 text-red-300 border-crimson/30'
+                  : 'bg-indigo-600/15 text-indigo-300 border-indigo-500/30'
+              }`}>
+                {isVideo ? <Video className="w-3 h-3 text-crimson" /> : <Music className="w-3 h-3 text-indigo-400" />}
+                <span>{isVideo ? 'Vídeo da Sessão' : 'Gravação em Áudio'}</span>
+              </span>
+            </div>
+
+            <p className="text-xs text-dark-muted pl-8 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-dark-muted" />
+              <span>{hearing.courtJurisdiction}</span>
+            </p>
           </div>
 
-          <p className="text-xs text-dark-muted pl-8 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-dark-muted" />
-            <span>{hearing.courtJurisdiction}</span>
-          </p>
+          {/* Badges & Meta info */}
+          <div className="flex items-center gap-2.5 flex-wrap pl-8 md:pl-0">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-dark-input border border-dark-border text-xs text-slate-300">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span>{hearing.participants.length} Participantes</span>
+            </div>
+          </div>
         </div>
 
-        {/* Badges & Meta info */}
-        <div className="flex items-center gap-2.5 flex-wrap pl-8 md:pl-0">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-dark-input border border-dark-border text-xs text-slate-300">
-            <Users className="w-3.5 h-3.5 text-slate-400" />
-            <span>{hearing.participants.length} Participantes</span>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#1a3328] border border-emerald-900/40 text-xs text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Gemini 2.0 + AlloyDB Ativo</span>
-          </div>
-        </div>
+        {/* Synchronized Media Player (Audio & Video) */}
+        <MediaPlayer
+          currentPlaybackMs={currentPlaybackMs}
+          onTimeUpdate={setCurrentPlaybackMs}
+          seekTargetMs={seekTargetMs}
+          totalDurationSeconds={hearing.audioDurationSeconds || 142}
+          filename={hearing.mediaFilename || hearing.audioFilename || 'audiencia_0004521_instrucao.mp4'}
+          mediaType={hearing.mediaType || (isVideo ? 'VIDEO' : 'AUDIO')}
+          videoUrl={hearing.videoUrl}
+          segments={segments}
+        />
       </div>
 
-      {/* Synchronized Audio Player Bar */}
-      <AudioPlayer
-        currentPlaybackMs={currentPlaybackMs}
-        onTimeUpdate={setCurrentPlaybackMs}
-        seekTargetMs={seekTargetMs}
-        totalDurationSeconds={hearing.audioDurationSeconds || 142}
-        filename={hearing.audioFilename || 'audiencia_0004521_instrucao.mp3'}
-      />
+      {/* ========================================================================= */}
+      {/* CARD 2: Unified Workspace Card (Transcrição, Minuta, Análise, Gemini Chat) */}
+      {/* ========================================================================= */}
+      <div className="flex-1 flex flex-col bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl min-h-[640px]">
+        {/* Top Tab Navigation Bar */}
+        <div className="p-2.5 bg-dark-bg/60 border-b border-dark-border flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setActiveTab('transcription')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+              activeTab === 'transcription'
+                ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-red-400" />
+            <span>Transcrição Diarizada</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-dark-input text-slate-300 font-mono">
+              {segments.length}
+            </span>
+          </button>
 
-      {/* Main Workspace Split: Left (Diarized Transcript) vs Right (Ata / Analysis / Copilot) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[580px]">
-        {/* Left Column (6 cols): Diarized Transcript Viewer */}
-        <div className="lg:col-span-6 h-[620px]">
-          <TranscriptViewer
-            segments={segments}
-            currentPlaybackMs={currentPlaybackMs}
-            onSeek={handleSeek}
-          />
+          <button
+            onClick={() => setActiveTab('ata')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+              activeTab === 'ata'
+                ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-crimson" />
+            <span>Minuta da Ata</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+              activeTab === 'analysis'
+                ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>Análise & Contradições</span>
+            {summary?.contradictions && summary.contradictions.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-950/60 text-amber-300 font-mono border border-amber-800/40">
+                {summary.contradictions.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('copilot')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+              activeTab === 'copilot'
+                ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5 text-sky-400" />
+            <span>Gemini Chat</span>
+          </button>
         </div>
 
-        {/* Right Column (6 cols): Tabbed Workspace */}
-        <div className="lg:col-span-6 flex flex-col h-[620px] space-y-2">
-          {/* Tab Navigation Pill Bar */}
-          <div className="flex p-1 bg-dark-card border border-dark-border rounded-xl">
-            <button
-              onClick={() => setActiveTab('ata')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                activeTab === 'ata'
-                  ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
-                  : 'text-dark-muted hover:text-slate-200'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 text-crimson" />
-              <span>Minuta da Ata</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('analysis')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                activeTab === 'analysis'
-                  ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
-                  : 'text-dark-muted hover:text-slate-200'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span>Análise & Contradições</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('copilot')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                activeTab === 'copilot'
-                  ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
-                  : 'text-dark-muted hover:text-slate-200'
-              }`}
-            >
-              <Bot className="w-3.5 h-3.5 text-sky-400" />
-              <span>Copilot IA</span>
-            </button>
-          </div>
-
-          {/* Tab Contents */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === 'ata' && ata && (
-              <AtaEditor ata={ata} onRegenerate={handleRegenerateAta} />
-            )}
-            {activeTab === 'analysis' && summary && (
-              <LegalAnalysisView summary={summary} onSeek={handleSeek} />
-            )}
-            {activeTab === 'copilot' && (
-              <CopilotChat hearingId={hearingId} onSeek={handleSeek} />
-            )}
-          </div>
+        {/* Tab Contents Body */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {activeTab === 'transcription' && (
+            <TranscriptViewer
+              segments={segments}
+              blocks={blocks}
+              currentPlaybackMs={currentPlaybackMs}
+              onSeek={handleSeek}
+            />
+          )}
+          {activeTab === 'ata' && ata && (
+            <AtaEditor ata={ata} onRegenerate={handleRegenerateAta} />
+          )}
+          {activeTab === 'analysis' && summary && (
+            <LegalAnalysisView summary={summary} onSeek={handleSeek} />
+          )}
+          {activeTab === 'copilot' && (
+            <CopilotChat hearingId={hearingId} onSeek={handleSeek} />
+          )}
         </div>
       </div>
     </div>

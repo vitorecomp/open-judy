@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcription-pipeline
+  labels:
+    app.kubernetes.io/name: transcription-pipeline
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: open-judy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transcription-pipeline
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: transcription-pipeline
+        app.kubernetes.io/component: worker
+        app.kubernetes.io/part-of: open-judy
+    spec:
+      containers:
+        - name: transcription-pipeline
+          image: open-judy/transcription-pipeline:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: open-judy-config
+            - secretRef:
+                name: open-judy-secrets
+          env:
+            - name: RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: open-judy-secrets
+                  key: RABBITMQ_USER
+                  optional: true
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: open-judy-secrets
+                  key: RABBITMQ_PASSWORD
+                  optional: true
+            - name: MAX_RETRIES
+              value: "3"
+            - name: RETRY_BACKOFF_SECONDS
+              value: "5"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: 1500m
+              memory: 1024Mi

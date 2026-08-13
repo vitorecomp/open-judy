@@ -11,7 +11,7 @@ interface LegalAnalysisViewProps {
 
 export default function LegalAnalysisView({ summary, onSeek }: LegalAnalysisViewProps) {
   return (
-    <div className="flex flex-col h-full bg-dark-card border border-dark-border rounded-2xl overflow-y-auto p-5 space-y-6 shadow-xl">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto p-5 space-y-6">
       {/* Executive Summary */}
       <div className="p-4 rounded-xl bg-dark-input border border-dark-border">
         <div className="flex items-center gap-2 mb-2">

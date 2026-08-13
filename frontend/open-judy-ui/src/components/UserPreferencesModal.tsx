@@ -65,6 +65,7 @@ export default function UserPreferencesModal({
   const isAdmin = role === 'ADMIN' || permissions.canEditSystemConfig;
 
   useEffect(() => {
+    if (!isOpen) return;
     setFormData(config);
     setSysFormData(systemConfig);
     const color = config.accentColor || systemConfig.accentColor || accentColor || '#e63946';
@@ -75,7 +76,7 @@ export default function UserPreferencesModal({
     } else if (initialTab) {
       setActiveTab(initialTab);
     }
-  }, [config, systemConfig, accentColor, isOpen, preferencesInitialTab, initialTab]);
+  }, [isOpen, preferencesInitialTab, initialTab]);
 
   if (!isOpen) return null;
 
@@ -442,8 +443,8 @@ export default function UserPreferencesModal({
                 </div>
               </div>
 
-              {/* Font Size & Display Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Font Size, Display & Hearings View Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Tamanho da Fonte
@@ -471,6 +472,20 @@ export default function UserPreferencesModal({
                     <option value="DASHBOARD">Dashboard Geral</option>
                     <option value="HEARINGS">Pauta de Audiências</option>
                     <option value="CASES">Processos & Varas</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Visualização das Audiências
+                  </label>
+                  <select
+                    value={formData.hearingsViewMode || 'TABLE'}
+                    onChange={(e) => setFormData({ ...formData, hearingsViewMode: e.target.value as 'TABLE' | 'CARDS' })}
+                    className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-crimson"
+                  >
+                    <option value="TABLE">Tabela de Dados</option>
+                    <option value="CARDS">Grade de Cards</option>
                   </select>
                 </div>
               </div>

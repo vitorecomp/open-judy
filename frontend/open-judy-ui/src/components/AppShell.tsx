@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import UserPreferencesModal from '@/components/UserPreferencesModal';
 import AdminConfigModal from '@/components/AdminConfigModal';
+import KeycloakLoginModal from '@/components/KeycloakLoginModal';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 
@@ -14,7 +15,14 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const { isPreferencesOpen, setIsPreferencesOpen, isAdminConfigOpen, setIsAdminConfigOpen } = useAuth();
+  const {
+    isPreferencesOpen,
+    setIsPreferencesOpen,
+    isAdminConfigOpen,
+    setIsAdminConfigOpen,
+    isKeycloakModalOpen,
+    setIsKeycloakModalOpen
+  } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -75,6 +83,12 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
       <AdminConfigModal
         isOpen={isAdminConfigOpen}
         onClose={() => setIsAdminConfigOpen(false)}
+      />
+
+      {/* Global Keycloak IAM Login & Session Modal */}
+      <KeycloakLoginModal
+        isOpen={isKeycloakModalOpen}
+        onClose={() => setIsKeycloakModalOpen(false)}
       />
     </div>
   );

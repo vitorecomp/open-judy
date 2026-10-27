@@ -2,6 +2,7 @@ package org.openjudy.users.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
@@ -17,6 +18,7 @@ public class UserEventProducer {
     @Channel("user-events")
     Emitter<Object> eventEmitter;
 
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public void emitUserCreated(UserCreatedEvent event) {
         try {
             LOG.infof("Publicando evento UserCreatedEvent para o usuário: %s (%s)", event.username(), event.userId());
@@ -26,6 +28,7 @@ public class UserEventProducer {
         }
     }
 
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public void emitConfigUpdated(UserConfigUpdatedEvent event) {
         try {
             LOG.infof("Publicando evento UserConfigUpdatedEvent para o usuário: %s", event.userId());

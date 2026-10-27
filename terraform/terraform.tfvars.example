@@ -1,0 +1,15 @@
+project_id                = "open-judy-cloud"
+region                    = "us-central1"
+zone                      = "us-central1-a"
+environment               = "prod"
+k8s_namespace             = "open-judy-prod"
+gke_cluster_name          = "open-judy-gke"
+gke_machine_type          = "e2-standard-4"
+gke_min_nodes             = 2
+gke_max_nodes             = 6
+alloydb_cluster_id        = "open-judy-alloydb"
+alloydb_instance_id       = "open-judy-alloydb-primary"
+alloydb_cpu_count         = 2
+db_user                   = "judy_user"
+db_password               = "replace-with-strong-alloydb-password"
+artifact_registry_repo_id = "open-judy-repo"

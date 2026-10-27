@@ -52,6 +52,11 @@ export default function CasesPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q) setSearchTerm(q);
+    }
     loadCases();
   }, []);
 
@@ -72,30 +77,26 @@ export default function CasesPage() {
     if (!newCaseNumber || !newSubject || !newPlaintiff || !newDefendant) return;
 
     try {
-      const created = await api.listCases(); // Fallback trigger
-      const newCaseObj: Case = {
-        id: `case-${Date.now()}`,
-        caseNumber: newCaseNumber,
-        courtJurisdiction: newCourt,
+      const created = await api.createCase({
+        caseNumber: newCaseNumber.trim(),
+        courtJurisdiction: newCourt.trim(),
         legalBranch: newBranch,
-        subject: newSubject,
-        plaintiffName: newPlaintiff,
-        defendantName: newDefendant,
-        judgeName: newJudge,
+        subject: newSubject.trim(),
+        plaintiffName: newPlaintiff.trim(),
+        defendantName: newDefendant.trim(),
+        judgeName: newJudge.trim(),
         status: 'DISTRIBUIDO',
         documents: [],
         participants: [
-          { id: '1', name: newPlaintiff, role: 'AUTOR', isPresent: true },
-          { id: '2', name: newDefendant, role: 'REU', isPresent: true }
+          { id: '1', name: newPlaintiff.trim(), role: 'AUTOR', isPresent: true },
+          { id: '2', name: newDefendant.trim(), role: 'REU', isPresent: true }
         ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      });
 
-      setCases((prev) => [newCaseObj, ...prev]);
+      setCases((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
       setIsCreateModalOpen(false);
       resetForm();
-      router.push(`/cases/${newCaseObj.id}`);
+      router.push(`/cases/${created.id}`);
     } catch (err) {
       console.error(err);
     }

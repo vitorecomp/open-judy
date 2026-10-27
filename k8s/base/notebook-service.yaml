@@ -29,6 +29,8 @@ spec:
             - secretRef:
                 name: open-judy-secrets
           env:
+            - name: CASE_SERVICE_URL
+              value: "http://case-service:8081"
             - name: TRANSCRIPTION_SERVICE_URL
               value: "http://transcription-service:8083"
             - name: NOTIFICATION_SERVICE_URL

@@ -38,4 +38,4 @@ VALUES
     '/hearings',
     NOW() - INTERVAL '1 hour'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

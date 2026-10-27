@@ -13,6 +13,7 @@ const nextConfig = {
     const agentGardenService = process.env.AGENT_GARDEN_SERVICE_URL || 'http://localhost:8088';
     const indexerService = process.env.INDEXER_SERVICE_URL || 'http://localhost:8089';
     const notebookService = process.env.NOTEBOOK_SERVICE_URL || 'http://localhost:8090';
+    const keycloakService = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 
     return [
       {
@@ -45,7 +46,7 @@ const nextConfig = {
       },
       {
         source: '/api/v1/system/:path*',
-        destination: `${configService}/api/v1/system/:path*`,
+        destination: `${userService}/api/v1/system/:path*`,
       },
       {
         source: '/api/v1/notifications/:path*',
@@ -64,8 +65,16 @@ const nextConfig = {
         destination: `${indexerService}/api/v1/indexer/:path*`,
       },
       {
+        source: '/api/v1/search',
+        destination: `${indexerService}/api/v1/indexer/search`,
+      },
+      {
         source: '/api/v1/search/:path*',
-        destination: `${indexerService}/api/v1/indexer/search:path*`,
+        destination: `${indexerService}/api/v1/indexer/search/:path*`,
+      },
+      {
+        source: '/realms/:path*',
+        destination: `${keycloakService}/realms/:path*`,
       },
     ];
   },

@@ -1,0 +1,68 @@
+[
+  {
+    "caseNumber": "0018920-55.2025.8.26.0100",
+    "courtJurisdiction": "3ª Vara Cível Central da Comarca de São Paulo/SP",
+    "hearingType": "INSTRUCAO_E_JULGAMENTO",
+    "scheduledDateTime": "2026-09-10T14:00:00Z",
+    "status": "READY",
+    "mediaType": "VIDEO",
+    "mediaFilename": "audiencia_0018920_instrucao.mp4",
+    "audioDurationSeconds": 195.0,
+    "audioSizeBytes": 52400000,
+    "participants": [
+      {
+        "name": "Dra. Camila Vasconcelos de Albuquerque",
+        "role": "MAGISTRADO",
+        "documentNumber": "TJSP-44910",
+        "isPresent": true
+      },
+      {
+        "name": "Helena Vasconcelos Nogueira",
+        "role": "AUTOR",
+        "documentNumber": "CPF 418.229.108-44",
+        "isPresent": true
+      },
+      {
+        "name": "Dr. Lucas Menezes Braga",
+        "role": "ADVOGADO_AUTOR",
+        "documentNumber": "OAB/SP 389.122",
+        "isPresent": true
+      }
+    ],
+    "segments": [
+      {
+        "segmentIndex": 1,
+        "startTimeMs": 0,
+        "endTimeMs": 22000,
+        "speakerRole": "MAGISTRADO",
+        "speakerName": "Dra. Camila Vasconcelos (Juíza)",
+        "text": "Declaro aberta a audiência de instrução e julgamento referente ao processo 0018920-55.2025.8.26.0100. Indago aos patronos se há possibilidade de composição amigável.",
+        "confidenceScore": 0.99,
+        "isKeyStatement": false,
+        "topicTag": "Abertura"
+      },
+      {
+        "segmentIndex": 2,
+        "startTimeMs": 23000,
+        "endTimeMs": 58000,
+        "speakerRole": "AUTOR",
+        "speakerName": "Helena Vasconcelos Nogueira (Autora)",
+        "text": "Excelência, o prazo contratual de entrega encerrou há dezoito meses e o empreendimento permanece sem habite-se expedido pela prefeitura.",
+        "confidenceScore": 0.98,
+        "isKeyStatement": true,
+        "topicTag": "Depoimento Pessoal"
+      }
+    ]
+  },
+  {
+    "caseNumber": "0021450-11.2025.5.02.0014",
+    "courtJurisdiction": "14ª Vara do Trabalho de São Paulo/SP",
+    "hearingType": "UNA",
+    "scheduledDateTime": "2026-09-12T10:30:00Z",
+    "status": "READY",
+    "mediaType": "VIDEO",
+    "mediaFilename": "audiencia_0021450_una_trabalhista.mp4",
+    "audioDurationSeconds": 240.0,
+    "audioSizeBytes": 64100000
+  }
+]

@@ -1,6 +1,7 @@
 package org.openjudy.agentgarden.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class EnterpriseAgent {
     private String systemInstruction;
     private String defaultModel;
     private String status; // "ACTIVE", "INACTIVE", "DEPRECATED"
+    @JsonProperty("isDefault")
     private boolean isDefault;
     private Instant createdAt;
 

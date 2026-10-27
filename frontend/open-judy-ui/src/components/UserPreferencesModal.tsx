@@ -26,7 +26,8 @@ import {
   Lock,
   HardDrive,
   Palette,
-  Image as ImageIcon
+  Image as ImageIcon,
+  KeyRound
 } from 'lucide-react';
 
 interface UserPreferencesModalProps {
@@ -51,7 +52,9 @@ export default function UserPreferencesModal({
     preferencesInitialTab,
     openAdminConfig,
     accentColor,
-    setAccentColor
+    setAccentColor,
+    setIsKeycloakModalOpen,
+    keycloakStatus
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'ui' | 'audio' | 'ai' | 'notifications' | 'system'>('ui');
@@ -179,13 +182,33 @@ export default function UserPreferencesModal({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition"
-            title="Fechar"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  setIsKeycloakModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-crimson/15 hover:bg-crimson/25 border border-crimson/40 text-xs font-bold text-white transition"
+                title="Autenticação Keycloak IAM (OIDC)"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-crimson shrink-0" />
+                <span>Keycloak IAM (OIDC)</span>
+                <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Admin
+                </span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition"
+              title="Fechar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -245,7 +268,7 @@ export default function UserPreferencesModal({
               className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
                 activeTab === 'system'
                   ? 'border-emerald-500 text-emerald-300 bg-dark-card'
-                  : 'border-transparent text-emerald-400/80 hover:text-emerald-300 hover:bg-dark-pill/30'
+                  : 'border-transparent text-emerald-300 hover:text-emerald-200 hover:bg-dark-pill/30'
               }`}
             >
               <Server className="w-3.5 h-3.5 text-emerald-400" />
@@ -715,23 +738,37 @@ export default function UserPreferencesModal({
                   <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
                     <p className="font-bold text-emerald-300">Modo de Administração de Infraestrutura Ativo</p>
-                    <p className="text-emerald-400/80 text-[11px]">
+                    <p className="text-emerald-200 text-[11px]">
                       Gerenciamento de Prompts, Modelos de IA, Dashboards e Tipos de Notificações via <strong>config-service</strong>.
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    openAdminConfig('prompts');
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md transition shrink-0"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Abrir Painel do config-service</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      setIsKeycloakModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-xs font-bold text-white shadow-md transition shrink-0"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Keycloak IAM (OIDC)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      openAdminConfig('prompts');
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md transition shrink-0"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>Abrir Painel do config-service</span>
+                  </button>
+                </div>
               </div>
 
               {/* System Branding & Identity */}

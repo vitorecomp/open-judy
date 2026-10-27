@@ -5,5 +5,3 @@ namePrefix: local-
 
 resources:
   - ../../base
-
-patchesStrategicMerge: []

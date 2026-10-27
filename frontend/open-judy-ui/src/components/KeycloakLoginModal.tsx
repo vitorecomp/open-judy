@@ -161,7 +161,7 @@ export default function KeycloakLoginModal({ isOpen, onClose }: KeycloakLoginMod
               <Fingerprint className="w-3.5 h-3.5 text-crimson" />
               Acesso Rápido - Perfis Homologados no Keycloak:
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => handleQuickPreset('camila.vasconcelos')}
@@ -205,6 +205,21 @@ export default function KeycloakLoginModal({ isOpen, onClose }: KeycloakLoginMod
                 </div>
                 <p className="font-bold text-white text-xs truncate">Admin Judy</p>
                 <p className="text-[10px] text-dark-muted truncate">admin.judy</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickPreset('lucas.menezes')}
+                disabled={isLoading}
+                className="p-2.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border hover:border-sky-500/50 text-left transition group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                    Advogado
+                  </span>
+                </div>
+                <p className="font-bold text-white text-xs truncate">Dr. Lucas</p>
+                <p className="text-[10px] text-dark-muted truncate">lucas.menezes</p>
               </button>
             </div>
           </div>

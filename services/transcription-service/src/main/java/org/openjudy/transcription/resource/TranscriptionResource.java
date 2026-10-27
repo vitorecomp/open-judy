@@ -72,6 +72,16 @@ public class TranscriptionResource {
         return Response.ok(context).build();
     }
 
+    @PUT
+    @Path("/segments/{segmentId}")
+    @Operation(summary = "Atualizar segmento de transcrição (texto, orador, destaque ou tag)")
+    public Response updateSegment(
+            @PathParam("segmentId") String segmentId,
+            java.util.Map<String, Object> body) {
+        TranscriptSegmentDTO updated = transcriptionService.updateSegment(segmentId, body);
+        return Response.ok(updated).build();
+    }
+
     @POST
     @Path("/enqueue/{hearingId}")
     @Operation(summary = "Enfileirar job de transcrição no RabbitMQ para processamento pelo Pipeline Python")
@@ -79,7 +89,8 @@ public class TranscriptionResource {
             @PathParam("hearingId") UUID hearingId,
             @QueryParam("caseNumber") @DefaultValue("0014238-19.2024.8.26.0100") String caseNumber,
             @QueryParam("mediaType") @DefaultValue("VIDEO") String mediaTypeStr,
-            @QueryParam("filename") @DefaultValue("audiencia.mp4") String filename) {
+            @QueryParam("filename") @DefaultValue("audiencia.mp4") String filename,
+            @QueryParam("audioUri") String audioUri) {
         
         org.openjudy.common.enums.MediaType mediaType;
         try {
@@ -88,10 +99,12 @@ public class TranscriptionResource {
             mediaType = org.openjudy.common.enums.MediaType.VIDEO;
         }
 
+        String mediaPath = (audioUri != null && !audioUri.isBlank()) ? audioUri : "/media/hearings/" + filename;
+
         transcriptionService.enqueueHearingTranscription(
                 hearingId,
                 caseNumber,
-                "/media/hearings/" + filename,
+                mediaPath,
                 filename,
                 mediaType == org.openjudy.common.enums.MediaType.VIDEO ? "video/mp4" : "audio/mpeg",
                 mediaType

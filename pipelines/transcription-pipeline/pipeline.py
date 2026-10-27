@@ -1,9 +1,11 @@
 import json
 import time
+import uuid
 import pika
 from config import (
     EXCHANGE_NAME,
     ROUTING_KEY,
+    COMPLETED_ROUTING_KEY,
     DLQ_EXCHANGE,
     DLQ_ROUTING_KEY,
     logger,
@@ -39,6 +41,13 @@ class TranscriptionPipeline:
 
         if not hearing_id:
             logger.error(f"Message missing hearingId: {payload}. Discarding.")
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+            return
+
+        try:
+            hearing_id = str(uuid.UUID(str(hearing_id)))
+        except ValueError:
+            logger.error(f"Invalid UUID for hearingId '{hearing_id}' in payload {payload}. Discarding.")
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
@@ -78,7 +87,7 @@ class TranscriptionPipeline:
             }
             channel.basic_publish(
                 exchange=EXCHANGE_NAME,
-                routing_key="transcription.completed",
+                routing_key=COMPLETED_ROUTING_KEY,
                 body=json.dumps(completed_payload),
                 properties=pika.BasicProperties(delivery_mode=2)
             )
@@ -114,7 +123,10 @@ class TranscriptionPipeline:
                 channel.basic_ack(delivery_tag=method.delivery_tag)
             else:
                 logger.critical(f"[DLQ] Max retries ({max_retries}) exceeded for Hearing [{hearing_id}]. Moving to DLQ.")
-                update_hearing_status(hearing_id, "FAILED")
+                try:
+                    update_hearing_status(hearing_id, "FAILED", case_number)
+                except Exception as db_err:
+                    logger.error(f"Could not update hearing status to FAILED for [{hearing_id}]: {db_err}")
 
                 payload["failed_at"] = time.time()
                 payload["final_error"] = str(err)

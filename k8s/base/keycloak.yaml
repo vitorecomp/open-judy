@@ -24,13 +24,13 @@ spec:
             - name: KEYCLOAK_ADMIN
               valueFrom:
                 secretKeyRef:
-                  name: open-judy-secret
+                  name: open-judy-secrets
                   key: KEYCLOAK_ADMIN
                   optional: true
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: open-judy-secret
+                  name: open-judy-secrets
                   key: KEYCLOAK_ADMIN_PASSWORD
                   optional: true
             - name: KC_HEALTH_ENABLED

@@ -8,17 +8,32 @@ resources:
 
 images:
   - name: open-judy/case-service
-    newName: gcr.io/YOUR_GCP_PROJECT/open-judy-case-service
-    newTag: v1.0.0
-  - name: open-judy/media-service
-    newName: gcr.io/YOUR_GCP_PROJECT/open-judy-media-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/case-service
     newTag: v1.0.0
   - name: open-judy/transcription-service
-    newName: gcr.io/YOUR_GCP_PROJECT/open-judy-transcription-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/transcription-service
     newTag: v1.0.0
-  - name: open-judy/judy-ai-service
-    newName: gcr.io/YOUR_GCP_PROJECT/open-judy-ai-service
+  - name: open-judy/transcription-pipeline
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/transcription-pipeline
+    newTag: v1.0.0
+  - name: open-judy/user-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/user-service
+    newTag: v1.0.0
+  - name: open-judy/config-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/config-service
+    newTag: v1.0.0
+  - name: open-judy/notification-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/notification-service
+    newTag: v1.0.0
+  - name: open-judy/notebook-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/notebook-service
+    newTag: v1.0.0
+  - name: open-judy/agent-garden
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/agent-garden
+    newTag: v1.0.0
+  - name: open-judy/indexer-service
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/indexer-service
     newTag: v1.0.0
   - name: open-judy/open-judy-ui
-    newName: gcr.io/YOUR_GCP_PROJECT/open-judy-ui
+    newName: us-central1-docker.pkg.dev/YOUR_GCP_PROJECT/open-judy-repo/open-judy-ui
     newTag: v1.0.0

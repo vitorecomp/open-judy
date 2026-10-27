@@ -25,13 +25,13 @@ spec:
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
-                  name: open-judy-secret
+                  name: open-judy-secrets
                   key: RABBITMQ_USER
                   optional: true
             - name: RABBITMQ_DEFAULT_PASS
               valueFrom:
                 secretKeyRef:
-                  name: open-judy-secret
+                  name: open-judy-secrets
                   key: RABBITMQ_PASSWORD
                   optional: true
             - name: RABBITMQ_DEFAULT_VHOST

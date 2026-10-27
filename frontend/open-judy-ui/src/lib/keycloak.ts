@@ -146,8 +146,20 @@ export function extractUserFromKeycloakToken(token: string) {
     fullName,
     role,
     courtJurisdiction: getAttr('courtJurisdiction') || '3ª Vara Cível Central da Comarca de São Paulo/SP',
-    documentNumber: getAttr('documentNumber') || (role === 'MAGISTRADO' ? 'TJSP-44910' : role === 'ADMIN' ? 'SYS-001' : 'ASSESS-8831'),
-    avatarUrl: getAttr('avatarUrl') || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=${role === 'MAGISTRADO' ? 'e63946' : role === 'ADMIN' ? '10b981' : '4f46e5'}&color=fff`,
+    documentNumber:
+      getAttr('documentNumber') ||
+      (role === 'MAGISTRADO'
+        ? 'TJSP-44910'
+        : role === 'ADMIN'
+        ? 'SYS-001'
+        : role === 'ADVOGADO'
+        ? 'OAB/SP 389.122'
+        : 'ASSESS-8831'),
+    avatarUrl:
+      getAttr('avatarUrl') ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=${
+        role === 'MAGISTRADO' ? 'e63946' : role === 'ADMIN' ? '10b981' : role === 'ADVOGADO' ? '0284c7' : '4f46e5'
+      }&color=fff`,
     roles,
     exp: payload.exp,
   };
@@ -155,9 +167,16 @@ export function extractUserFromKeycloakToken(token: string) {
 
 /**
  * Logs in directly using Keycloak Direct Access Grants (OAuth2 password grant).
+ * Attempts proxied Next.js rewrite (/realms/:path*) first in browser to avoid CORS/container DNS issues,
+ * then falls back to direct KEYCLOAK_CONFIG.url, and finally to dev simulation if Keycloak is offline.
  */
 export async function loginWithKeycloakDirect(username: string, password: string): Promise<KeycloakAuthResult | null> {
-  const tokenEndpoint = `${KEYCLOAK_CONFIG.url}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`;
+  const relativeEndpoint = `/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`;
+  const directEndpoint = `${KEYCLOAK_CONFIG.url}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`;
+  const endpoints =
+    typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_KEYCLOAK_URL
+      ? [relativeEndpoint, directEndpoint]
+      : [directEndpoint];
 
   const params = new URLSearchParams();
   params.append('client_id', KEYCLOAK_CONFIG.clientId);
@@ -166,32 +185,34 @@ export async function loginWithKeycloakDirect(username: string, password: string
   params.append('password', password);
   params.append('scope', 'openid profile email roles');
 
-  try {
-    const res = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
+  for (const tokenEndpoint of endpoints) {
+    try {
+      const res = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      const user = extractUserFromKeycloakToken(data.access_token);
-      if (user) {
-        setStoredKeycloakToken(data.access_token, data.refresh_token);
-        return {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresIn: data.expires_in,
-          user,
-        };
+      if (res.ok) {
+        const data = await res.json();
+        const user = extractUserFromKeycloakToken(data.access_token);
+        if (user) {
+          setStoredKeycloakToken(data.access_token, data.refresh_token);
+          return {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresIn: data.expires_in,
+            user,
+          };
+        }
+      } else {
+        console.warn(`Keycloak authentication at ${tokenEndpoint} failed with status:`, res.status);
       }
-    } else {
-      console.warn('Keycloak authentication failed with status:', res.status);
+    } catch (err) {
+      console.warn(`Keycloak endpoint ${tokenEndpoint} unreachable:`, err);
     }
-  } catch (err) {
-    console.warn('Keycloak server offline or unreachable, falling back to simulated dev authentication:', err);
   }
 
   // Fallback for development simulation if Keycloak container is offline
@@ -247,6 +268,8 @@ export function generateMockKeycloakToken(preset: {
       ? 'u0000000-0000-0000-0000-000000000001'
       : preset.username === 'marcos.assessor'
       ? 'u0000000-0000-0000-0000-000000000002'
+      : preset.username === 'lucas.menezes'
+      ? 'u0000000-0000-0000-0000-000000000004'
       : 'u0000000-0000-0000-0000-000000000003';
 
   const now = Math.floor(Date.now() / 1000);
@@ -262,8 +285,24 @@ export function generateMockKeycloakToken(preset: {
       roles: [preset.role, 'offline_access', 'uma_authorization', 'default-roles-open-judy'],
     },
     courtJurisdiction: [preset.jurisdiction],
-    documentNumber: [preset.role === 'MAGISTRADO' ? 'TJSP-44910' : preset.role === 'ADMIN' ? 'SYS-001' : 'ASSESS-8831'],
-    title: [preset.role === 'MAGISTRADO' ? 'Juíza de Direito Titular' : preset.role === 'ADMIN' ? 'Administrador do Sistema' : 'Assessor de Gabinete'],
+    documentNumber: [
+      preset.role === 'MAGISTRADO'
+        ? 'TJSP-44910'
+        : preset.role === 'ADMIN'
+        ? 'SYS-001'
+        : preset.role === 'ADVOGADO'
+        ? 'OAB/SP 389.122'
+        : 'ASSESS-8831',
+    ],
+    title: [
+      preset.role === 'MAGISTRADO'
+        ? 'Juíza de Direito Titular'
+        : preset.role === 'ADMIN'
+        ? 'Administrador do Sistema'
+        : preset.role === 'ADVOGADO'
+        ? 'Advogado Constituído'
+        : 'Assessor de Gabinete',
+    ],
     avatarUrl: [preset.avatarUrl],
   };
 
@@ -299,6 +338,13 @@ function generateSimulatedAuthResult(username: string): KeycloakAuthResult {
     jurisdiction = 'Tribunal de Justiça - Coordenação de TI e IA';
     avatarUrl = 'https://ui-avatars.com/api/?name=Open+Judy+Admin&background=10b981&color=fff';
     keycloakId = 'u0000000-0000-0000-0000-000000000003';
+  } else if (norm.includes('lucas') || norm.includes('advogad') || norm.includes('menezes')) {
+    role = 'ADVOGADO';
+    name = 'Dr. Lucas Menezes Braga';
+    email = 'lucas.menezes@advocacia.com.br';
+    jurisdiction = 'São Paulo/SP';
+    avatarUrl = 'https://ui-avatars.com/api/?name=Lucas+Menezes&background=0284c7&color=fff';
+    keycloakId = 'u0000000-0000-0000-0000-000000000004';
   }
 
   const token = generateMockKeycloakToken({
@@ -323,7 +369,14 @@ function generateSimulatedAuthResult(username: string): KeycloakAuthResult {
       fullName: name,
       role,
       courtJurisdiction: jurisdiction,
-      documentNumber: role === 'MAGISTRADO' ? 'TJSP-44910' : role === 'ADMIN' ? 'SYS-001' : 'ASSESS-8831',
+      documentNumber:
+        role === 'MAGISTRADO'
+          ? 'TJSP-44910'
+          : role === 'ADMIN'
+          ? 'SYS-001'
+          : role === 'ADVOGADO'
+          ? 'OAB/SP 389.122'
+          : 'ASSESS-8831',
       avatarUrl,
     },
   };

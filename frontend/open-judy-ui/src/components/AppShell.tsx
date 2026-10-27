@@ -31,6 +31,12 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/hearings/')) return 'Audiência / Sala de Sessão';
     if (pathname.startsWith('/hearings')) return 'Audiências & Pautas';
+    if (pathname.startsWith('/cases/')) return 'Autos do Processo Judicial';
+    if (pathname.startsWith('/cases')) return 'Processos Judiciais';
+    if (pathname.startsWith('/notebooks/')) return 'Workspace do Caderno Jurídico (NotebookLM)';
+    if (pathname.startsWith('/notebooks')) return 'Cadernos de Pesquisa Jurídica (NotebookLM)';
+    if (pathname.startsWith('/agents/')) return 'Workspace do Agente Jurídico (Agent Garden)';
+    if (pathname.startsWith('/agents')) return 'Agent Garden — Catálogo de Agentes';
     return 'Dashboard';
   };
 
@@ -40,7 +46,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-slate-100 flex transition-colors duration-200">
+    <div className="min-h-screen bg-dark-bg text-[var(--foreground)] flex transition-colors duration-200">
       {/* Navigation Sidebar (Collapsible on Desktop, Drawer on Mobile) */}
       <Sidebar
         isOpen={sidebarOpen}

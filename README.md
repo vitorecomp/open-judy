@@ -1,27 +1,29 @@
 # Open Judy ⚖️🤖
 
 > **Plataforma Aberta de Inteligência Artificial para o Poder Judiciário**
-> Transcrição de Audiências, Diarização de Falas, Geração de Atas Oficiais, Copilot RAG e Autenticação Zero-Trust com Keycloak IAM, Google Gemini, Quarkus, AlloyDB e Next.js.
+> Transcrição de Audiências, Diarização de Falas, Cadernos Judiciais Multi-Contexto, Agent Garden (Gemini Enterprise), Busca Unificada (Elasticsearch), Notificações em Tempo Real e Autenticação Zero-Trust com Keycloak IAM, Google Gemini, Quarkus, AlloyDB e Next.js.
 
 [![Quarkus](https://img.shields.io/badge/Backend-Quarkus%203.15-red?logo=quarkus)](https://quarkus.io)
 [![Keycloak](https://img.shields.io/badge/IAM-Keycloak%2024.0%20(OIDC)-blue?logo=keycloak)](https://www.keycloak.org)
 [![Google Gemini](https://img.shields.io/badge/AI-Gemini%202.0%20%26%201.5-blue?logo=google)](https://ai.google.dev)
 [![AlloyDB](https://img.shields.io/badge/Database-AlloyDB%20%2B%20pgvector-green?logo=googlecloud)](https://cloud.google.com/alloydb)
+[![Elasticsearch](https://img.shields.io/badge/Search-Elasticsearch%208.13-005571?logo=elasticsearch)](https://www.elastic.co)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015-black?logo=next.js)](https://nextjs.org)
-[![Kubernetes](https://img.shields.io/badge/Deploy-Kubernetes-326CE5?logo=kubernetes)](https://kubernetes.io)
+[![Kubernetes](https://img.shields.io/badge/Deploy-Kubernetes%20%2B%20Terraform-326CE5?logo=kubernetes)](https://kubernetes.io)
 
 ---
 
 ## 🏛️ Sobre o Open Judy
 
-O **Open Judy** é uma solução de arquitetura orientada a microsserviços cloud-native (Kubernetes) desenvolvida para acelerar e desburocratizar o trabalho de magistrados, assessores de gabinete, promotores de justiça, defensores e advogados.
+O **Open Judy** é uma solução de arquitetura orientada a microsserviços cloud-native (Kubernetes & Google Cloud) desenvolvida para acelerar e desburocratizar o trabalho de magistrados, assessores de gabinete, promotores de justiça, defensores e advogados.
 
 Funcionalidades centrais:
 1. **Autenticação & Controle de Acesso Baseado em Papéis (RBAC) com Keycloak IAM**: Autenticação unificada via OpenID Connect (OIDC / OAuth 2.0 / JWT Bearer) com clientes públicos (`open-judy-ui`) e serviços de retaguarda (`open-judy-backend`), provimento Just-In-Time (JIT) e perfis judiciais (`MAGISTRADO`, `ASSESSOR`, `ADMIN`, `ADVOGADO`).
-2. **Ingestão & Diarização com Gemini**: Transcrição de gravações de áudio/vídeo com segmentação por orador (`Magistrado`, `Promotor`, `Advogado do Autor/Réu`, `Autor`, `Réu`, `Testemunha`) e carimbos de tempo em milissegundos.
-3. **Minuta da Ata de Audiência Automatizada**: Geração em segundos do termo oficial de audiência com cabeçalho da comarca, qualificação das presenças, síntese dos depoimentos colhidos, deliberações e despacho final de encerramento.
-4. **Detector de Contradições e Análise Jurídica**: Mapeamento de teses conflitantes, pontos controvertidos e cronologia dos fatos com fundamentação em súmulas e jurisprudência (ex: Súmula 543 STJ).
-5. **Copilot Judiciário com RAG Semântico**: Assistente conversacional alimentado por vetores no **AlloyDB `pgvector`** com geração de citações com links clicáveis que retrocedem/avançam o player de áudio para o trecho exato da fala.
+2. **Ingestão, Diarização & Blocos Multimodais (~256k tokens) com Gemini**: Transcrição de gravações de áudio/vídeo via pipeline assíncrono resiliente (RabbitMQ + Python + Gemini 2.0 Flash) com segmentação por orador e carimbos de tempo em milissegundos.
+3. **Cadernos Judiciais & Chat Aberto Multi-Contexto (`notebook-service`)**: Pesquisa comparativa combinando blocos de vídeo/transcrição, peças processuais e jurisprudência com citações verificáveis.
+4. **Gemini Enterprise Agent Garden (`agent-garden`)**: Gateway integrado ao Google Cloud Discovery Engine (`StreamAssist`) para agentes jurídicos especializados (Pesquisa Jurisprudencial STF/STJ, Auditor de Contradições, Redator de Decisões e Gestor de Pautas).
+5. **Busca Textual Unificada (`indexer-service` + Elasticsearch)**: Indexação e busca full-text de alta velocidade em processos, documentos anexos, transcrições de audiências e conhecimento de agentes.
+6. **Central de Notificações em Tempo Real (`notification-service`)**: Alertas de conclusão de transcrição, minutas e assinaturas via Server-Sent Events (SSE), RabbitMQ e Kafka.
 
 ---
 
@@ -30,60 +32,68 @@ Funcionalidades centrais:
 ```mermaid
 graph TB
     subgraph Identity ["Autenticação & IAM"]
-        KC["Keycloak 24 IAM Server<br/>(Realm: open-judy | OIDC / OAuth 2.0 / PKCE)"]
+        KC["Keycloak 24 IAM Server<br/>(Porta 8080 | Realm: open-judy | OIDC / OAuth 2.0)"]
     end
 
     subgraph Client ["Frontend (Next.js 15 App Router)"]
-        UI["Portal Judicial open-judy-ui<br/>(Player de Áudio + Transcrição + Editor de Ata + Copilot + Keycloak OIDC)"]
+        UI["Portal Judicial open-judy-ui<br/>(Porta 3000 | Audiências, Processos, Cadernos, Agent Garden, Busca & Admin)"]
     end
 
     subgraph Gateway ["Ingress / API Gateway"]
-        ING["Kubernetes Ingress / Traefik / NGINX"]
+        ING["Kubernetes NGINX Ingress / Next.js Rewrites"]
     end
 
-    subgraph Backend ["Microsserviços Quarkus (Java 21 / K8s Pods)"]
-        CS["case-service<br/>(Processos & Audiências)"]
-        MS["media-service<br/>(Ingestão & Streaming de Áudio S3/MinIO)"]
-        TS["transcription-service<br/>(Transcrição Multimodal Gemini 2.0)"]
-        AS["judy-ai-service<br/>(Geração de Ata, Contradições & RAG pgvector)"]
-        US["user-service<br/>(Usuários, JIT Provisioning & Keycloak Security Filter)"]
-        CFS["config-service<br/>(Prompts, Modelos IA, Dashboards & Keycloak Filter)"]
+    subgraph Backend ["Microsserviços Quarkus (Java 21)"]
+        CS["case-service (:8081)<br/>(Processos & Peças Processuais)"]
+        TS["transcription-service (:8083)<br/>(Transcrições, Blocos 256k & Enfileiramento)"]
+        US["user-service (:8085)<br/>(Usuários, JIT Provisioning, Config Global & Keycloak Filter)"]
+        CFS["config-service (:8086)<br/>(Prompts, Modelos IA, Dashboards, Notificações & Settings)"]
+        NS["notification-service (:8087)<br/>(Notificações em Tempo Real, SSE & Consumidor RabbitMQ/Kafka)"]
+        AG["agent-garden (:8088)<br/>(Gemini Enterprise StreamAssist Gateway & Agentes)"]
+        IS["indexer-service (:8089)<br/>(Indexação & Busca Unificada Elasticsearch)"]
+        NBS["notebook-service (:8090)<br/>(Cadernos Judiciais & Chat Aberto Multi-Contexto)"]
     end
 
-    subgraph Messaging ["Mensageria Reativa"]
-        KAFKA["Apache Kafka<br/>(Topics: judy.audio.uploaded, judy.transcription.completed, judy.user.events, judy.config.events)"]
+    subgraph Workers ["Pipelines Assíncronos (Python 3.11)"]
+        TP["transcription-pipeline<br/>(Worker Resiliente RabbitMQ + Gemini Multimodal + Retries/DLQ)"]
     end
 
-    subgraph Persistence ["Dados & IA"]
-        ALLOYDB[("Google Cloud AlloyDB<br/>(PostgreSQL 16 + pgvector)")]
-        GCS[("MinIO / Google Cloud Storage<br/>(Gravações MP3/WAV/MP4)")]
-        GEMINI["Google Gemini AI<br/>(gemini-2.0-flash / text-embedding-004)"]
+    subgraph Messaging ["Mensageria & Eventos"]
+        RMQ["RabbitMQ 3.13 (:5672 / :15672)<br/>(Exchanges: judy.direct, judy.dlx)"]
+        KAFKA["Apache Kafka KRaft (:9092)<br/>(Topics: judy.audio.uploaded, judy.transcription.completed, judy.user.events, judy.config.events)"]
     end
 
-    UI -->|1. Autenticação OIDC / Direct Grant| KC
-    UI -->|2. Requisições com Bearer JWT| ING
+    subgraph Persistence ["Persistência, Busca & IA"]
+        ALLOYDB[("Google Cloud AlloyDB / PostgreSQL 16 + pgvector (:5432)")]
+        ES[("Elasticsearch 8.13 (:9200)")]
+        GCS[("MinIO / Google Cloud Storage (:9000 / :9001)")]
+        GEMINI["Google Gemini & Vertex AI Discovery Engine<br/>(gemini-2.0-flash / text-embedding-004 / StreamAssist)"]
+    end
+
+    UI -->|1. Autenticação OIDC| KC
+    UI -->|2. Requisições REST / SSE| ING
     ING --> CS
-    ING --> MS
     ING --> TS
-    ING --> AS
     ING --> US
     ING --> CFS
+    ING --> NS
+    ING --> AG
+    ING --> IS
+    ING --> NBS
 
-    US -->|Validação de Token & JIT| KC
-    CS --> ALLOYDB
-    US --> ALLOYDB
-    CFS --> ALLOYDB
-    MS --> GCS
-    MS -->|AudioUploadedEvent| KAFKA
-    
-    KAFKA -->|Consome AudioUploadedEvent| TS
-    TS --> GEMINI
-    TS --> ALLOYDB
-    TS -->|TranscriptionCompletedEvent| KAFKA
+    US -->|Validação JWT & JIT| KC
+    CS & TS & US & CFS & NS & NBS --> ALLOYDB
+    IS --> ES
+    IS --> CS & TS & AG
+    NBS --> CS & TS & GEMINI
+    AG --> GEMINI
 
-    KAFKA -->|Consome TranscriptionCompletedEvent| AS
-    AS --> GEMINI
-    AS --> ALLOYDB
+    TS -->|Publica Job| RMQ
+    RMQ -->|Consome Job| TP
+    TP --> GEMINI & ALLOYDB & GCS
+    TP -->|Notifica Conclusão| RMQ
+    RMQ -->|Consome Conclusão| NS
+    US & CFS & TS & NS <--> KAFKA
 ```
 
 ---
@@ -94,7 +104,7 @@ O Open Judy utiliza o **Keycloak 24** como servidor central de gerenciamento de 
 
 - **Realm**: `open-judy`
 - **Clients**:
-  - `open-judy-ui`: Cliente público com fluxo Authorization Code Flow + PKCE (S256) e Direct Access Grants.
+  - `open-judy-ui`: Cliente público com fluxo Authorization Code Flow e Direct Access Grants, incluindo protocol mappers para atributos judiciais (`courtJurisdiction`, `documentNumber`, `title`, `avatarUrl`).
   - `open-judy-backend`: Cliente Bearer-only para validação de JWTs nos microsserviços Quarkus.
 - **Perfis e Permissões (RBAC)**:
   - `MAGISTRADO`: Condução de audiências, análise jurídica integral, aprovação e assinatura digital de atas.
@@ -118,29 +128,39 @@ O Open Judy utiliza o **Keycloak 24** como servidor central de gerenciamento de 
 ```
 open-judy/
 ├── services/
-│   ├── pom.xml                                   # POM Pai Maven Multi-módulo
-│   ├── common-lib/                               # DTOs, Eventos de Domínio, KeycloakHeaders, KeycloakPrincipal, TokenVerifier
-│   ├── case-service/                             # Microsserviço Quarkus (Processos e Audiências)
-│   ├── media-service/                            # Microsserviço Quarkus (Mídia e S3/GCS)
-│   ├── transcription-service/                    # Microsserviço Quarkus (Produtor RabbitMQ e API de Transcrições)
-│   ├── judy-ai-service/                          # Microsserviço Quarkus (Atas, RAG e Copilot)
-│   ├── user-service/                             # Microsserviço Quarkus (Keycloak OIDC, JIT Provisioning, Perfis)
-│   ├── config-service/                           # Microsserviço Quarkus (Prompts, Modelos, Dashboards, KeycloakFilter)
-│   └── notification-service/                     # Microsserviço Quarkus (Notificações em Tempo Real, SSE, RabbitMQ)
+│   ├── pom.xml                                   # POM Pai Maven Multi-módulo (Java 21 / Quarkus 3.15)
+│   ├── Dockerfile.dev                            # Dockerfile de desenvolvimento Quarkus com hot-reload
+│   ├── common-lib/                               # DTOs, Enums, Eventos de Domínio e Segurança Keycloak/IAP
+│   ├── case-service/                             # Microsserviço Quarkus (:8081 - Processos e Documentos)
+│   ├── transcription-service/                    # Microsserviço Quarkus (:8083 - Transcrições, Blocos 256k e RabbitMQ)
+│   ├── user-service/                             # Microsserviço Quarkus (:8085 - Usuários, JIT Provisioning e Config Sistema)
+│   ├── config-service/                           # Microsserviço Quarkus (:8086 - Prompts, Modelos IA, Dashboards e Settings)
+│   ├── notification-service/                     # Microsserviço Quarkus (:8087 - Notificações em Tempo Real, SSE e RabbitMQ)
+│   ├── agent-garden/                             # Microsserviço Quarkus (:8088 - Gemini Enterprise StreamAssist e Agentes)
+│   ├── indexer-service/                          # Microsserviço Quarkus (:8089 - Busca Unificada Elasticsearch)
+│   └── notebook-service/                         # Microsserviço Quarkus (:8090 - Cadernos Judiciais e Chat Multi-Contexto)
 ├── pipelines/
-│   └── transcription-pipeline/                   # Pipeline Assíncrono em Python (Consumidor RabbitMQ, Resiliência, Retries e Gemini)
+│   └── transcription-pipeline/                   # Pipeline Assíncrono em Python (RabbitMQ, Gemini, Retries e DLQ)
 ├── frontend/
-│   └── open-judy-ui/                             # Portal Next.js 15 (Keycloak Client, TypeScript, Tailwind CSS)
+│   └── open-judy-ui/                             # Portal Next.js 15 (:3000 - React 19, TypeScript, Tailwind CSS)
 ├── docker/
+│   ├── entrypoint-quarkus-dev.sh                 # Entrypoint de sincronização common-lib e Quarkus Dev Mode
+│   ├── init-db.sql                               # Script de inicialização PostgreSQL 16 + pgvector
 │   └── keycloak/
 │       └── openjudy-realm.json                   # Exportação completa do Realm Keycloak open-judy
 ├── k8s/
-│   ├── base/                                     # Manifestos Kubernetes (Keycloak, Services, Pipelines, ConfigMaps, Ingress)
+│   ├── base/                                     # Manifestos Kubernetes (Deployments, Services, ConfigMap, Secret, Ingress)
 │   └── overlays/
 │       ├── local/                                # Overlay Kustomize para desenvolvimento local
 │       └── gke-alloydb/                          # Overlay Kustomize para produção no GKE + AlloyDB
-├── docker-compose.yml                            # Stack Docker (Keycloak, Postgres+pgvector, Kafka, RabbitMQ, MinIO)
-├── podman-compose.yml                            # Stack Podman
+├── terraform/
+│   ├── versions.tf                               # Requisitos de versão Terraform e provider Google Cloud
+│   ├── variables.tf                              # Variáveis de infraestrutura GCP (GKE, AlloyDB, GCS, IAM)
+│   ├── main.tf                                   # Provisionamento VPC, GKE, AlloyDB, GCS, Artifact Registry e Workload Identity
+│   ├── outputs.tf                                # Outputs de conexão para o cluster GKE e AlloyDB Auth Proxy
+│   └── terraform.tfvars.example                  # Exemplo de configuração de variáveis
+├── docker-compose.yml                            # Stack completa Docker Compose
+├── podman-compose.yml                            # Stack completa Podman Compose (com suporte SELinux)
 └── README.md
 ```
 
@@ -148,74 +168,58 @@ open-judy/
 
 ## 🚀 Como Executar
 
-### 1. Iniciar Infraestrutura Local (Keycloak, AlloyDB/PostgreSQL + pgvector, Kafka e MinIO)
+### 1. Iniciar a Stack Completa com Podman Compose ou Docker Compose
 
 ```bash
-# Iniciar stack local com podman-compose ou docker-compose
+# Com Podman Compose:
 podman-compose up -d
 
-# Verificar status dos containers
-podman ps
+# Ou com Docker Compose:
+docker compose up -d
 ```
 
-Serviços expostos:
-- **Keycloak IAM**: `http://localhost:8080` (Console Admin: `admin` / `admin`)
-- **AlloyDB / PostgreSQL (`pgvector`)**: `localhost:5432` (`judy_user` / `judy_password`)
-- **Apache Kafka**: `localhost:9092`
-- **RabbitMQ**: `localhost:5672` (AMQP) | Console Web: `http://localhost:15672` (`judy_user` / `judy_password`)
-- **MinIO Console**: `http://localhost:9001` (`judy_minio_admin` / `judy_minio_password`)
+### Mapa de Portas e Serviços
 
-### 2. Executar os Microsserviços Quarkus
-
-Cada microsserviço pode ser iniciado em modo de desenvolvimento (`dev mode`):
-
-```bash
-# Terminal 1: Case Service (Porta 8081)
-cd services/case-service
-./mvnw quarkus:dev
-
-# Terminal 2: Media Service (Porta 8082)
-cd services/media-service
-./mvnw quarkus:dev
-
-# Terminal 3: Transcription Service (Porta 8083)
-cd services/transcription-service
-./mvnw quarkus:dev
-
-# Terminal 4: Judy AI Service (Porta 8084)
-cd services/judy-ai-service
-./mvnw quarkus:dev
-
-# Terminal 5: User Service (Porta 8085)
-cd services/user-service
-./mvnw quarkus:dev
-
-# Terminal 6: Config Service (Porta 8086)
-cd services/config-service
-./mvnw quarkus:dev
-```
-
-### 3. Executar o Frontend Next.js
-
-```bash
-cd frontend/open-judy-ui
-npm install
-npm run dev
-```
-
-Acesse o portal em: [http://localhost:3000](http://localhost:3000)
+| Serviço | Porta Local | Descrição |
+|---|---|---|
+| `open-judy-ui` | `http://localhost:3000` | Portal Judicial Next.js 15 |
+| `keycloak` | `http://localhost:8080` | Servidor OIDC Keycloak (`admin` / `admin`) |
+| `case-service` | `http://localhost:8081` | API de Processos Judiciais e Peças (`/api/v1/cases`) |
+| `transcription-service` | `http://localhost:8083` | API de Transcrições e Blocos 256k (`/api/v1/transcriptions`) |
+| `user-service` | `http://localhost:8085` | API de Usuários e Config Global (`/api/v1/users`, `/api/v1/system/config`) |
+| `config-service` | `http://localhost:8086` | API de Prompts, Modelos IA e Painéis (`/api/v1/config/*`) |
+| `notification-service` | `http://localhost:8087` | API e Stream SSE de Notificações (`/api/v1/notifications`) |
+| `agent-garden` | `http://localhost:8088` | Gateway Gemini Enterprise StreamAssist (`/api/v1/agent-garden`) |
+| `indexer-service` | `http://localhost:8089` | Busca Full-Text Unificada (`/api/v1/indexer`) |
+| `notebook-service` | `http://localhost:8090` | Cadernos Judiciais e Chat Aberto (`/api/v1/notebooks`) |
+| `alloydb-local` | `localhost:5432` | PostgreSQL 16 + `pgvector` (`open_judy_db` / `judy_user` / `judy_password`) |
+| `rabbitmq` | `localhost:5672` / `http://localhost:15672` | Broker AMQP e Console Management (`judy_user` / `judy_password`) |
+| `kafka` | `localhost:9092` | Broker Apache Kafka (KRaft) |
+| `elasticsearch` | `http://localhost:9200` | Motor de Busca Textual Elasticsearch 8.13 |
+| `minio` | `http://localhost:9000` / `http://localhost:9001` | Object Storage S3 (`judy_minio_admin` / `judy_minio_password`) |
 
 ---
 
-## ☸️ Deploy no Kubernetes
+## ☁️ Provisionamento Google Cloud (Terraform) & Deploy Kubernetes (Kustomize)
 
-Para aplicar os manifestos com o **Kustomize**:
+### 1. Provisionar Infraestrutura no GCP com Terraform
 
 ```bash
-# Ambiente local / Minikube
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edite terraform.tfvars com seu project_id e credenciais
+terraform init
+terraform plan
+terraform apply
+```
+
+### 2. Aplicar Manifestos Kubernetes com Kustomize
+
+```bash
+# Ambiente local / Minikube / Kind
 kubectl apply -k k8s/overlays/local
 
-# Ambiente Google Cloud (GKE + AlloyDB)
+# Ambiente Google Cloud (GKE + AlloyDB Auth Proxy)
 kubectl apply -k k8s/overlays/gke-alloydb
 ```
 

@@ -151,13 +151,35 @@ public class NotebookChatService {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Timestamp cTs = rs.getTimestamp("created_at");
+                    List<String> activeSources = List.of();
+                    List<NotebookChatMessageDTO.CitationDTO> citations = List.of();
+                    String sourcesJson = rs.getString("active_sources_json");
+                    if (sourcesJson != null && !sourcesJson.isBlank()) {
+                        try {
+                            activeSources = objectMapper.readValue(
+                                    sourcesJson,
+                                    new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {}
+                            );
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    String citationsJson = rs.getString("citations_json");
+                    if (citationsJson != null && !citationsJson.isBlank()) {
+                        try {
+                            citations = objectMapper.readValue(
+                                    citationsJson,
+                                    new com.fasterxml.jackson.core.type.TypeReference<List<NotebookChatMessageDTO.CitationDTO>>() {}
+                            );
+                        } catch (Exception ignored) {
+                        }
+                    }
                     list.add(new NotebookChatMessageDTO(
                             (UUID) rs.getObject("id"),
                             (UUID) rs.getObject("notebook_id"),
                             rs.getString("role"),
                             rs.getString("content"),
-                            List.of(),
-                            List.of(),
+                            activeSources,
+                            citations,
                             rs.getInt("tokens_used"),
                             cTs != null ? cTs.toInstant() : Instant.now()
                     ));

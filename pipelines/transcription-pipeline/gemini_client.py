@@ -35,8 +35,9 @@ class GeminiMultimodalClient:
         prompt_instruction = f"""
         Você é o pipeline de IA Open Judy especializado na transcrição e diarização de audiências judiciais brasileiras (áudio e vídeo).
         Transcreva e faça a diarização dos interlocutores do processo {case_number} identificando:
-        - Papéis: MAGISTRADO, PROMOTOR, ADVOGADO_AUTOR, ADVOGADO_REU, AUTOR, REU, TESTEMUNHA, PERITO.
-        - Segmentos com start_time_ms, end_time_ms, text, confidence, isKeyStatement e topicTag.
+        - Papéis: MAGISTRADO, PROMOTOR, DEFENSOR_PUBLICO, ADVOGADO_AUTOR, ADVOGADO_REU, AUTOR, REU, TESTEMUNHA, PERITO, ESCRIVAO, OUTRO.
+        - Segmentos com segmentIndex, blockIndex, startTimeMs, endTimeMs, text, confidence, isKeyStatement e topicTag.
+        - Blocos multimodais (~256k tokens) em "blocks" agrupando os segmentos por fase da audiência.
         Retorne estritamente um JSON estruturado com o formato:
         {{
             "language": "pt-BR",
@@ -45,6 +46,7 @@ class GeminiMultimodalClient:
             "segments": [
                 {{
                     "segmentIndex": 1,
+                    "blockIndex": 1,
                     "startTimeMs": 0,
                     "endTimeMs": 14500,
                     "speakerRole": "MAGISTRADO",
@@ -53,6 +55,19 @@ class GeminiMultimodalClient:
                     "confidence": 0.99,
                     "isKeyStatement": false,
                     "topicTag": "Abertura dos Trabalhos"
+                }}
+            ],
+            "blocks": [
+                {{
+                    "blockIndex": 1,
+                    "title": "Bloco 1: Abertura e Tentativa de Conciliação",
+                    "startTimeMs": 0,
+                    "endTimeMs": 14500,
+                    "startTimeFormatted": "00:00",
+                    "endTimeFormatted": "00:14",
+                    "estimatedTokens": 252000,
+                    "segmentCount": 1,
+                    "summary": "Abertura dos trabalhos da audiência judicial."
                 }}
             ]
         }}

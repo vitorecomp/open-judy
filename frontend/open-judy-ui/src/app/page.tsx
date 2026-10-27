@@ -41,13 +41,13 @@ export default function DashboardPage() {
         {/* Left Big Widget: Court Map Hero (7 cols) */}
         <div className="lg:col-span-7 bg-dark-card border border-dark-border rounded-2xl p-5 relative flex flex-col justify-between overflow-hidden shadow-xl min-h-[300px] sm:min-h-[340px]">
           {/* Subtle Map Ambient Background */}
-          <div className="absolute inset-0 bg-[#121318] opacity-90" />
+          <div className="absolute inset-0 bg-dark-bg opacity-90" />
           
           {/* Stylized vector map graphic & glow */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-25 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
             <svg viewBox="0 0 800 400" className="w-full h-full text-slate-600 fill-current">
-              <path d="M150,80 Q200,60 260,90 T350,110 T450,90 T550,120 T650,100 Q700,120 720,160 T680,240 T580,280 T480,260 T380,310 T280,270 T180,220 Z" fill="#252732" />
-              <path d="M180,110 Q220,100 280,130 T370,160 T460,140 T560,180 T630,220 T520,240 T390,260 T250,220 T190,160 Z" fill="#1d1e26" />
+              <path d="M150,80 Q200,60 260,90 T350,110 T450,90 T550,120 T650,100 Q700,120 720,160 T680,240 T580,280 T480,260 T380,310 T280,270 T180,220 Z" fill="var(--color-pill)" />
+              <path d="M180,110 Q220,100 280,130 T370,160 T460,140 T560,180 T630,220 T520,240 T390,260 T250,220 T190,160 Z" fill="var(--color-input)" />
             </svg>
           </div>
 

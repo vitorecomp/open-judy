@@ -51,8 +51,19 @@ export default function HearingsPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q) setSearchTerm(q);
+    }
     api.listHearings().then(setHearings);
   }, []);
+
+  const handleDeleteHearing = async (id: string) => {
+    await api.deleteHearing(id);
+    setHearings((prev) => prev.filter((h) => h.id !== id));
+    setSelectedIds((prev) => prev.filter((i) => i !== id));
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -445,7 +456,7 @@ export default function HearingsPage() {
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2 text-dark-muted">
                           <button
-                            onClick={() => {}}
+                            onClick={() => handleDeleteHearing(h.id)}
                             className="p-1.5 rounded-lg hover:text-white hover:bg-dark-pill transition"
                             title="Excluir"
                           >
@@ -563,7 +574,7 @@ export default function HearingsPage() {
 
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => {}}
+                      onClick={() => handleDeleteHearing(h.id)}
                       className="p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-pill transition"
                       title="Excluir Audiência"
                     >

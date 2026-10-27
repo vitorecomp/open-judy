@@ -67,6 +67,7 @@ public class UserConfigurationService {
         config.updatedAt = Instant.now();
 
         config.persist();
+        user.configuration = config;
         return config;
     }
 

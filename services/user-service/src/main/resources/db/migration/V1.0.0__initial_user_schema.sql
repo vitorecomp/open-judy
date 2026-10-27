@@ -80,7 +80,7 @@ VALUES
     ('a0000000-0000-0000-0000-000000000002', 'marcos.assessor', 'marcos.assessor@tjsp.jus.br', 'Marcos Vinicius de Souza', 'ASSESS-8831', 'ASSESSOR', '3ª Vara Cível Central da Comarca de São Paulo/SP', 'ACTIVE', 'https://ui-avatars.com/api/?name=Marcos+Souza&background=4f46e5&color=fff'),
     ('a0000000-0000-0000-0000-000000000003', 'lucas.menezes', 'lucas.menezes@advocacia.com.br', 'Dr. Lucas Menezes Braga', 'OAB/SP 389.122', 'ADVOGADO', 'São Paulo/SP', 'ACTIVE', 'https://ui-avatars.com/api/?name=Lucas+Menezes&background=0284c7&color=fff'),
     ('a0000000-0000-0000-0000-000000000004', 'admin.judy', 'admin@openjudy.org', 'Administrador Geral Open Judy', 'SYS-001', 'ADMIN', 'Tribunal de Justiça - Coordenação de TI e IA', 'ACTIVE', 'https://ui-avatars.com/api/?name=Open+Judy+Admin&background=10b981&color=fff')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 INSERT INTO tb_user_configurations (id, user_id, theme, language, font_size, default_landing_page, playback_rate, auto_generate_ata_draft, auto_detect_contradictions, default_ata_template, ai_temperature, judge_signature_title)
 VALUES
@@ -88,7 +88,7 @@ VALUES
     ('c0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'DARK', 'pt-BR', 'MEDIUM', 'HEARINGS', 1.0, TRUE, TRUE, 'PADRAO_CIVEL', 0.2, 'Assessor de Gabinete'),
     ('c0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'DARK', 'pt-BR', 'MEDIUM', 'HEARINGS', 1.25, TRUE, TRUE, 'PADRAO_CIVEL', 0.2, NULL),
     ('c0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'DARK', 'pt-BR', 'MEDIUM', 'DASHBOARD', 1.0, TRUE, TRUE, 'PADRAO_CIVEL', 0.2, 'Administrador do Sistema')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- 4. Tabela de Configurações Globais do Sistema (Admin)
 CREATE TABLE IF NOT EXISTS tb_system_configurations (
@@ -122,5 +122,5 @@ VALUES (
     FALSE,
     '{"copilotMaxHistoryTurns":20,"enableMultimodalDiarization":true,"alloyDbVectorDimensions":768}'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 

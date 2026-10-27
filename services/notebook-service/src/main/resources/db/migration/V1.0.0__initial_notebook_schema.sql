@@ -67,7 +67,7 @@ VALUES
     '⚖️',
     '#e63946'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 INSERT INTO tb_notebook_sources (id, notebook_id, source_type, title, reference_id, block_index, estimated_tokens, is_active_for_chat, content)
 VALUES
@@ -104,7 +104,7 @@ VALUES
     TRUE,
     'Súmula 543/STJ: Na hipótese de resolução de contrato de promessa de compra e venda de imóvel submetido ao CDC, deve ocorrer a imediata restituição das parcelas pagas pelo promitente comprador - integralmente, em caso de culpa exclusiva do promitente vendedor/construtor.'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 INSERT INTO tb_notebook_notes (id, notebook_id, title, content, note_type)
 VALUES
@@ -115,4 +115,4 @@ VALUES
     'A prova oral e a notificação de março/2023 corroboram a mora injustificada da construtora ré. Aplicação direta da Súmula 543 do STJ determinando restituição integral de 100%.',
     'FINDING'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

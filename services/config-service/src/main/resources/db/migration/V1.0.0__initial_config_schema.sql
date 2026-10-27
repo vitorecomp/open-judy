@@ -200,7 +200,7 @@ VALUES
     1,
     TRUE
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =========================================================================
 -- SEED DATA: AI Models
@@ -302,7 +302,7 @@ VALUES
     TRUE,
     '{"language":"pt","temperature":0.0}'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =========================================================================
 -- SEED DATA: Dashboard Types
@@ -353,7 +353,7 @@ VALUES
     TRUE,
     TRUE
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =========================================================================
 -- SEED DATA: Notification Types
@@ -438,7 +438,7 @@ VALUES
     TRUE,
     TRUE
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =========================================================================
 -- SEED DATA: System Settings
@@ -605,4 +605,4 @@ VALUES
     FALSE,
     FALSE
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

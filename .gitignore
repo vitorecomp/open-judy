@@ -2,14 +2,45 @@
 frontend/open-judy-ui/node_modules/
 frontend/open-judy-ui/.next/
 frontend/open-judy-ui/out/
+*.tsbuildinfo
 
 # Maven & Java
 **/target/
 **/.m2/
+backend/
 .idea/
 *.iml
 *.log
+.vscode/
+.DS_Store
 
-# Podman & Docker
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Podman & Docker & Env
 volumes/
+.env
 .env.local
+.env.*.local
+!.env.example

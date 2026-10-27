@@ -11,7 +11,7 @@ import {
   SlidersHorizontal,
   Bot,
   Layers,
-  BookOpen
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import JudyLogo from './JudyLogo';
@@ -201,15 +201,6 @@ export default function Sidebar({
         <div className="p-2.5 border-t border-dark-border/60 space-y-2">
           <div className="space-y-0.5">
             <button
-              title={isCollapsed ? 'Suporte Judiciário' : undefined}
-              className={`w-full flex items-center rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill/50 transition ${
-                isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
-              }`}
-            >
-              <Headphones className="w-4 h-4 text-dark-muted shrink-0" />
-              {!isCollapsed && <span className="truncate">Suporte Judiciário</span>}
-            </button>
-            <button
               onClick={() => openPreferencesWithTab('ui')}
               title={isCollapsed ? 'Preferências' : undefined}
               className={`w-full flex items-center rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill/50 transition ${
@@ -245,10 +236,11 @@ export default function Sidebar({
           {/* User Profile Card with Profile Switcher */}
           <div className="pt-2 border-t border-dark-border/40">
             <div
-              className={`flex items-center rounded-xl bg-dark-card/80 border border-dark-border transition-all ${
+              onClick={() => openPreferencesWithTab('ui')}
+              className={`flex items-center rounded-xl bg-dark-card/80 hover:bg-dark-card border border-dark-border hover:border-crimson/40 cursor-pointer transition-all ${
                 isCollapsed ? 'justify-center p-2' : 'gap-3 p-2'
               }`}
-              title={isCollapsed ? `${user.fullName} (${role})` : undefined}
+              title={isCollapsed ? `${user.fullName} (${role}) — Preferências` : 'Abrir Preferências do Usuário'}
             >
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-dark-border">
                 {user.avatarUrl ? (
@@ -287,21 +279,27 @@ export default function Sidebar({
 
             {/* Quick Profile Switcher */}
             {!isCollapsed && (
-              <div className="mt-2 flex items-center justify-between gap-1 px-1">
-                <span className="text-[9px] text-dark-muted font-semibold uppercase">Perfil:</span>
-                <div className="flex items-center gap-1">
+              <div className="mt-2 flex items-center justify-between gap-1 px-0.5 flex-nowrap whitespace-nowrap">
+                <span className="text-[8px] text-dark-muted font-semibold uppercase shrink-0">Perfil:</span>
+                <div className="flex items-center gap-0.5 flex-nowrap justify-end min-w-0">
                   {availablePresets.map((p) => (
                     <button
                       key={p.username}
                       onClick={() => switchProfile(p.role)}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition ${
+                      className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase transition whitespace-nowrap shrink-0 ${
                         role === p.role
                           ? 'bg-crimson text-white shadow-sm'
                           : 'text-dark-muted hover:text-white hover:bg-dark-pill'
                       }`}
                       title={p.name}
                     >
-                      {p.role === 'MAGISTRADO' ? 'Juíza' : p.role === 'ASSESSOR' ? 'Assessor' : 'Admin'}
+                      {p.role === 'MAGISTRADO'
+                        ? 'Juíza'
+                        : p.role === 'ASSESSOR'
+                        ? 'Assessor'
+                        : p.role === 'ADMIN'
+                        ? 'Admin'
+                        : 'Advogado'}
                     </button>
                   ))}
                 </div>

@@ -12,12 +12,12 @@ services:
       POSTGRES_USER: judy_user
       POSTGRES_PASSWORD: judy_password
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - alloydb_data:/var/lib/postgresql/data:z
+      - alloydb_data:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro,z
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "judy_user", "-d", "open_judy_db"]
+      test: "pg_isready -U judy_user -d open_judy_db"
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,17 +45,18 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     volumes:
-      - kafka_data:/tmp/kraft-combined-logs:z
+      - kafka_data:/tmp/kraft-combined-logs
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      test: "kafka-broker-api-versions --bootstrap-server localhost:9092"
       interval: 10s
       timeout: 10s
       retries: 5
 
   # MinIO (S3-compatible Object Storage for Court Audio/Video)
   minio:
-    image: docker.io/minio/minio:RELEASE.2024-03-05T04-48-44Z
+    image: docker.io/alpine/minio:RELEASE.2025-10-15T17-29-55Z
     container_name: open-judy-minio
+    user: "0:0"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -64,9 +65,9 @@ services:
       MINIO_ROOT_PASSWORD: judy_minio_password
     entrypoint: ["/bin/sh", "-c", "mkdir -p /data/open-judy-audio && exec minio server /data --console-address :9001"]
     volumes:
-      - minio_data:/data:z
+      - minio_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: "wget -q --spider http://localhost:9000/minio/health/live"
       interval: 5s
       timeout: 5s
       retries: 5
@@ -83,11 +84,11 @@ services:
       KC_METRICS_ENABLED: "true"
       KC_HTTP_RELATIVE_PATH: "/"
     ports:
-      - "8080:8080"
+      - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
       - ./docker/keycloak:/opt/keycloak/data/import:ro,z
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      test: "exec 3<>/dev/tcp/127.0.0.1/8080; echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: 127.0.0.1:8080\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200 OK' <&3"
       interval: 10s
       timeout: 5s
       retries: 6
@@ -107,9 +108,9 @@ services:
       RABBITMQ_DEFAULT_VHOST: /
       RABBITMQ_ERLANG_COOKIE: "open_judy_secret_cookie_12345"
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq/mnesia:z
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: "rabbitmq-diagnostics -q ping"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -126,9 +127,9 @@ services:
       - "9200:9200"
       - "9300:9300"
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data:z
+      - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      test: "curl -f http://localhost:9200/_cluster/health"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -153,12 +154,21 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8081"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
+    healthcheck:
+      test: "curl -f http://localhost:8081/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Gemini Audio Transcription & Diarization Service
   transcription-service:
@@ -179,21 +189,29 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
       RABBITMQ_USER: judy_user
       RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
       GEMINI_MODEL: gemini-2.0-flash
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8083"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
       - kafka
       - rabbitmq
       - keycloak
+    healthcheck:
+      test: "curl -f http://localhost:8083/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # User Management Service (Keycloak OIDC Auth & JIT Provisioning)
   user-service:
@@ -214,14 +232,21 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8085"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
       - kafka
       - keycloak
+    healthcheck:
+      test: "curl -f http://localhost:8085/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # System Configuration Service (Prompts, Models, Dashboards, Notification Types)
   config-service:
@@ -242,14 +267,21 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8086"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
       - kafka
       - keycloak
+    healthcheck:
+      test: "curl -f http://localhost:8086/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Real-Time Judicial Notification Service (RabbitMQ, SSE, DB)
   notification-service:
@@ -272,14 +304,24 @@ services:
       RABBITMQ_PORT: "5672"
       RABBITMQ_USER: judy_user
       RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8087"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
       - kafka
       - rabbitmq
+    healthcheck:
+      test: "curl -f http://localhost:8087/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Judicial Notebook & Open Multi-Context Chat Service
   notebook-service:
@@ -297,15 +339,28 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
+      CASE_SERVICE_URL: http://case-service:8081
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
+      GEMINI_MODEL: gemini-2.0-flash
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: open-judy
+      KEYCLOAK_CLIENT_ID: open-judy-backend
       QUARKUS_HTTP_HOST: "0.0.0.0"
       QUARKUS_HTTP_PORT: "8090"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
+      - case-service
+      - transcription-service
+    healthcheck:
+      test: "curl -f http://localhost:8090/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Gemini Enterprise Agent Garden Service (StreamAssist Gateway, Enterprise Agents)
   agent-garden:
@@ -323,12 +378,19 @@ services:
       GCP_ENDPOINT_LOCATION: ${GCP_ENDPOINT_LOCATION:-global}
       GCP_APP_ID: ${GCP_APP_ID:-judy-legal-agents}
       GCP_ASSISTANT_ID: ${GCP_ASSISTANT_ID:-default_assistant}
+      GCP_API_KEY: ${GCP_API_KEY:-}
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8088"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
+    healthcheck:
+      test: "curl -f http://localhost:8088/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # Unified Elasticsearch Full-Text Indexer & Search Service
   indexer-service:
@@ -342,16 +404,23 @@ services:
     environment:
       SERVICE_NAME: indexer-service
       ELASTICSEARCH_HOSTS: elasticsearch:9200
+      ELASTICSEARCH_PROTOCOL: http
       CASE_SERVICE_URL: http://case-service:8081
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       AGENT_GARDEN_SERVICE_URL: http://agent-garden:8088
       QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8089"
     volumes:
       - ./services:/workspace/services:z
-      - maven_cache:/root/.m2:z
+      - maven_cache:/root/.m2
     depends_on:
       - elasticsearch
       - alloydb-local
+    healthcheck:
+      test: "curl -f http://localhost:8089/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # =================================================================
   # 3. ASYNC PIPELINES & WORKERS (PYTHON RESILIENT CONSUMERS)
@@ -370,6 +439,9 @@ services:
       RABBITMQ_USER: judy_user
       RABBITMQ_PASSWORD: judy_password
       RABBITMQ_VHOST: /
+      EXCHANGE_NAME: judy.direct
+      QUEUE_NAME: judy.transcription.jobs
+      ROUTING_KEY: transcription.job
       DB_HOST: alloydb-local
       DB_PORT: "5432"
       DB_NAME: open_judy_db
@@ -397,15 +469,15 @@ services:
     ports:
       - "3000:3000"
     environment:
+      CASE_SERVICE_URL: http://case-service:8081
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       USER_SERVICE_URL: http://user-service:8085
       CONFIG_SERVICE_URL: http://config-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       AGENT_GARDEN_SERVICE_URL: http://agent-garden:8088
       INDEXER_SERVICE_URL: http://indexer-service:8089
-      CASE_SERVICE_URL: http://case-service:8081
       NOTEBOOK_SERVICE_URL: http://notebook-service:8090
-      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:8080
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:${KEYCLOAK_PORT:-8080}
       NEXT_PUBLIC_KEYCLOAK_REALM: open-judy
       NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: open-judy-ui
       KEYCLOAK_URL: http://keycloak:8080
@@ -414,15 +486,19 @@ services:
     volumes:
       - ./frontend/open-judy-ui:/app:z
     depends_on:
+      - case-service
       - transcription-service
       - user-service
       - config-service
       - notification-service
       - agent-garden
-      - case-service
       - indexer-service
       - notebook-service
       - keycloak
+
+networks:
+  default:
+    name: open-judy-network
 
 volumes:
   alloydb_data:

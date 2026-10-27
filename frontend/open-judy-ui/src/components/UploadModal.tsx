@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { X, Upload, Music, Video, FileText, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
-import { MediaType } from '@/lib/types';
+import { MediaType, HearingType } from '@/lib/types';
+import { api } from '@/lib/api';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -44,6 +45,27 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
     setUploadProgress(15);
 
     try {
+      const filename =
+        selectedFile?.name ||
+        (mediaType === 'VIDEO' ? 'audiencia_instrucao.mp4' : 'audiencia_gravacao.mp3');
+
+      const createdHearing = await api.createHearing({
+        caseNumber: caseNumber.trim(),
+        courtJurisdiction: courtVara.trim(),
+        hearingType: hearingType as HearingType,
+        mediaType,
+        mediaFilename: filename,
+        audioFilename: filename,
+        audioSizeBytes: selectedFile?.size || 48500000,
+        status: 'READY',
+      });
+
+      await api.enqueueTranscription(
+        createdHearing.id,
+        createdHearing.caseNumber,
+        `s3://open-judy-audio-archive/${filename}`
+      );
+
       const interval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -52,14 +74,14 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           }
           return prev + 25;
         });
-      }, 300);
+      }, 250);
 
       setTimeout(() => {
         clearInterval(interval);
         setUploadProgress(100);
         setIsUploading(false);
-        onSuccess('f1e2d3c4-b5a6-9788-7654-3210fedcba98');
-      }, 1500);
+        onSuccess(createdHearing.id);
+      }, 1000);
     } catch (err) {
       setIsUploading(false);
     }

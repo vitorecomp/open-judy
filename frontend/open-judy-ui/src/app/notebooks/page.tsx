@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { listNotebooks, createNotebook } from '@/lib/api';
 import { Notebook } from '@/lib/types';
-import Header from '@/components/Header';
 import {
   BookOpen,
   Plus,
@@ -30,6 +29,11 @@ export default function NotebooksHubPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q) setSearchTerm(q);
+    }
     listNotebooks().then((nbs) => {
       const map = new Map<string, Notebook>();
       nbs.forEach((n) => map.set(n.id, n));
@@ -74,10 +78,8 @@ export default function NotebooksHubPage() {
   });
 
   return (
-    <div className="min-h-screen bg-dark-bg text-slate-100 flex flex-col">
-      <Header />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="w-full flex-1 flex flex-col space-y-6 animate-in fade-in">
+      <div className="flex-1 max-w-7xl w-full mx-auto space-y-6">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-card border border-dark-border p-6 rounded-2xl shadow-xl">
           <div className="space-y-1">
@@ -180,7 +182,7 @@ export default function NotebooksHubPage() {
             );
           })}
         </div>
-      </main>
+      </div>
 
       {/* Modal Criar Novo Caderno */}
       {isCreateModalOpen && (

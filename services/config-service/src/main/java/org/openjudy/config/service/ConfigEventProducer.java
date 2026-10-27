@@ -3,6 +3,7 @@ package org.openjudy.config.service;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
@@ -20,6 +21,7 @@ public class ConfigEventProducer {
     @Broadcast
     Emitter<ConfigUpdatedEvent> configEventEmitter;
 
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public void emitConfigUpdated(String configType, String entityCode, String action) {
         ConfigUpdatedEvent event = new ConfigUpdatedEvent(
                 configType,

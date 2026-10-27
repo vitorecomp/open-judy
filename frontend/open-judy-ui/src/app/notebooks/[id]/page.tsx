@@ -12,7 +12,6 @@ import {
   createNotebookNote
 } from '@/lib/api';
 import { Notebook, NotebookSource, NotebookNote } from '@/lib/types';
-import Header from '@/components/Header';
 import {
   BookOpen,
   Plus,
@@ -189,9 +188,7 @@ export default function NotebookDetailPage() {
   };
 
   return (
-    <div className="h-screen bg-dark-bg text-slate-100 flex flex-col overflow-hidden">
-      <Header />
-
+    <div className="h-[calc(100vh-7rem)] bg-dark-bg text-slate-100 flex flex-col rounded-2xl border border-dark-border overflow-hidden shadow-xl">
       {/* Sub-header Bar */}
       <div className="px-6 py-2.5 bg-dark-card border-b border-dark-border flex items-center justify-between">
         <div className="flex items-center gap-3">

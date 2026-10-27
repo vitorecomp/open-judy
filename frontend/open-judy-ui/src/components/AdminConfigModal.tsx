@@ -962,7 +962,7 @@ export default function AdminConfigModal({
                       <button
                         type="submit"
                         disabled={isSavingBranding}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md shadow-emerald-950 transition disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md shadow-emerald-600/25 transition disabled:opacity-50"
                       >
                         <Save className="w-3.5 h-3.5" />
                         <span>{isSavingBranding ? 'Salvando Marca...' : 'Salvar Nome e Logo'}</span>

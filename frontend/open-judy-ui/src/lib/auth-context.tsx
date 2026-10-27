@@ -61,6 +61,17 @@ export const PROFILE_PRESETS: ProfilePreset[] = [
     badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     avatarUrl: 'https://ui-avatars.com/api/?name=Open+Judy+Admin&background=10b981&color=fff',
   },
+  {
+    role: 'ADVOGADO',
+    username: 'lucas.menezes',
+    name: 'Dr. Lucas Menezes Braga',
+    title: 'Advogado Constituído',
+    email: 'lucas.menezes@advocacia.com.br',
+    jurisdiction: 'São Paulo/SP (OAB/SP 389.122)',
+    description: 'Consulta pública de autos, reprodução de audiências e revisão de transcrições',
+    badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Lucas+Menezes&background=0284c7&color=fff',
+  },
 ];
 
 export const ACCENT_PRESETS = [
@@ -87,7 +98,7 @@ export function adjustHexBrightness(hex: string, percent: number): string {
   let g = ((num >> 8) & 255) + Math.round(255 * (percent / 100));
   let b = (num & 255) + Math.round(255 * (percent / 100));
   r = Math.min(255, Math.max(0, r));
-  g = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
   b = Math.min(255, Math.max(0, b));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
@@ -271,6 +282,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? 'u0000000-0000-0000-0000-000000000001'
         : preset.username === 'marcos.assessor'
         ? 'u0000000-0000-0000-0000-000000000002'
+        : preset.username === 'lucas.menezes'
+        ? 'u0000000-0000-0000-0000-000000000004'
         : 'u0000000-0000-0000-0000-000000000003';
 
     const userId =
@@ -278,6 +291,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? 'a0000000-0000-0000-0000-000000000001'
         : preset.username === 'marcos.assessor'
         ? 'a0000000-0000-0000-0000-000000000002'
+        : preset.username === 'lucas.menezes'
+        ? 'a0000000-0000-0000-0000-000000000003'
         : 'a0000000-0000-0000-0000-000000000004';
 
     setUser((prev) => ({

@@ -360,6 +360,131 @@ function getAuthHeaders(customHeaders: Record<string, string> = {}): Record<stri
   return headers;
 }
 
+export function generateUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+const MOCK_CASES: any[] = [
+  {
+    id: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+    caseNumber: '0014238-89.2024.8.26.0100',
+    courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
+    legalBranch: 'CIVIL',
+    subject: 'Indenização por Danos Morais e Rescisão Contratual',
+    plaintiffName: 'Carlos Eduardo Mendes',
+    defendantName: 'Construtora e Incorporadora Metrópole S.A.',
+    judgeName: 'Dra. Camila Vasconcelos',
+    prosecutorName: 'Dr. Fernando Meirelles',
+    status: 'EM_ANDAMENTO',
+    documents: [
+      {
+        id: 'd0000001-0000-4000-8000-000000000001',
+        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        title: 'Petição Inicial com Pedido Liminar de Urgência',
+        documentType: 'PETICAO_INICIAL',
+        fileName: 'peticao_inicial_0014238.pdf',
+        fileSize: 1420500,
+        mimeType: 'application/pdf',
+        pageCount: 18,
+        ocrStatus: 'COMPLETED',
+        uploadedBy: 'Dra. Luciana Ferreira',
+        uploadedAt: '2024-03-15T10:00:00Z'
+      },
+      {
+        id: 'd0000002-0000-4000-8000-000000000002',
+        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        title: 'Contestação com Documentos e Preliminares',
+        documentType: 'CONTESTACAO',
+        fileName: 'contestacao_metropole_sa.pdf',
+        fileSize: 3100200,
+        mimeType: 'application/pdf',
+        pageCount: 34,
+        ocrStatus: 'COMPLETED',
+        uploadedBy: 'Dr. Roberto Silva',
+        uploadedAt: '2024-04-10T14:30:00Z'
+      },
+      {
+        id: 'd0000003-0000-4000-8000-000000000003',
+        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
+        title: 'Laudo Pericial de Engenharia Civil e Segurança da Obra',
+        documentType: 'LAUDO_TECNICO',
+        fileName: 'laudo_pericial_engenharia.pdf',
+        fileSize: 5420100,
+        mimeType: 'application/pdf',
+        pageCount: 42,
+        ocrStatus: 'COMPLETED',
+        uploadedBy: 'Perito Eng. Marcelo Rossi',
+        uploadedAt: '2024-06-20T09:15:00Z'
+      }
+    ],
+    createdAt: '2024-03-15T10:00:00Z',
+    updatedAt: '2026-08-06T14:22:00Z'
+  },
+  {
+    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
+    caseNumber: '0005891-12.2024.8.26.0100',
+    courtJurisdiction: '1ª Vara Cível de Santo Amaro/SP',
+    legalBranch: 'CIVIL',
+    subject: 'Revisão Contratual e Obrigação de Fazer',
+    plaintiffName: 'Roberto Almeida Santos',
+    defendantName: 'Banco Financeiro Nacional S.A.',
+    judgeName: 'Dra. Camila Vasconcelos',
+    status: 'EM_ANDAMENTO',
+    documents: [
+      {
+        id: 'd0000004-0000-4000-8000-000000000004',
+        caseId: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
+        title: 'Petição Inicial e Planilha de Evolução de Débito',
+        documentType: 'PETICAO_INICIAL',
+        fileName: 'inicial_revisional_0005891.pdf',
+        fileSize: 980400,
+        mimeType: 'application/pdf',
+        pageCount: 14,
+        ocrStatus: 'COMPLETED',
+        uploadedBy: 'Dr. Marcos Peixoto',
+        uploadedAt: '2024-05-10T11:20:00Z'
+      }
+    ],
+    createdAt: '2024-05-10T11:20:00Z',
+    updatedAt: '2026-08-07T11:05:00Z'
+  },
+  {
+    id: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
+    caseNumber: '0009142-45.2024.8.26.0002',
+    courtJurisdiction: '14ª Vara do Trabalho de São Paulo/SP',
+    legalBranch: 'TRABALHISTA',
+    subject: 'Reclamação Trabalhista - Horas Extras e Vínculo Empregatício',
+    plaintiffName: 'Fernando Costa Lima',
+    defendantName: 'Logística Express Brasil Ltda.',
+    judgeName: 'Dr. Marcos Valério Silveira',
+    status: 'CONCLUSO_PARA_SENTENCA',
+    documents: [
+      {
+        id: 'd0000005-0000-4000-8000-000000000005',
+        caseId: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
+        title: 'Reclamação Trabalhista Inicial e Controles de Jornada',
+        documentType: 'PETICAO_INICIAL',
+        fileName: 'reclamatoria_0009142.pdf',
+        fileSize: 2150000,
+        mimeType: 'application/pdf',
+        pageCount: 22,
+        ocrStatus: 'COMPLETED',
+        uploadedBy: 'Dr. Marcelo Fagundes',
+        uploadedAt: '2024-06-01T09:00:00Z'
+      }
+    ],
+    createdAt: '2024-06-01T09:00:00Z',
+    updatedAt: '2026-08-07T15:00:00Z'
+  }
+];
+
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const customHeaders = (options.headers as Record<string, string>) || {};
   return fetch(url, {
@@ -377,7 +502,7 @@ export const api = {
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (_) {}
-    return MOCK_HEARINGS;
+    return [...MOCK_HEARINGS];
   },
 
   async getHearing(id: string): Promise<Hearing> {
@@ -386,6 +511,71 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (_) {}
     return MOCK_HEARINGS.find((h) => h.id === id) || MOCK_DEMO_HEARING;
+  },
+
+  async createHearing(data: Partial<Hearing>): Promise<Hearing> {
+    const newId = data.id || generateUuid();
+    try {
+      const res = await authFetch('/api/v1/hearings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, id: newId })
+      });
+      if (res.ok) {
+        const created = await res.json();
+        MOCK_HEARINGS.unshift(created);
+        return created;
+      }
+    } catch (_) {}
+    const created: Hearing = {
+      id: newId,
+      caseId: data.caseId || generateUuid(),
+      caseNumber: data.caseNumber || '0000000-00.2026.8.26.0100',
+      courtJurisdiction: data.courtJurisdiction || '3ª Vara Cível Central da Comarca de São Paulo/SP',
+      hearingType: data.hearingType || 'INSTRUCAO_E_JULGAMENTO',
+      scheduledDateTime: data.scheduledDateTime || new Date().toISOString(),
+      status: data.status || 'READY',
+      mediaType: data.mediaType || 'VIDEO',
+      mediaFilename: data.mediaFilename || 'gravacao_audiencia.mp4',
+      audioFilename: data.audioFilename || data.mediaFilename || 'gravacao_audiencia.mp4',
+      audioDurationSeconds: data.audioDurationSeconds || 142,
+      audioSizeBytes: data.audioSizeBytes || 45000000,
+      participants: data.participants || MOCK_DEMO_HEARING.participants,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    MOCK_HEARINGS.unshift(created);
+    return created;
+  },
+
+  async deleteHearing(id: string): Promise<boolean> {
+    try {
+      const res = await authFetch(`/api/v1/hearings/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const idx = MOCK_HEARINGS.findIndex((h) => h.id === id);
+        if (idx !== -1) MOCK_HEARINGS.splice(idx, 1);
+        return true;
+      }
+    } catch (_) {}
+    const idx = MOCK_HEARINGS.findIndex((h) => h.id === id);
+    if (idx !== -1) MOCK_HEARINGS.splice(idx, 1);
+    return true;
+  },
+
+  async enqueueTranscription(hearingId: string, caseNumber: string, audioUri: string): Promise<any> {
+    try {
+      const params = new URLSearchParams({ caseNumber, audioUri });
+      const res = await authFetch(`/api/v1/transcriptions/enqueue/${hearingId}?${params.toString()}`, {
+        method: 'POST',
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return {
+      status: 'ENQUEUED',
+      hearingId,
+      caseNumber,
+      queue: 'openjudy.transcription.jobs',
+    };
   },
 
   async getTranscript(hearingId: string, blockIndex?: number): Promise<TranscriptSegment[]> {
@@ -398,6 +588,23 @@ export const api = {
       }
     } catch (_) {}
     return blockIndex ? MOCK_SEGMENTS.filter(s => s.blockIndex === blockIndex) : MOCK_SEGMENTS;
+  },
+
+  async updateSegment(segmentId: string, update: Partial<TranscriptSegment>): Promise<TranscriptSegment> {
+    try {
+      const res = await authFetch(`/api/v1/transcriptions/segments/${segmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update),
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const idx = MOCK_SEGMENTS.findIndex((s) => s.id === segmentId);
+    if (idx !== -1) {
+      MOCK_SEGMENTS[idx] = { ...MOCK_SEGMENTS[idx], ...update };
+      return MOCK_SEGMENTS[idx];
+    }
+    return update as TranscriptSegment;
   },
 
   async getBlocks(hearingId: string): Promise<TranscriptBlock[]> {
@@ -948,83 +1155,114 @@ export const api = {
       if (search) params.append('search', search);
       if (status && status !== 'ALL') params.append('status', status);
       const url = `/api/v1/cases${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await authFetch(url);
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    return [
-      {
-        id: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
-        legalBranch: 'CIVIL',
-        subject: 'Indenização por Danos Morais e Rescisão Contratual',
-        plaintiffName: 'Carlos Eduardo Mendes',
-        defendantName: 'Construtora e Incorporadora Metrópole S.A.',
-        judgeName: 'Dra. Camila Vasconcelos',
-        prosecutorName: 'Dr. Fernando Meirelles',
-        status: 'EM_ANDAMENTO',
-        documents: [
-          {
-            id: 'doc-001',
-            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-            title: 'Petição Inicial com Pedido Liminar de Urgência',
-            documentType: 'PETICAO_INICIAL',
-            fileName: 'peticao_inicial_0014238.pdf',
-            fileSize: 1420500,
-            mimeType: 'application/pdf',
-            pageCount: 18,
-            ocrStatus: 'COMPLETED',
-            uploadedBy: 'Dra. Luciana Ferreira',
-            uploadedAt: '2024-03-15T10:00:00Z'
-          },
-          {
-            id: 'doc-002',
-            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-            title: 'Contestação com Documentos e Preliminares',
-            documentType: 'CONTESTACAO',
-            fileName: 'contestacao_metropole_sa.pdf',
-            fileSize: 3100200,
-            mimeType: 'application/pdf',
-            pageCount: 34,
-            ocrStatus: 'COMPLETED',
-            uploadedBy: 'Dr. Roberto Silva',
-            uploadedAt: '2024-04-10T14:30:00Z'
-          },
-          {
-            id: 'doc-003',
-            caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-            title: 'Laudo Pericial de Engenharia Civil e Segurança da Obra',
-            documentType: 'LAUDO_TECNICO',
-            fileName: 'laudo_pericial_engenharia.pdf',
-            fileSize: 5420100,
-            mimeType: 'application/pdf',
-            pageCount: 42,
-            ocrStatus: 'COMPLETED',
-            uploadedBy: 'Perito Eng. Marcelo Rossi',
-            uploadedAt: '2024-06-20T09:15:00Z'
-          }
-        ],
-        createdAt: '2024-03-15T10:00:00Z',
-        updatedAt: '2026-08-06T14:22:00Z'
+      const res = await authFetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
       }
-    ];
+    } catch (_) {}
+    let results = [...MOCK_CASES];
+    if (status && status !== 'ALL') {
+      results = results.filter((c) => c.status === status);
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      results = results.filter(
+        (c) =>
+          (c.caseNumber && c.caseNumber.toLowerCase().includes(q)) ||
+          (c.subject && c.subject.toLowerCase().includes(q)) ||
+          (c.plaintiffName && c.plaintiffName.toLowerCase().includes(q)) ||
+          (c.defendantName && c.defendantName.toLowerCase().includes(q)) ||
+          (c.courtJurisdiction && c.courtJurisdiction.toLowerCase().includes(q))
+      );
+    }
+    return results;
   },
 
   async getCase(id: string): Promise<any> {
     try {
-      const res = await authFetch(`/api/v1/cases/${id}`);
+      const res = await authFetch(`/api/v1/cases/${id}`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
-    const cases = await this.listCases();
-    return cases.find((c: any) => c.id === id) || cases[0];
+    return MOCK_CASES.find((c: any) => c.id === id) || MOCK_CASES[0];
+  },
+
+  async createCase(caseData: any): Promise<any> {
+    const newId = caseData.id || generateUuid();
+    try {
+      const res = await authFetch('/api/v1/cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...caseData, id: newId })
+      });
+      if (res.ok) {
+        const created = await res.json();
+        MOCK_CASES.unshift(created);
+        return created;
+      }
+    } catch (_) {}
+    const created = {
+      id: newId,
+      caseNumber: caseData.caseNumber,
+      courtJurisdiction: caseData.courtJurisdiction || '2ª Vara Cível da Comarca de São Paulo',
+      legalBranch: caseData.legalBranch || 'CIVIL',
+      subject: caseData.subject || 'Procedimento Comum Cível',
+      plaintiffName: caseData.plaintiffName || 'Não informado',
+      defendantName: caseData.defendantName || 'Não informado',
+      judgeName: caseData.judgeName || 'Dra. Camila Vasconcelos',
+      status: caseData.status || 'EM_ANDAMENTO',
+      documents: caseData.documents || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    MOCK_CASES.unshift(created);
+    return created;
+  },
+
+  async updateCase(id: string, update: any): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const idx = MOCK_CASES.findIndex((c) => c.id === id);
+        if (idx !== -1) MOCK_CASES[idx] = updated;
+        return updated;
+      }
+    } catch (_) {}
+    const idx = MOCK_CASES.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      MOCK_CASES[idx] = { ...MOCK_CASES[idx], ...update, updatedAt: new Date().toISOString() };
+      return MOCK_CASES[idx];
+    }
+    return update;
+  },
+
+  async deleteCase(id: string): Promise<boolean> {
+    try {
+      const res = await authFetch(`/api/v1/cases/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const idx = MOCK_CASES.findIndex((c) => c.id === id);
+        if (idx !== -1) MOCK_CASES.splice(idx, 1);
+        return true;
+      }
+    } catch (_) {}
+    const idx = MOCK_CASES.findIndex((c) => c.id === id);
+    if (idx !== -1) MOCK_CASES.splice(idx, 1);
+    return true;
   },
 
   async getCaseDocuments(caseId: string): Promise<any[]> {
     try {
-      const res = await authFetch(`/api/v1/cases/${caseId}/documents`);
+      const res = await authFetch(`/api/v1/cases/${caseId}/documents`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
-    const c = await this.getCase(caseId);
+    const c = MOCK_CASES.find((item) => item.id === caseId) || MOCK_CASES[0];
     return c?.documents || [];
   },
 
@@ -1035,15 +1273,27 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(document)
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const created = await res.json();
+        const target = MOCK_CASES.find((c) => c.id === caseId);
+        if (target) {
+          target.documents = [...(target.documents || []), created];
+        }
+        return created;
+      }
     } catch (_) {}
-    return {
+    const created = {
       ...document,
-      id: `doc-${Date.now().toString(36)}`,
+      id: generateUuid(),
       caseId,
       uploadedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    const target = MOCK_CASES.find((c) => c.id === caseId);
+    if (target) {
+      target.documents = [...(target.documents || []), created];
+    }
+    return created;
   },
 
   async deleteCaseDocument(caseId: string, documentId: string): Promise<boolean> {
@@ -1051,8 +1301,18 @@ export const api = {
       const res = await authFetch(`/api/v1/cases/${caseId}/documents/${documentId}`, {
         method: 'DELETE'
       });
-      if (res.ok) return true;
+      if (res.ok) {
+        const target = MOCK_CASES.find((c) => c.id === caseId);
+        if (target && target.documents) {
+          target.documents = target.documents.filter((d: any) => d.id !== documentId);
+        }
+        return true;
+      }
     } catch (_) {}
+    const target = MOCK_CASES.find((c) => c.id === caseId);
+    if (target && target.documents) {
+      target.documents = target.documents.filter((d: any) => d.id !== documentId);
+    }
     return true;
   },
 
@@ -1486,21 +1746,22 @@ const MOCK_NOTIFICATIONS: JudicialNotification[] = [
 
 export async function getJudicialNotifications(unreadOnly = false): Promise<JudicialNotification[]> {
   try {
-    const res = await fetch(`http://localhost:8087/api/v1/notifications?unreadOnly=${unreadOnly}`, {
+    const res = await authFetch(`/api/v1/notifications?unreadOnly=${unreadOnly}`, {
       cache: 'no-store'
     });
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
     }
   } catch (e) {
     // fallback to mock
   }
-  return unreadOnly ? MOCK_NOTIFICATIONS.filter(n => !n.read) : MOCK_NOTIFICATIONS;
+  return unreadOnly ? MOCK_NOTIFICATIONS.filter(n => !n.read) : [...MOCK_NOTIFICATIONS];
 }
 
 export async function getUnreadNotificationCount(): Promise<number> {
   try {
-    const res = await fetch('http://localhost:8087/api/v1/notifications/unread-count', {
+    const res = await authFetch('/api/v1/notifications/unread-count', {
       cache: 'no-store'
     });
     if (res.ok) {
@@ -1514,28 +1775,26 @@ export async function getUnreadNotificationCount(): Promise<number> {
 }
 
 export async function markNotificationAsRead(id: string): Promise<boolean> {
+  const n = MOCK_NOTIFICATIONS.find(item => item.id === id);
+  if (n) n.read = true;
   try {
-    const res = await fetch(`http://localhost:8087/api/v1/notifications/${id}/read`, {
+    const res = await authFetch(`/api/v1/notifications/${id}/read`, {
       method: 'PUT'
     });
-    return res.ok;
-  } catch (e) {
-    const n = MOCK_NOTIFICATIONS.find(item => item.id === id);
-    if (n) n.read = true;
-    return true;
-  }
+    if (res.ok) return true;
+  } catch (e) {}
+  return true;
 }
 
 export async function markAllNotificationsAsRead(): Promise<boolean> {
+  MOCK_NOTIFICATIONS.forEach(n => { n.read = true; });
   try {
-    const res = await fetch('http://localhost:8087/api/v1/notifications/read-all', {
+    const res = await authFetch('/api/v1/notifications/read-all', {
       method: 'PUT'
     });
-    return res.ok;
-  } catch (e) {
-    MOCK_NOTIFICATIONS.forEach(n => { n.read = true; });
-    return true;
-  }
+    if (res.ok) return true;
+  } catch (e) {}
+  return true;
 }
 
 const MOCK_NOTEBOOKS: Notebook[] = [
@@ -1608,7 +1867,7 @@ export async function listNotebooks(): Promise<Notebook[]> {
       if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch (e) {}
-  return MOCK_NOTEBOOKS;
+  return [...MOCK_NOTEBOOKS];
 }
 
 export async function getNotebook(id: string): Promise<Notebook | null> {
@@ -1632,10 +1891,16 @@ export async function createNotebook(data: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const created = await res.json();
+      const filtered = MOCK_NOTEBOOKS.filter(n => n.id !== created.id);
+      MOCK_NOTEBOOKS.length = 0;
+      MOCK_NOTEBOOKS.push(created, ...filtered);
+      return created;
+    }
   } catch (e) {}
   const created: Notebook = {
-    id: `nb-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    id: generateUuid(),
     title: data.title,
     description: data.description || '',
     caseNumber: data.caseNumber,
@@ -1651,6 +1916,20 @@ export async function createNotebook(data: {
   MOCK_NOTEBOOKS.length = 0;
   MOCK_NOTEBOOKS.push(created, ...filtered);
   return created;
+}
+
+export async function deleteNotebook(id: string): Promise<boolean> {
+  try {
+    const res = await authFetch(`/api/v1/notebooks/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      const idx = MOCK_NOTEBOOKS.findIndex((n) => n.id === id);
+      if (idx !== -1) MOCK_NOTEBOOKS.splice(idx, 1);
+      return true;
+    }
+  } catch (e) {}
+  const idx = MOCK_NOTEBOOKS.findIndex((n) => n.id === id);
+  if (idx !== -1) MOCK_NOTEBOOKS.splice(idx, 1);
+  return true;
 }
 
 export async function toggleNotebookSource(
@@ -1688,7 +1967,7 @@ export async function addNotebookSource(
     if (res.ok) return await res.json();
   } catch (e) {}
   const s: NotebookSource = {
-    id: `src-${Date.now()}`,
+    id: generateUuid(),
     notebookId,
     sourceType: source.sourceType || 'CUSTOM_TEXT',
     title: source.title || 'Nova Fonte',
@@ -1735,7 +2014,7 @@ export async function chatNotebook(
   } catch (e) {}
 
   return {
-    messageId: `msg-${Date.now()}`,
+    messageId: generateUuid(),
     answer:
       'Com base no exame das fontes ativas do caderno:\n\n1. **Frustração da Conciliação (Bloco 1)**: Durante a audiência de instrução, a ré ofertou restituição de 80% dos valores pagos com retenção de 20%, o que foi recusado pela autora.\n2. **Adequação Jurisprudencial (Súmula 543/STJ)**: Como a prova oral aponta culpa exclusiva da construtora pelo atraso na obra após 180 dias de tolerância, a retenção de 20% pretendida é indevida, incidindo o dever de devolução de 100% integral e imediata.',
     activeSourceTitles: [
@@ -1767,7 +2046,7 @@ export async function createNotebookNote(
     if (res.ok) return await res.json();
   } catch (e) {}
   const note: NotebookNote = {
-    id: `note-${Date.now()}`,
+    id: generateUuid(),
     notebookId,
     title: data.title,
     content: data.content,
@@ -1779,4 +2058,5 @@ export async function createNotebookNote(
   if (nb) nb.notes.unshift(note);
   return note;
 }
+
 

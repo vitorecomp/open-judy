@@ -11,6 +11,8 @@ from config import (
     EXCHANGE_NAME,
     QUEUE_NAME,
     ROUTING_KEY,
+    COMPLETED_QUEUE_NAME,
+    COMPLETED_ROUTING_KEY,
     DLQ_EXCHANGE,
     DLQ_QUEUE_NAME,
     DLQ_ROUTING_KEY,
@@ -49,7 +51,7 @@ def connect_and_consume():
     channel.queue_declare(queue=DLQ_QUEUE_NAME, durable=True)
     channel.queue_bind(exchange=DLQ_EXCHANGE, queue=DLQ_QUEUE_NAME, routing_key=DLQ_ROUTING_KEY)
 
-    # 2. Setup Main Exchange and Queue
+    # 2. Setup Main Exchange, Jobs Queue, and Completed Events Queue
     channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type="direct", durable=True)
     channel.queue_declare(
         queue=QUEUE_NAME,
@@ -60,6 +62,9 @@ def connect_and_consume():
         },
     )
     channel.queue_bind(exchange=EXCHANGE_NAME, queue=QUEUE_NAME, routing_key=ROUTING_KEY)
+
+    channel.queue_declare(queue=COMPLETED_QUEUE_NAME, durable=True)
+    channel.queue_bind(exchange=EXCHANGE_NAME, queue=COMPLETED_QUEUE_NAME, routing_key=COMPLETED_ROUTING_KEY)
 
     # 3. Configure Fair Dispatching (Prefetch 1)
     channel.basic_qos(prefetch_count=1)

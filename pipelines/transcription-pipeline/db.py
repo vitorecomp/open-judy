@@ -55,28 +55,65 @@ def get_retry_backoff_seconds() -> int:
     except ValueError:
         return DEFAULT_RETRY_BACKOFF_SECONDS
 
+VALID_PARTICIPANT_ROLES = {
+    "MAGISTRADO",
+    "PROMOTOR",
+    "DEFENSOR_PUBLICO",
+    "ADVOGADO_AUTOR",
+    "ADVOGADO_REU",
+    "AUTOR",
+    "REU",
+    "TESTEMUNHA",
+    "PERITO",
+    "ESCRIVAO",
+    "OUTRO",
+}
+
+def _normalize_speaker_role(role: str) -> str:
+    """Ensure speaker_role matches Java ParticipantRole enum values."""
+    if not role:
+        return "OUTRO"
+    normalized = str(role).strip().upper()
+    return normalized if normalized in VALID_PARTICIPANT_ROLES else "OUTRO"
+
+def _format_ms(ms: int) -> str:
+    total_sec = max(0, int(ms) // 1000)
+    minutes = total_sec // 60
+    seconds = total_sec % 60
+    return f"{minutes:02d}:{seconds:02d}"
+
 def ensure_hearing_exists(hearing_id: str, case_number: str = "0000000-00.0000.0.00.0000"):
     """Ensure parent case and hearing exist in database before transcript attachment."""
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM tb_hearings WHERE id = %s LIMIT 1", (hearing_id,))
             if not cur.fetchone():
-                case_id = str(uuid.uuid4())
-                cur.execute(
-                    """
-                    INSERT INTO tb_cases (id, case_number, court_jurisdiction, legal_branch, subject, plaintiff_name, defendant_name, judge_name)
-                    VALUES (%s, %s, 'Vara Cível Central', 'CIVIL', 'Ação Ordinária', 'Parte Autora', 'Parte Ré', 'Dra. Juíza de Direito')
-                    ON CONFLICT DO NOTHING
-                    """,
-                    (case_id, case_number)
-                )
+                cur.execute("SELECT id FROM tb_cases WHERE case_number = %s LIMIT 1", (case_number,))
+                case_row = cur.fetchone()
+                if case_row:
+                    case_id = str(case_row[0])
+                else:
+                    case_id = str(uuid.uuid4())
+                    cur.execute(
+                        """
+                        INSERT INTO tb_cases (id, case_number, court_jurisdiction, legal_branch, subject, plaintiff_name, defendant_name, judge_name)
+                        VALUES (%s, %s, 'Vara Cível Central', 'CIVIL', 'Ação Ordinária', 'Parte Autora', 'Parte Ré', 'Dra. Juíza de Direito')
+                        ON CONFLICT (case_number) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+                        RETURNING id
+                        """,
+                        (case_id, case_number),
+                    )
+                    inserted_case = cur.fetchone()
+                    if inserted_case:
+                        case_id = str(inserted_case[0])
+
                 cur.execute(
                     """
                     INSERT INTO tb_hearings (id, case_id, hearing_type, scheduled_date_time, status)
                     VALUES (%s, %s, 'INSTRUCAO_E_JULGAMENTO', CURRENT_TIMESTAMP, 'PROCESSING_TRANSCRIPTION')
                     ON CONFLICT (id) DO NOTHING
                     """,
-                    (hearing_id, case_id)
+                    (hearing_id, case_id),
                 )
         conn.commit()
 
@@ -103,7 +140,23 @@ def save_transcript_and_segments(hearing_id: str, transcript_data: dict) -> str:
     total_segments = len(segments)
     engine_used = transcript_data.get("engineUsed", "GEMINI-2.0-FLASH-PIPELINE")
 
-    blocks = transcript_data.get("blocks", [])
+    blocks = list(transcript_data.get("blocks") or [])
+    if not blocks and segments:
+        start_ms = int(segments[0].get("startTimeMs", 0))
+        end_ms = int(segments[-1].get("endTimeMs", 0))
+        blocks = [
+            {
+                "blockIndex": 1,
+                "title": "Bloco 1: Transcrição da Audiência",
+                "startTimeMs": start_ms,
+                "endTimeMs": end_ms,
+                "startTimeFormatted": _format_ms(start_ms),
+                "endTimeFormatted": _format_ms(end_ms),
+                "estimatedTokens": 256000,
+                "segmentCount": len(segments),
+                "summary": "Bloco consolidado da transcrição multimodal da audiência.",
+            }
+        ]
 
     with get_db_connection() as conn:
         with conn.cursor() as cur:
@@ -147,6 +200,7 @@ def save_transcript_and_segments(hearing_id: str, transcript_data: dict) -> str:
                         estimated_tokens = EXCLUDED.estimated_tokens,
                         segment_count = EXCLUDED.segment_count,
                         summary = EXCLUDED.summary
+                    RETURNING id
                     """,
                     (
                         blk_id,
@@ -159,9 +213,12 @@ def save_transcript_and_segments(hearing_id: str, transcript_data: dict) -> str:
                         blk.get("endTimeFormatted", "00:00"),
                         int(blk.get("estimatedTokens", 256000)),
                         int(blk.get("segmentCount", 0)),
-                        blk.get("summary", "")
-                    )
+                        blk.get("summary", ""),
+                    ),
                 )
+                blk_row = cur.fetchone()
+                if blk_row:
+                    block_id_map[b_idx] = str(blk_row[0])
 
             # 3. Clear existing segments if re-processing
             cur.execute("DELETE FROM tb_transcript_segments WHERE transcript_id = %s", (transcript_id,))
@@ -173,23 +230,23 @@ def save_transcript_and_segments(hearing_id: str, transcript_data: dict) -> str:
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             segment_tuples = []
-            for seg in segments:
+            for idx, seg in enumerate(segments, start=1):
                 b_idx = int(seg.get("blockIndex", 1))
                 b_id = block_id_map.get(b_idx)
                 segment_tuples.append((
                     str(uuid.uuid4()),
                     transcript_id,
-                    seg.get("segmentIndex", 1),
-                    seg.get("startTimeMs", 0),
-                    seg.get("endTimeMs", 0),
-                    seg.get("speakerRole", "OUTRO"),
+                    int(seg.get("segmentIndex", idx)),
+                    int(seg.get("startTimeMs", 0)),
+                    int(seg.get("endTimeMs", 0)),
+                    _normalize_speaker_role(seg.get("speakerRole", "OUTRO")),
                     seg.get("speakerName", "Interlocutor"),
                     seg.get("text", ""),
                     float(seg.get("confidence", 0.95)),
                     bool(seg.get("isKeyStatement", False)),
                     seg.get("topicTag", "Geral"),
                     b_id,
-                    b_idx
+                    b_idx,
                 ))
 
             if segment_tuples:

@@ -67,7 +67,6 @@
         "*"
       ],
       "attributes": {
-        "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:3000/*##http://127.0.0.1:3000/*"
       },
       "defaultClientScopes": [
@@ -75,12 +74,74 @@
         "profile",
         "roles",
         "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "courtJurisdiction-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "courtJurisdiction",
+            "claim.name": "courtJurisdiction",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "false"
+          }
+        },
+        {
+          "name": "documentNumber-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "documentNumber",
+            "claim.name": "documentNumber",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "false"
+          }
+        },
+        {
+          "name": "title-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "title",
+            "claim.name": "title",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "false"
+          }
+        },
+        {
+          "name": "avatarUrl-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "avatarUrl",
+            "claim.name": "avatarUrl",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "false"
+          }
+        }
       ]
     },
     {
       "clientId": "open-judy-backend",
       "name": "Open Judy Microservices Backend",
-      "description": "Quarkus Backend Services (user-service, transcription-service, config-service)",
+      "description": "Quarkus Backend Services (case-service, transcription-service, user-service, config-service, notification-service, notebook-service, agent-garden, indexer-service)",
       "enabled": true,
       "publicClient": false,
       "bearerOnly": true,

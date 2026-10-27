@@ -30,6 +30,11 @@ export default function AgentGardenHubPage() {
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q) setSearchTerm(q);
+    }
     api.listEnterpriseAgents().then(setAgents);
   }, []);
 

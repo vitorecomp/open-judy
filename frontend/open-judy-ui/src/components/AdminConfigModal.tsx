@@ -313,30 +313,32 @@ export default function AdminConfigModal({
 
   if (isPage && !isAdmin) {
     return (
-      <div className="max-w-2xl mx-auto my-12 p-8 rounded-2xl bg-dark-card border border-dark-border text-center space-y-4 shadow-xl">
-        <div className="w-12 h-12 rounded-2xl status-badge-danger border flex items-center justify-center mx-auto">
-          <Lock className="w-6 h-6 text-rose-400" />
-        </div>
-        <h2 className="text-base font-bold text-white">
-          Acesso Restrito — Configurações do Sistema (Admin)
-        </h2>
-        <p className="text-xs text-dark-muted max-w-[60ch] mx-auto leading-relaxed">
-          Esta página gerencia templates de prompts forenses (<code>tb_prompt_templates</code>), modelos LLM do Vertex AI e parâmetros globais do cluster (<code>config-service :8086</code>). Seu perfil atual (<strong>{role}</strong>) não possui permissão de administrador.
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => switchProfile('ADMIN')}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors min-h-[38px]"
-          >
-            Alternar para Perfil Admin TI (CNJ)
-          </button>
-          <a
-            href="/"
-            className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-semibold text-slate-200 hover:text-white transition-colors min-h-[38px] inline-flex items-center"
-          >
-            Voltar ao Dashboard
-          </a>
+      <div className="w-full max-w-none flex-1 flex items-center justify-center min-h-[70vh] p-6">
+        <div className="w-full p-8 rounded-2xl bg-dark-card border border-dark-border text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 rounded-2xl status-badge-danger border flex items-center justify-center">
+            <Lock className="w-6 h-6 text-rose-400" />
+          </div>
+          <h2 className="text-base font-bold text-white">
+            Acesso Restrito — Configurações do Sistema (Admin)
+          </h2>
+          <p className="text-xs text-dark-muted leading-relaxed">
+            Esta página gerencia templates de prompts forenses (<code>tb_prompt_templates</code>), modelos LLM do Vertex AI e parâmetros globais do cluster (<code>config-service :8086</code>). Seu perfil atual (<strong>{role}</strong>) não possui permissão de administrador.
+          </p>
+          <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => switchProfile('ADMIN')}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors min-h-[38px]"
+            >
+              Alternar para Perfil Admin TI (CNJ)
+            </button>
+            <a
+              href="/"
+              className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-semibold text-slate-200 hover:text-white transition-colors min-h-[38px] inline-flex items-center"
+            >
+              Voltar ao Dashboard
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -356,36 +358,53 @@ export default function AdminConfigModal({
     <div
       className={
         isPage
-          ? 'w-full space-y-4'
+          ? 'w-full max-w-none flex-1 flex flex-col space-y-6 min-h-[calc(100vh-6rem)]'
           : 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in'
       }
     >
       <div
         className={
           isPage
-            ? 'bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-xl flex flex-col min-h-[calc(100vh-8.5rem)]'
-            : 'bg-dark-card border border-dark-border rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col h-[90vh] max-h-[850px] animate-in zoom-in-95 duration-150'
+            ? 'w-full max-w-none flex-1 flex flex-col space-y-6'
+            : 'bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col h-[90vh] animate-in zoom-in-95 duration-150'
         }
       >
-        {/* Header */}
-        <div className="p-4 sm:px-6 border-b border-dark-border bg-dark-bg/80 flex items-center justify-between gap-3 flex-wrap">
+        {/* Full-Width Page Header */}
+        <div
+          className={
+            isPage
+              ? 'w-full flex flex-col lg:flex-row lg:items-center justify-between gap-4'
+              : 'p-4 sm:px-6 border-b border-dark-border bg-dark-bg/80 flex items-center justify-between gap-3 flex-wrap'
+          }
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
+              {isPage && (
+                <div className="flex items-center gap-2 text-xs text-dark-muted mb-1">
+                  <a href="/" className="hover:text-white transition-colors">
+                    Dashboard
+                  </a>
+                  <span>/</span>
+                  <span className="text-emerald-400 font-semibold">
+                    Administração • Configurações do Sistema
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base font-bold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                   Painel de Configurações do Sistema
-                </h2>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
+                </h1>
+                <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
                   config-service :8086
                 </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full status-badge-success border">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full status-badge-success border">
                   ADMIN MASTER
                 </span>
               </div>
-              <p className="text-xs text-dark-muted">
+              <p className="text-xs text-dark-muted mt-0.5">
                 Central de gerenciamento para Prompts de IA, Modelos LLM/Embeddings, Dashboards Judiciais e Tipos de Notificações.
               </p>
             </div>
@@ -396,7 +415,7 @@ export default function AdminConfigModal({
               type="button"
               onClick={loadAllConfigs}
               disabled={isLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-dark-muted hover:text-white transition-colors disabled:opacity-50 min-h-[36px]"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-dark-card hover:bg-dark-pill border border-dark-border text-xs font-semibold text-dark-muted hover:text-white transition-colors disabled:opacity-50 min-h-[38px]"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Recarregar dados</span>
@@ -415,79 +434,85 @@ export default function AdminConfigModal({
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-dark-border bg-dark-bg/40 px-4 sm:px-6 pt-2 gap-2 overflow-x-auto no-scrollbar">
+        {/* Full-Width Tab Navigation Bar */}
+        <div
+          className={
+            isPage
+              ? 'w-full flex items-center gap-2 flex-wrap bg-dark-card border border-dark-border rounded-2xl p-2 shadow-lg'
+              : 'flex border-b border-dark-border bg-dark-bg/40 px-4 sm:px-6 pt-2 gap-2 overflow-x-auto no-scrollbar'
+          }
+        >
           <button
             onClick={() => setActiveTab('prompts')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'prompts'
-                ? 'border-crimson text-white bg-dark-card shadow-sm'
-                : 'border-transparent text-dark-muted hover:text-slate-200'
+                ? 'bg-crimson text-white shadow-sm'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
-            <FileCode2 className="w-4 h-4 text-crimson" />
+            <FileCode2 className="w-4 h-4" />
             <span>Prompts do Sistema</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {prompts.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('models')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'models'
-                ? 'border-sky-500 text-white bg-dark-card shadow-sm'
-                : 'border-transparent text-dark-muted hover:text-slate-200'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
-            <Cpu className="w-4 h-4 text-sky-400" />
+            <Cpu className="w-4 h-4" />
             <span>Modelos de IA & LLM</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {models.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('dashboards')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'dashboards'
-                ? 'border-amber-500 text-white bg-dark-card shadow-sm'
-                : 'border-transparent text-dark-muted hover:text-slate-200'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
-            <LayoutGrid className="w-4 h-4 text-amber-400" />
+            <LayoutGrid className="w-4 h-4" />
             <span>Tipos de Dashboard</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {dashboards.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('notifications')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'notifications'
-                ? 'border-purple-500 text-white bg-dark-card shadow-sm'
-                : 'border-transparent text-dark-muted hover:text-slate-200'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
-            <BellRing className="w-4 h-4 text-purple-400" />
+            <BellRing className="w-4 h-4" />
             <span>Tipos de Notificações</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {notifications.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'settings'
-                ? 'border-emerald-500 text-white bg-dark-card shadow-sm'
-                : 'border-transparent text-dark-muted hover:text-slate-200'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4" />
             <span>Parâmetros Globais</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {settings.length}
             </span>
           </button>
@@ -495,28 +520,28 @@ export default function AdminConfigModal({
 
         {/* Feedback Alert */}
         {successMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl status-badge-success border text-xs flex items-center gap-2 animate-in fade-in">
+          <div className="w-full p-3.5 rounded-2xl status-badge-success border text-xs flex items-center gap-2 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Body Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className={isPage ? 'w-full max-w-none flex-1 flex flex-col' : 'flex-1 overflow-y-auto p-4 sm:p-6'}>
           {/* ================================================================= */}
           {/* TAB 1: PROMPTS */}
           {/* ================================================================= */}
           {activeTab === 'prompts' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-dark-bg/60 p-3 rounded-xl border border-dark-border">
-                <div className="relative flex-1 w-full sm:max-w-md">
+            <div className="w-full max-w-none space-y-4">
+              <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-dark-card p-3.5 rounded-2xl border border-dark-border shadow-lg">
+                <div className="relative flex-1 w-full">
                   <Search className="w-3.5 h-3.5 text-dark-muted absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Pesquisar por código, nome ou descrição do prompt..."
                     value={promptSearch}
                     onChange={(e) => setPromptSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson"
+                    className="w-full pl-9 pr-3 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson"
                   />
                 </div>
 
@@ -525,7 +550,7 @@ export default function AdminConfigModal({
                     value={selectedPromptCategory}
                     onChange={(e) => setSelectedPromptCategory(e.target.value)}
                     aria-label="Filtrar prompts por categoria"
-                    className="bg-dark-input border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-crimson"
+                    className="bg-dark-input border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-crimson"
                   >
                     <option value="ALL">Todas as Categorias</option>
                     <option value="DOCUMENT_GENERATION">Geração de Atas (Document)</option>
@@ -538,7 +563,7 @@ export default function AdminConfigModal({
               </div>
 
               {/* Prompts Cards Grid */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {filteredPrompts.map((p) => (
                   <div
                     key={p.id}
@@ -715,7 +740,7 @@ export default function AdminConfigModal({
           {/* TAB 3: DASHBOARD TYPES */}
           {/* ================================================================= */}
           {activeTab === 'dashboards' && (
-            <div className="space-y-4">
+            <div className="w-full max-w-none space-y-4">
               <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-800/40 flex items-center gap-3 text-xs text-amber-200">
                 <LayoutGrid className="w-5 h-5 text-amber-400 shrink-0" />
                 <span>
@@ -723,11 +748,11 @@ export default function AdminConfigModal({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {dashboards.map((d) => (
                   <div
                     key={d.id}
-                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col gap-3"
+                    className="p-4 rounded-2xl bg-dark-card border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col justify-between gap-3 shadow-lg"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -779,7 +804,7 @@ export default function AdminConfigModal({
           {/* TAB 4: NOTIFICATIONS */}
           {/* ================================================================= */}
           {activeTab === 'notifications' && (
-            <div className="space-y-4">
+            <div className="w-full max-w-none space-y-4">
               <div className="p-3.5 rounded-xl bg-purple-950/30 border border-purple-800/40 flex items-center gap-3 text-xs text-purple-200">
                 <BellRing className="w-5 h-5 text-purple-400 shrink-0" />
                 <span>
@@ -787,11 +812,11 @@ export default function AdminConfigModal({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col gap-3"
+                    className="p-4 rounded-2xl bg-dark-card border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col justify-between gap-3 shadow-lg"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -1087,11 +1112,11 @@ export default function AdminConfigModal({
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {settings.map((s) => (
                   <div
                     key={s.key}
-                    className="p-3.5 rounded-xl bg-dark-input/60 border border-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    className="p-4 rounded-2xl bg-dark-card border border-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -1153,8 +1178,8 @@ export default function AdminConfigModal({
       {/* SUB-MODAL 1: EDIT PROMPT TEMPLATE */}
       {/* ================================================================= */}
       {editingPrompt && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileCode2 className="w-5 h-5 text-crimson" />
@@ -1279,8 +1304,8 @@ export default function AdminConfigModal({
       {/* SUB-MODAL 2: TEST / RENDER PROMPT PREVIEW */}
       {/* ================================================================= */}
       {testingPrompt && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Play className="w-5 h-5 text-emerald-400" />
@@ -1361,8 +1386,8 @@ export default function AdminConfigModal({
       {/* SUB-MODAL 3: EDIT AI MODEL */}
       {/* ================================================================= */}
       {editingModel && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Cpu className="w-5 h-5 text-sky-400" />
@@ -1449,8 +1474,8 @@ export default function AdminConfigModal({
       {/* SUB-MODAL 4: EDIT DASHBOARD */}
       {/* ================================================================= */}
       {editingDashboard && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <LayoutGrid className="w-5 h-5 text-amber-400" />
@@ -1534,8 +1559,8 @@ export default function AdminConfigModal({
       {/* SUB-MODAL 5: EDIT NOTIFICATION */}
       {/* ================================================================= */}
       {editingNotification && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BellRing className="w-5 h-5 text-purple-400" />

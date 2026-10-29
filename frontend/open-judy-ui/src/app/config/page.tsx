@@ -15,12 +15,14 @@ function SystemConfigPageContent() {
   const promptCode = searchParams?.get('prompt') || undefined;
 
   return (
-    <AdminConfigModal
-      mode="page"
-      isOpen={true}
-      initialTab={validTab}
-      initialPromptCode={promptCode}
-    />
+    <div className="w-full max-w-none flex-1 flex flex-col min-h-[calc(100vh-5rem)] pb-6 animate-fade-in">
+      <AdminConfigModal
+        mode="page"
+        isOpen={true}
+        initialTab={validTab}
+        initialPromptCode={promptCode}
+      />
+    </div>
   );
 }
 
@@ -28,7 +30,7 @@ export default function SystemConfigPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex-1 flex items-center justify-center p-12 text-dark-muted text-xs">
+        <div className="w-full max-w-none flex-1 flex items-center justify-center p-12 text-dark-muted text-xs">
           Carregando configurações do sistema...
         </div>
       }

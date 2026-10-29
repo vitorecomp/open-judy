@@ -31,17 +31,20 @@ import {
 } from 'lucide-react';
 
 interface UserPreferencesModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   initialTab?: 'ui' | 'audio' | 'ai' | 'notifications' | 'system';
+  mode?: 'modal' | 'page';
 }
 
 export default function UserPreferencesModal({
-  isOpen,
-  onClose,
+  isOpen = true,
+  onClose = () => {},
   initialTab = 'ui',
+  mode = 'modal',
 }: UserPreferencesModalProps) {
   const {
+    user,
     config,
     updateConfig,
     resetConfig,
@@ -49,6 +52,8 @@ export default function UserPreferencesModal({
     updateSystemConfig,
     role,
     permissions,
+    availablePresets,
+    switchProfile,
     preferencesInitialTab,
     openAdminConfig,
     accentColor,
@@ -56,6 +61,7 @@ export default function UserPreferencesModal({
     setIsKeycloakModalOpen,
     keycloakStatus
   } = useAuth();
+  const isPage = mode === 'page';
 
   const [activeTab, setActiveTab] = useState<'ui' | 'audio' | 'ai' | 'notifications' | 'system'>('ui');
   const [formData, setFormData] = useState<UserConfiguration>(config);
@@ -68,20 +74,20 @@ export default function UserPreferencesModal({
   const isAdmin = role === 'ADMIN' || permissions.canEditSystemConfig;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !isPage) return;
     setFormData(config);
     setSysFormData(systemConfig);
     const color = config.accentColor || systemConfig.accentColor || accentColor || '#e63946';
     setSelectedAccent(color);
     setCustomHex(color);
-    if (preferencesInitialTab) {
-      setActiveTab(preferencesInitialTab);
-    } else if (initialTab) {
+    if (initialTab) {
       setActiveTab(initialTab);
+    } else if (preferencesInitialTab) {
+      setActiveTab(preferencesInitialTab);
     }
-  }, [isOpen, preferencesInitialTab, initialTab]);
+  }, [isOpen, isPage, preferencesInitialTab, initialTab, config, systemConfig, accentColor]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !isPage) return null;
 
   const handleChangeTheme = (theme: 'DARK' | 'LIGHT' | 'SYSTEM') => {
     setFormData((prev) => ({ ...prev, theme }));
@@ -118,8 +124,8 @@ export default function UserPreferencesModal({
       setSavedSuccess(true);
       setTimeout(() => {
         setSavedSuccess(false);
-        onClose();
-      }, 800);
+        if (!isPage) onClose();
+      }, 1500);
     } catch (err) {
       console.error('Falha ao salvar configurações:', err);
     } finally {
@@ -135,8 +141,8 @@ export default function UserPreferencesModal({
         setSavedSuccess(true);
         setTimeout(() => {
           setSavedSuccess(false);
-          onClose();
-        }, 800);
+          if (!isPage) onClose();
+        }, 1500);
       } finally {
         setIsSaving(false);
       }
@@ -144,26 +150,38 @@ export default function UserPreferencesModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
-        {/* Modal Header */}
-        <div className="p-4 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between">
+    <div
+      className={
+        isPage
+          ? 'w-full space-y-4'
+          : 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in'
+      }
+    >
+      <div
+        className={
+          isPage
+            ? 'bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-xl flex flex-col'
+            : 'bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150'
+        }
+      >
+        {/* Header */}
+        <div className="p-4 sm:px-6 border-b border-dark-border bg-dark-bg/60 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-crimson/10 border border-crimson/30 text-crimson flex items-center justify-center">
               {activeTab === 'system' ? <Server className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
                 <span>
                   {activeTab === 'system'
                     ? 'Configurações Globais do Sistema Open Judy'
                     : 'Configurações & Preferências do Usuário'}
                 </span>
-                <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-dark-pill text-dark-muted border border-dark-border">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-dark-pill text-dark-muted border border-dark-border">
                   user-service
                 </span>
                 {isAdmin && activeTab === 'system' && (
-                  <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full status-badge-success border">
                     Admin Master
                   </span>
                 )}
@@ -171,7 +189,7 @@ export default function UserPreferencesModal({
               <p className="text-xs text-dark-muted">
                 {activeTab === 'system'
                   ? 'Gerencie parâmetros de infraestrutura, modelos de IA Gemini, AlloyDB e retenção zero-trust'
-                  : 'Personalize tema visual, reprodução de áudio e automações judiciais'}
+                  : 'Personalize perfil RBAC, tema visual, reprodução de áudio e automações judiciais'}
               </p>
             </div>
           </div>
@@ -181,7 +199,7 @@ export default function UserPreferencesModal({
               <button
                 type="button"
                 onClick={() => {
-                  onClose();
+                  if (!isPage) onClose();
                   setIsKeycloakModalOpen(true);
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-crimson/15 hover:bg-crimson/25 border border-crimson/40 text-xs font-bold text-white transition-colors min-h-[36px]"
@@ -189,20 +207,23 @@ export default function UserPreferencesModal({
               >
                 <KeyRound className="w-3.5 h-3.5 text-crimson shrink-0" />
                 <span>Keycloak IAM (OIDC)</span>
-                <span className="px-1.5 py-0.5 rounded text-[11px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="px-1.5 py-0.5 rounded text-xs font-bold status-badge-success border">
                   Admin
                 </span>
               </button>
             )}
 
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-              title="Fechar"
-              aria-label="Fechar preferências do usuário"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {!isPage && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                title="Fechar"
+                aria-label="Fechar preferências do usuário"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -280,6 +301,41 @@ export default function UserPreferencesModal({
           {/* TAB 1: UI & THEME */}
           {activeTab === 'ui' && (
             <div className="space-y-5">
+              {/* Active User Profile & Simulated RBAC Role Switcher */}
+              <div>
+                <label className="block text-xs font-bold text-slate-200 mb-2.5">
+                  Perfil &amp; Papel Simulado (RBAC Keycloak IAM)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {availablePresets.map((preset) => {
+                    const isActiveRole = role === preset.role;
+                    return (
+                      <button
+                        key={preset.username}
+                        type="button"
+                        onClick={() => switchProfile(preset.role)}
+                        className={`p-3.5 rounded-xl border text-left transition-colors flex flex-col justify-between gap-2 cursor-pointer ${
+                          isActiveRole
+                            ? 'bg-dark-input border-crimson shadow-md shadow-crimson/15 ring-1 ring-crimson'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold border ${preset.badgeColor}`}>
+                            {preset.role}
+                          </span>
+                          {isActiveRole && <Check className="w-4 h-4 text-crimson shrink-0" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white truncate">{preset.name}</p>
+                          <p className="text-xs text-dark-muted truncate">{preset.title}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Theme Selection */}
               <div>
                 <label className="block text-xs font-bold text-slate-200 mb-2.5">
@@ -750,26 +806,22 @@ export default function UserPreferencesModal({
                   <button
                     type="button"
                     onClick={() => {
-                      onClose();
+                      if (!isPage) onClose();
                       setIsKeycloakModalOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-xs font-bold text-white shadow-md transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-xs font-bold text-white shadow-md transition-colors shrink-0 min-h-[36px]"
                   >
                     <KeyRound className="w-3.5 h-3.5" />
                     <span>Keycloak IAM (OIDC)</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      openAdminConfig('prompts');
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md transition-colors shrink-0"
+                  <a
+                    href="/config"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md transition-colors shrink-0 min-h-[36px]"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
-                    <span>Abrir Painel do config-service</span>
-                  </button>
+                    <span>Abrir Painel do config-service (/config)</span>
+                  </a>
                 </div>
               </div>
 
@@ -982,17 +1034,19 @@ export default function UserPreferencesModal({
             </button>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill transition"
-              >
-                Cancelar
-              </button>
+              {!isPage && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={isSaving}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md transition disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md transition-colors disabled:opacity-50 min-h-[38px] ${
                   activeTab === 'system'
                     ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/25'
                     : 'bg-crimson hover:bg-crimson-dark shadow-crimson/25'

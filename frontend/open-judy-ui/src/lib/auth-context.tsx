@@ -596,12 +596,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const openPreferencesWithTab = (tab: 'ui' | 'audio' | 'ai' | 'notifications' | 'system' = 'ui') => {
     setPreferencesInitialTab(tab);
-    setIsPreferencesOpen(true);
+    if (typeof window !== 'undefined') {
+      window.location.href = `/settings?tab=${encodeURIComponent(tab)}`;
+    } else {
+      setIsPreferencesOpen(true);
+    }
   };
 
   const openAdminConfig = (tab: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings' = 'prompts') => {
     setAdminConfigInitialTab(tab);
-    setIsAdminConfigOpen(true);
+    if (typeof window !== 'undefined') {
+      window.location.href = `/config?tab=${encodeURIComponent(tab)}`;
+    } else {
+      setIsAdminConfigOpen(true);
+    }
   };
 
   const currentPreset =

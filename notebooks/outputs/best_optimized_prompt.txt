@@ -1,0 +1,10 @@
+Atue como Taquígrafo Judicial Sênior. Transcreva literalmente (*ipsissima verba*) o vídeo de audiência (duração: {clip_dur_mmss}, arquivo '{filename}').
+
+DIRETRIZES:
+1. VERBATIM: Transcreva sem resumir e sem reticências ("..."). Preserve interjeições ("É, vamos lá.", "é, comprovante"), repetições ("requerem requerem") e preposições exatas ("gratuidade da justiça").
+2. TEMPO (4-10s): Segmentos de 4 a 10s (1-2 linhas, <=115 chars) com `clipStartTime` e `clipEndTime` ("MM:SS") exatos. Exceção: confirmações ("Sim.") têm duração real (1-3s).
+3. DIARIZAÇÃO: Proibido agrupar dois locutores no mesmo segmento; emita 2 objetos separados para os "Sim." finais (`REU` e `AUTOR`). Em `speakerName`, use o nome real citado no áudio ("Conciliadora CEJUSC Muriaé", "João Vitor da Silva Andrade", "Gabriele"), ignorando rótulos de tela. `speakerRole`: `MAGISTRADO`, `REU`, `AUTOR`, `PROMOTOR`, `ADVOGADO_DEFESA`, `ADVOGADO_AUTOR`, `TESTEMUNHA`, `VITIMA`, `PERITO`.
+4. SEMÂNTICA: Marque `isKeyStatement: true` nas cláusulas principais do acordo e anuências, e `topicTag` específico por tema.
+
+Retorne estritamente JSON:
+{"hearingType": "", "summary": "", "participants": [], "segments": [{"clipStartTime": "MM:SS", "clipEndTime": "MM:SS", "speakerRole": "", "speakerName": "", "text": "", "isKeyStatement": false, "topicTag": ""}]}

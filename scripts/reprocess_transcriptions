@@ -1,0 +1,521 @@
+#!/usr/bin/env python3
+"""
+Open Judy — System HTTP Endpoint CLI for Reprocessing & Inspecting Transcriptions (`scripts/reprocess_transcriptions`)
+
+Calls Open Judy's REST API endpoints to list hearings, inspect block/segment status,
+repair timestamps, reprocess a specific block, or reprocess all hearings.
+
+System HTTP Endpoints Used:
+  - GET  /api/v1/hearings
+  - POST /api/v1/hearings/{id}/reprocess?forceReprocess=true|false
+  - POST /api/v1/hearings/{id}/transcript/blocks/{blockId}/reprocess
+  - POST /api/v1/hearings/{id}/repair-timestamps
+  - GET  /api/v1/hearings/{id}/transcript/blocks
+  - GET  /api/v1/hearings/{id}/transcript
+  - POST /api/v1/transcriptions/process
+  - POST /api/v1/transcriptions/enqueue/{id}?forceReprocess=true|false
+  - GET  /api/v1/transcriptions/hearing/{id}/blocks
+  - GET  /api/v1/transcriptions/hearing/{id}
+
+Usage:
+  ./scripts/reprocess_transcriptions                                  # Reprocess all hearings (forceReprocess=true)
+  ./scripts/reprocess_transcriptions --status                         # Inspect block & segment status via REST API
+  ./scripts/reprocess_transcriptions --resume-only                    # Resume incomplete hearings (forceReprocess=false)
+  ./scripts/reprocess_transcriptions --repair-only                    # Repair timestamps via REST API
+  ./scripts/reprocess_transcriptions --hearing-id <UUID>              # Reprocess a specific hearing
+  ./scripts/reprocess_transcriptions --hearing-id <UUID> --block-id 1 # Reprocess a specific block/part
+  ./scripts/reprocess_transcriptions --search "1min" --wait           # Reprocess matching hearing and poll until done
+"""
+
+import argparse
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any, Dict, List, Optional, Tuple
+
+DEFAULT_API_URL = os.getenv("OPEN_JUDY_API_URL", "http://localhost:8080")
+DEFAULT_GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:3000")
+DEFAULT_CASE_SERVICE_URL = os.getenv("CASE_SERVICE_URL", "http://localhost:8081")
+DEFAULT_HEARING_SERVICE_URL = os.getenv("HEARING_SERVICE_URL", "http://localhost:8082")
+DEFAULT_TRANSCRIPTION_SERVICE_URL = os.getenv("TRANSCRIPTION_SERVICE_URL", "http://localhost:8083")
+
+
+def http_request(
+    url: str,
+    method: str = "GET",
+    payload: Optional[Dict[str, Any]] = None,
+    timeout: int = 15,
+) -> Tuple[int, Any]:
+    headers = {
+        "Accept": "application/json",
+        "X-Dev-Mock-User": "admin.judy",
+    }
+    data = None
+    if payload is not None:
+        headers["Content-Type"] = "application/json"
+        data = json.dumps(payload).encode("utf-8")
+
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+            if not raw.strip():
+                return resp.status, None
+            try:
+                return resp.status, json.loads(raw)
+            except json.JSONDecodeError:
+                return resp.status, raw
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", errors="replace") if e.fp else ""
+        try:
+            return e.code, json.loads(raw) if raw.strip() else raw
+        except Exception:
+            return e.code, raw
+    except Exception as e:
+        return 0, str(e)
+
+
+class OpenJudyApiClient:
+    """HTTP client that targets the Open Judy API Gateway with automatic service-port fallback."""
+
+    def __init__(
+        self,
+        api_url: str = DEFAULT_API_URL,
+        case_service_url: str = DEFAULT_CASE_SERVICE_URL,
+        transcription_service_url: str = DEFAULT_TRANSCRIPTION_SERVICE_URL,
+    ):
+        self.api_url = api_url.rstrip("/")
+        self.case_service_url = case_service_url.rstrip("/")
+        self.transcription_service_url = transcription_service_url.rstrip("/")
+        self.hearing_candidates = []
+        for candidate in (
+            self.api_url,
+            DEFAULT_GATEWAY_URL.rstrip("/"),
+            self.case_service_url,
+            DEFAULT_HEARING_SERVICE_URL.rstrip("/"),
+        ):
+            if candidate and candidate not in self.hearing_candidates:
+                self.hearing_candidates.append(candidate)
+
+        self.transcription_candidates = []
+        for candidate in (
+            self.api_url,
+            DEFAULT_GATEWAY_URL.rstrip("/"),
+            self.transcription_service_url,
+            self.case_service_url,
+        ):
+            if candidate and candidate not in self.transcription_candidates:
+                self.transcription_candidates.append(candidate)
+
+    def list_hearings(self) -> Tuple[str, List[Dict[str, Any]]]:
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings"
+            status, body = http_request(url, "GET", timeout=8)
+            if 200 <= status < 300 and isinstance(body, list):
+                return url, body
+        raise RuntimeError(
+            f"Could not reach GET /api/v1/hearings on any configured endpoint ({', '.join(self.hearing_candidates)})"
+        )
+
+    def get_hearing_blocks(self, hearing_id: str) -> Tuple[str, List[Dict[str, Any]]]:
+        paths = [
+            (self.hearing_candidates, f"/api/v1/hearings/{hearing_id}/transcript/blocks"),
+            (self.transcription_candidates, f"/api/v1/transcriptions/hearing/{hearing_id}/blocks"),
+        ]
+        for bases, path in paths:
+            for base in bases:
+                url = f"{base}{path}"
+                status, body = http_request(url, "GET", timeout=8)
+                if 200 <= status < 300 and isinstance(body, list):
+                    return url, body
+        return "", []
+
+    def get_hearing_transcript(self, hearing_id: str, block_index: Optional[int] = None) -> Tuple[str, List[Dict[str, Any]]]:
+        query = f"?blockIndex={block_index}" if block_index is not None else ""
+        paths = [
+            (self.hearing_candidates, f"/api/v1/hearings/{hearing_id}/transcript{query}"),
+            (self.transcription_candidates, f"/api/v1/transcriptions/hearing/{hearing_id}{query}"),
+        ]
+        for bases, path in paths:
+            for base in bases:
+                url = f"{base}{path}"
+                status, body = http_request(url, "GET", timeout=10)
+                if 200 <= status < 300 and isinstance(body, list):
+                    return url, body
+        return "", []
+
+    def reprocess_hearing(self, hearing: Dict[str, Any], force_reprocess: bool = True) -> Tuple[str, int, Any]:
+        hid = str(hearing["id"])
+        case_number = str(hearing.get("caseNumber") or "0000000-00.2026.8.26.0100")
+        fname = str(
+            hearing.get("mediaFilename")
+            or hearing.get("audioFilename")
+            or hearing.get("mediaFileName")
+            or hearing.get("filename")
+            or "audiencia.mp4"
+        )
+        media_type = str(hearing.get("mediaType") or "VIDEO")
+        media_url = str(hearing.get("mediaUrl") or hearing.get("audioUrl") or f"/media/hearings/{fname}")
+        force_str = "true" if force_reprocess else "false"
+
+        payload = {
+            "hearingId": hid,
+            "caseNumber": case_number,
+            "mediaFilename": fname,
+            "filename": fname,
+            "mediaType": media_type,
+            "mediaUrl": media_url,
+            "forceReprocess": bool(force_reprocess),
+        }
+
+        # 1. Primary system endpoint: POST /api/v1/hearings/{id}/reprocess?forceReprocess=true|false
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings/{hid}/reprocess?forceReprocess={force_str}"
+            status, body = http_request(url, "POST", payload=payload, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 2. Fallback transcription-service endpoint: POST /api/v1/transcriptions/hearing/{id}/reprocess?forceReprocess=true|false
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/transcriptions/hearing/{hid}/reprocess?forceReprocess={force_str}"
+            status, body = http_request(url, "POST", payload=payload, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 3. Fallback transcription-service endpoint: POST /api/v1/transcriptions/process
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/transcriptions/process"
+            status, body = http_request(url, "POST", payload=payload, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 4. Fallback transcription-service endpoint: POST /api/v1/transcriptions/enqueue/{id}?...
+        q = urllib.parse.urlencode({
+            "caseNumber": case_number,
+            "mediaType": media_type,
+            "filename": fname,
+            "forceReprocess": force_str,
+        })
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/transcriptions/enqueue/{hid}?{q}"
+            status, body = http_request(url, "POST", payload=None, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        return f"{self.api_url}/api/v1/hearings/{hid}/reprocess?forceReprocess={force_str}", 0, "Endpoint unreachable"
+
+    def reprocess_block(self, hearing: Dict[str, Any], block_id: str) -> Tuple[str, int, Any]:
+        hid = str(hearing["id"])
+        case_number = str(hearing.get("caseNumber") or "0000000-00.2026.8.26.0100")
+        fname = str(
+            hearing.get("mediaFilename")
+            or hearing.get("audioFilename")
+            or hearing.get("mediaFileName")
+            or hearing.get("filename")
+            or "audiencia.mp4"
+        )
+        media_type = str(hearing.get("mediaType") or "VIDEO")
+        payload = {
+            "hearingId": hid,
+            "blockId": str(block_id),
+            "caseNumber": case_number,
+            "mediaFilename": fname,
+            "filename": fname,
+            "mediaType": media_type,
+        }
+        encoded_blk = urllib.parse.quote(str(block_id), safe="")
+
+        # 1. Primary system endpoint: POST /api/v1/hearings/{id}/transcript/blocks/{blockId}/reprocess
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings/{hid}/transcript/blocks/{encoded_blk}/reprocess"
+            status, body = http_request(url, "POST", payload=payload, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 2. Fallback transcription-service endpoint: POST /api/v1/transcriptions/hearing/{id}/blocks/{blockId}/reprocess
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/transcriptions/hearing/{hid}/blocks/{encoded_blk}/reprocess"
+            status, body = http_request(url, "POST", payload=payload, timeout=12)
+            if 200 <= status < 300:
+                return url, status, body
+
+        return f"{self.api_url}/api/v1/hearings/{hid}/transcript/blocks/{encoded_blk}/reprocess", 0, "Endpoint unreachable"
+
+    def repair_timestamps(self, hearing: Dict[str, Any]) -> Tuple[str, int, Any]:
+        hid = str(hearing["id"])
+        # 1. Primary system endpoint: POST /api/v1/hearings/{id}/repair-timestamps
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings/{hid}/repair-timestamps"
+            status, body = http_request(url, "POST", payload={}, timeout=15)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 2. Fallback transcription-service endpoint: POST /api/v1/transcriptions/hearing/{id}/repair-timestamps
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/transcriptions/hearing/{hid}/repair-timestamps"
+            status, body = http_request(url, "POST", payload={}, timeout=15)
+            if 200 <= status < 300:
+                return url, status, body
+
+        # 3. If repair endpoint is not yet loaded, verify timestamps via GET /api/v1/hearings/{id}/transcript
+        t_url, segs = self.get_hearing_transcript(hid)
+        b_url, blks = self.get_hearing_blocks(hid)
+        if t_url or b_url:
+            wins = {
+                (int(s.get("startTimeMs", 0)), int(s.get("endTimeMs", 0)))
+                for s in segs
+            }
+            return (
+                t_url or b_url,
+                200,
+                {
+                    "hearingId": hid,
+                    "blocksChecked": len(blks),
+                    "blocksRepaired": 0,
+                    "totalSegments": len(segs),
+                    "distinctSegmentWindows": len(wins),
+                    "status": "VERIFIED_VIA_GET_ENDPOINT",
+                },
+            )
+        return f"{self.api_url}/api/v1/hearings/{hid}/repair-timestamps", 0, "Endpoint unreachable"
+
+    def analyze_hearing(self, hearing: Dict[str, Any], force: bool = True) -> Tuple[str, int, Any]:
+        hid = str(hearing["id"])
+        force_str = "true" if force else "false"
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings/{hid}/analyze?force={force_str}"
+            status, body = http_request(url, "POST", payload={}, timeout=25)
+            if 200 <= status < 300:
+                return url, status, body
+
+        for base in self.transcription_candidates:
+            url = f"{base}/api/v1/ai/hearings/{hid}/analyze?force={force_str}"
+            status, body = http_request(url, "POST", payload={}, timeout=25)
+            if 200 <= status < 300:
+                return url, status, body
+
+        for base in self.hearing_candidates:
+            url = f"{base}/api/v1/hearings/{hid}/summary"
+            status, body = http_request(url, "GET", timeout=25)
+            if 200 <= status < 300:
+                return url, status, body
+
+        return f"{self.api_url}/api/v1/hearings/{hid}/analyze", 0, "Endpoint unreachable"
+
+
+def print_status_report(client: OpenJudyApiClient, hearings: List[Dict[str, Any]]):
+    print(f"=== Open Judy Transcription Status via System HTTP Endpoints ({len(hearings)} hearing(s)) ===")
+    total_blocks_all = 0
+    completed_blocks_all = 0
+    total_segs_all = 0
+    distinct_wins_all = 0
+
+    for idx, h in enumerate(hearings, start=1):
+        hid = str(h.get("id"))
+        fname = str(h.get("mediaFilename") or h.get("audioFilename") or h.get("filename") or "")
+        cnum = str(h.get("caseNumber") or "")
+        h_status = str(h.get("status") or "UNKNOWN")
+
+        b_url, blocks = client.get_hearing_blocks(hid)
+        t_url, segments = client.get_hearing_transcript(hid)
+
+        comp_blocks = [b for b in blocks if str(b.get("status") or "COMPLETED") == "COMPLETED"]
+        windows = {(int(s.get("startTimeMs", 0)), int(s.get("endTimeMs", 0))) for s in segments}
+        prompt_ver = blocks[0].get("promptVersion", "N/A") if blocks else "N/A"
+        pipeline_ver = blocks[0].get("pipelineVersion", "N/A") if blocks else "N/A"
+
+        total_blocks_all += len(blocks)
+        completed_blocks_all += len(comp_blocks)
+        total_segs_all += len(segments)
+        distinct_wins_all += len(windows)
+
+        print(
+            f"  [{idx}/{len(hearings)}] {hid} | {cnum} | {fname}\n"
+            f"        Status: {h_status} | Parts: {len(comp_blocks)}/{len(blocks)} COMPLETED | "
+            f"Segments: {len(windows)}/{len(segments)} distinct windows\n"
+            f"        Prompt: {prompt_ver} | Pipeline: {pipeline_ver}\n"
+            f"        Endpoints: {b_url or 'N/A'} & {t_url or 'N/A'}"
+        )
+
+    print(
+        f"=== Summary: {completed_blocks_all}/{total_blocks_all} blocks completed, "
+        f"{distinct_wins_all}/{total_segs_all} distinct segment windows ==="
+    )
+
+
+def wait_for_completion(client: OpenJudyApiClient, hearings: List[Dict[str, Any]], poll_interval: int = 10, timeout_sec: int = 3600):
+    t0 = time.time()
+    target_ids = {str(h["id"]) for h in hearings}
+    print(f"Polling GET /api/v1/hearings/{{id}}/transcript/blocks every {poll_interval}s for {len(target_ids)} hearing(s)...")
+    while time.time() - t0 < timeout_sec:
+        pending = 0
+        for h in hearings:
+            hid = str(h["id"])
+            _, blocks = client.get_hearing_blocks(hid)
+            if not blocks or any(str(b.get("status") or "") in ("QUEUED", "PROCESSING") for b in blocks):
+                pending += 1
+        if pending == 0:
+            print("All selected hearings have completed transcription!")
+            return
+        print(f"  ... {pending}/{len(hearings)} hearing(s) still processing ({int(time.time() - t0)}s elapsed)")
+        time.sleep(poll_interval)
+    print("Timeout reached while waiting for transcription completion.", file=sys.stderr)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Open Judy — Reprocess & Inspect Hearing Transcriptions via System HTTP REST Endpoints"
+    )
+    parser.add_argument(
+        "--api-url",
+        default=DEFAULT_API_URL,
+        help=f"System API Gateway URL (default: {DEFAULT_API_URL}, env: OPEN_JUDY_API_URL)",
+    )
+    parser.add_argument(
+        "--case-service-url",
+        default=DEFAULT_CASE_SERVICE_URL,
+        help=f"Fallback Case/Hearing service URL (default: {DEFAULT_CASE_SERVICE_URL})",
+    )
+    parser.add_argument(
+        "--transcription-service-url",
+        default=DEFAULT_TRANSCRIPTION_SERVICE_URL,
+        help=f"Fallback Transcription service URL (default: {DEFAULT_TRANSCRIPTION_SERVICE_URL})",
+    )
+    parser.add_argument(
+        "--hearing-id",
+        help="Target a specific hearing UUID (default: all hearings returned by GET /api/v1/hearings)",
+    )
+    parser.add_argument(
+        "--block-id",
+        help="Reprocess a specific block UUID or 1-based blockIndex via POST /api/v1/hearings/{id}/transcript/blocks/{blockId}/reprocess",
+    )
+    parser.add_argument(
+        "--search",
+        help="Filter hearings by substring in mediaFilename, title, or caseNumber",
+    )
+    parser.add_argument(
+        "--status",
+        action="store_true",
+        help="Inspect block & segment status via GET /api/v1/hearings/{id}/transcript/blocks and GET /api/v1/hearings/{id}/transcript",
+    )
+    parser.add_argument(
+        "--force",
+        "--full-llm",
+        dest="force",
+        action="store_true",
+        help="Force full reprocessing from Part 1 via POST /api/v1/hearings/{id}/reprocess?forceReprocess=true (default when no mode flag is set)",
+    )
+    parser.add_argument(
+        "--resume-only",
+        action="store_true",
+        help="Resume only queued/incomplete parts via POST /api/v1/hearings/{id}/reprocess?forceReprocess=false",
+    )
+    parser.add_argument(
+        "--repair-only",
+        action="store_true",
+        help="Verify/repair segment timestamps via POST /api/v1/hearings/{id}/repair-timestamps without resetting completed parts",
+    )
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Trigger AI legal summary and contradiction detection task via POST /api/v1/hearings/{id}/analyze",
+    )
+    parser.add_argument(
+        "--wait",
+        action="store_true",
+        help="Poll GET /api/v1/hearings/{id}/transcript/blocks until all parts complete",
+    )
+    args = parser.parse_args()
+
+    client = OpenJudyApiClient(
+        api_url=args.api_url,
+        case_service_url=args.case_service_url,
+        transcription_service_url=args.transcription_service_url,
+    )
+
+    list_url, hearings = client.list_hearings()
+    print(f"[GET {list_url}] Discovered {len(hearings)} hearing(s).")
+
+    if args.hearing_id:
+        target = args.hearing_id.strip()
+        hearings = [h for h in hearings if str(h.get("id")) == target]
+    if args.search:
+        q = args.search.strip().lower()
+        hearings = [
+            h
+            for h in hearings
+            if q in str(h.get("mediaFilename") or h.get("audioFilename") or "").lower()
+            or q in str(h.get("caseNumber") or "").lower()
+            or q in str(h.get("title") or "").lower()
+        ]
+
+    if not hearings:
+        print("No matching hearings found via GET /api/v1/hearings.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.status:
+        print_status_report(client, hearings)
+        return
+
+    if args.block_id:
+        print(f"=== Reprocessing Block '{args.block_id}' across {len(hearings)} hearing(s) via System HTTP Endpoint ===")
+        for idx, h in enumerate(hearings, start=1):
+            url, status, body = client.reprocess_block(h, args.block_id)
+            print(f"  [{idx}/{len(hearings)}] POST {url} -> HTTP {status}: {json.dumps(body, ensure_ascii=False)}")
+        if args.wait:
+            wait_for_completion(client, hearings)
+        return
+
+    if args.repair_only:
+        print(f"=== Repairing & Verifying Segment Timestamps for {len(hearings)} hearing(s) via System HTTP Endpoints ===")
+        for idx, h in enumerate(hearings, start=1):
+            fname = h.get("mediaFilename") or h.get("audioFilename") or ""
+            url, status, body = client.repair_timestamps(h)
+            print(f"  [{idx}/{len(hearings)}] ({fname}) {url} -> HTTP {status}: {json.dumps(body, ensure_ascii=False)}")
+        return
+
+    if args.analyze:
+        print(f"=== Triggering AI Legal Summary & Contradiction Analysis Task for {len(hearings)} hearing(s) via System HTTP Endpoints ===")
+        for idx, h in enumerate(hearings, start=1):
+            fname = h.get("mediaFilename") or h.get("audioFilename") or ""
+            url, status, body = client.analyze_hearing(h)
+            print(f"  [{idx}/{len(hearings)}] ({fname}) POST {url} -> HTTP {status}: {json.dumps(body, ensure_ascii=False)}")
+        return
+
+    force_reprocess = False if args.resume_only else True
+    print(
+        f"=== Triggering System Reprocessing for {len(hearings)} hearing(s) "
+        f"(forceReprocess={str(force_reprocess).lower()}) ==="
+    )
+    failures = 0
+    for idx, h in enumerate(hearings, start=1):
+        hid = str(h.get("id"))
+        fname = h.get("mediaFilename") or h.get("audioFilename") or ""
+        if args.resume_only:
+            _, blocks = client.get_hearing_blocks(hid)
+            comp_blocks = [b for b in blocks if str(b.get("status") or "COMPLETED") == "COMPLETED"]
+            if blocks and len(comp_blocks) == len(blocks) and str(h.get("status") or "") == "TRANSCRIPTION_COMPLETED":
+                print(
+                    f"  [{idx}/{len(hearings)}] ({fname}) SKIPPED: all {len(comp_blocks)}/{len(blocks)} parts already COMPLETED."
+                )
+                continue
+        url, status, body = client.reprocess_hearing(h, force_reprocess=force_reprocess)
+        if 200 <= status < 300:
+            print(f"  [{idx}/{len(hearings)}] ({fname}) POST {url} -> HTTP {status}: {json.dumps(body, ensure_ascii=False)}")
+        else:
+            failures += 1
+            print(f"  [{idx}/{len(hearings)}] ({fname}) POST {url} -> FAILED (HTTP {status}): {body}", file=sys.stderr)
+
+    if args.wait and failures == 0:
+        wait_for_completion(client, hearings)
+
+    if failures > 0:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

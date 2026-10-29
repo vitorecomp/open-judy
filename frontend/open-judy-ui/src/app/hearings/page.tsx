@@ -479,15 +479,15 @@ export default function HearingsPage() {
             <ChevronDown className="w-3 h-3 text-dark-muted" />
           </button>
 
-          {/* Settings button */}
-          <button
-            onClick={() => openPreferencesWithTab('ui')}
+          {/* Settings link */}
+          <Link
+            href="/settings?tab=ui"
             className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
             title="Configurações e Preferências de Exibição"
             aria-label="Abrir configurações e preferências de exibição"
           >
             <Settings className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
       </div>
 

@@ -1,0 +1,458 @@
+{
+  "datasetName": "Open Judy Audio-Subtitle Synchronization Ground-Truth Benchmark",
+  "sourceDatasets": [
+    {
+      "name": "facebook/multilingual_librispeech (portuguese, test)",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=facebook%2Fmultilingual_librispeech&config=portuguese&split=test&offset=0&length=45",
+      "utterancesDownloaded": 36
+    }
+  ],
+  "totalStreams": 4,
+  "totalGroundTruthSegments": 36,
+  "streams": [
+    {
+      "streamId": "mls_pt_stream_01_clean46dB",
+      "datasetSource": "facebook/multilingual_librispeech (portuguese/test)",
+      "audioPath": "/usr/local/google/home/vieiravitor/workspace/work/open-judy/notebooks/datasets/ground_truth_sync/streams/mls_pt_stream_01_clean46dB.wav",
+      "durationMs": 182620,
+      "durationSeconds": 182.62,
+      "backgroundNoiseFloorDb": -46.0,
+      "isNoisyCourtroomSimulation": false,
+      "segmentCount": 9,
+      "groundTruthSegments": [
+        {
+          "segmentIndex": 1,
+          "uttId": "11247_10229_000000",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "foice cortou o pescoço do animal a cabeça ficou segura na carne da vítima e das artérias rotas jorrava o sangue não havia mais cães a matar o terreiro ficara alastrado de corpos decepados mutilados de membros esparsos os homens maltratados doloridos deitavam",
+          "gtStartTimeMs": 1850,
+          "gtEndTimeMs": 21800,
+          "gtDurationMs": 19950
+        },
+        {
+          "segmentIndex": 2,
+          "uttId": "11247_10229_000001",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "névoa fugiu o céu espanou-se e dilatou-se em maravilhosa limpidez a mancha móvel sobre a planície definiu-se no perfil de um pobre cavalo que passeava na verdura os seus olhos de velhice e fadiga tristes e longos de passada com os",
+          "gtStartTimeMs": 22180,
+          "gtEndTimeMs": 42180,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 3,
+          "uttId": "11247_10229_000002",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "viviam unidos em uma só comunhão de desânimo e de espanto na casinha feita de madeira tosca com teto de telhas de pau incendiada pelo sol nos dias quentes",
+          "gtStartTimeMs": 43130,
+          "gtEndTimeMs": 54990,
+          "gtDurationMs": 11860
+        },
+        {
+          "segmentIndex": 4,
+          "uttId": "11247_10229_000003",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "trabalhadores até que uma manhã o agrimensor e os seus ajudantes sentados á porta do barracão viram uma mancha preta passar velejando majestosa serena no céu claro urubu disse felicíssimo ah temos carniça por aqui opinou joca",
+          "gtStartTimeMs": 57090,
+          "gtEndTimeMs": 76970,
+          "gtDurationMs": 19880
+        },
+        {
+          "segmentIndex": 5,
+          "uttId": "11247_10229_000004",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "até então não se trabalhara os homens corriam as vizinhanças caçavam vagavam pelos montes e iam aos povoados as mulheres viviam no lar quando caía a sombra o cigano deitava-se sobre a relva a beira do rio e pregava os olhos preguiçosos no poente",
+          "gtStartTimeMs": 80470,
+          "gtEndTimeMs": 99070,
+          "gtDurationMs": 18600
+        },
+        {
+          "segmentIndex": 6,
+          "uttId": "11247_10229_000005",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "fugira para os montes levada pela brisa como se fosse o imperceptível véu que envolvesse alguma deusa errante e retardada um raio de sol porém descera a brincar-lhe nos olhos e incendiava-lhe a pupila meiguices da natureza um dos jovens magiares levando uma corda caminhou",
+          "gtStartTimeMs": 99690,
+          "gtEndTimeMs": 119690,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 7,
+          "uttId": "11247_10229_000006",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "faz perguntou joca ao agrimensor ora vamos a enterrar o velho deus lhe perdoe a alma nós lhe cuidaremos do corpo disse decisivo o cearense os homens não hesitaram mais agora inspirados pelo impulso de piedade de felicíssimo e todos caminharam para dentro do cercado",
+          "gtStartTimeMs": 121140,
+          "gtEndTimeMs": 141140,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 8,
+          "uttId": "11247_10229_000007",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "varada pelo vento invadida pela chuva nos dias de tormenta aí cumpriam o ritual dos costumes pátrios sob a pressão covarde do isolamento apegavam-se como a um refugio as intactas tradições transportadas de sangue a sangue",
+          "gtStartTimeMs": 143990,
+          "gtEndTimeMs": 161100,
+          "gtDurationMs": 17110
+        },
+        {
+          "segmentIndex": 9,
+          "uttId": "11247_10229_000008",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "e percebia num grande desalento que o conjunto tropical do país do sol o deixava estático errante e incompreensível e que a sua alma emigrava dali incapaz de uma comunhão perfeita de uma infiltração definitiva com a terra o que sou eu então",
+          "gtStartTimeMs": 161480,
+          "gtEndTimeMs": 180220,
+          "gtDurationMs": 18740
+        }
+      ]
+    },
+    {
+      "streamId": "mls_pt_stream_02_noisy28dB",
+      "datasetSource": "facebook/multilingual_librispeech (portuguese/test)",
+      "audioPath": "/usr/local/google/home/vieiravitor/workspace/work/open-judy/notebooks/datasets/ground_truth_sync/streams/mls_pt_stream_02_noisy28dB.wav",
+      "durationMs": 156760,
+      "durationSeconds": 156.76,
+      "backgroundNoiseFloorDb": -28.5,
+      "isNoisyCourtroomSimulation": true,
+      "segmentCount": 9,
+      "groundTruthSegments": [
+        {
+          "segmentIndex": 1,
+          "uttId": "11247_10229_000009",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "o rio sem horizonte sem limite como uma grande pasta cinzenta ligava-se ao céu baixo e denso o desenho apagara-se a bruma mascarava os perfis das coisas e o colorido surgia com a sombra numa sublime desforra por toda a parte manchas esplendidas",
+          "gtStartTimeMs": 2270,
+          "gtEndTimeMs": 21390,
+          "gtDurationMs": 19120
+        },
+        {
+          "segmentIndex": 2,
+          "uttId": "11247_10229_000010",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "admirou ao longe o corte das montanhas a negrura da mata a fronte das árvores debaixo dos seus pés a terra vermelha como embebida de sangue e das plantas tenebrosas o cheiro que tonteia e excita",
+          "gtStartTimeMs": 22840,
+          "gtEndTimeMs": 38980,
+          "gtDurationMs": 16140
+        },
+        {
+          "segmentIndex": 3,
+          "uttId": "11247_10229_000011",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "onde leis imperiosas perversas me dominam me vencem o novo sangue outros vizinhos vieram algum tempo depois se estabelecer no rio doce na campina que saindo da mata morre sobre as águas",
+          "gtStartTimeMs": 41830,
+          "gtEndTimeMs": 55100,
+          "gtDurationMs": 13270
+        },
+        {
+          "segmentIndex": 4,
+          "uttId": "11247_10229_000012",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "morrendo a outra rapariga transportada em êxtase a cabeça loura reclinada sobre o ombro do noivo numa vertigem aérea respirava a pequenos haustos com a boca entreaberta sua boca vermelha como o sangue úmida como o orvalho a turma de felicíssimo voltara",
+          "gtStartTimeMs": 55480,
+          "gtEndTimeMs": 75480,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 5,
+          "uttId": "11247_10229_000013",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "não podia esquecer a desgraça de maria não há sofrimento cismava ele tão insignificante que não clame aos que passam piedade e reparação com o alarido de cem mil bocas",
+          "gtStartTimeMs": 76430,
+          "gtEndTimeMs": 90520,
+          "gtDurationMs": 14090
+        },
+        {
+          "segmentIndex": 6,
+          "uttId": "11247_10229_000014",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "e nem mesmo a ele confiava os passos do seu martírio milkau respeitava esse pejo e sem insistir em desnudar-lhe o coração",
+          "gtStartTimeMs": 92620,
+          "gtEndTimeMs": 102120,
+          "gtDurationMs": 9500
+        },
+        {
+          "segmentIndex": 7,
+          "uttId": "11247_10229_000015",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "um repouso suave um esquecimento devia adormecer-lhe os pensamentos lá vinha ainda nesses instantes o tormento da piedade o contínuo testemunhar da desgraça alheia como uma mancha na sua visão radiante",
+          "gtStartTimeMs": 105620,
+          "gtEndTimeMs": 122780,
+          "gtDurationMs": 17160
+        },
+        {
+          "segmentIndex": 8,
+          "uttId": "11247_10229_000016",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "e como abandonado a vomitar sangue fora por um acaso acolhido na estrada desde então dera baixa e emigrara para o brasil",
+          "gtStartTimeMs": 123400,
+          "gtEndTimeMs": 132910,
+          "gtDurationMs": 9510
+        },
+        {
+          "segmentIndex": 9,
+          "uttId": "11247_10229_000017",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "compassos a principio langorosos iam ganhando movimento e a largos impulsos do som arrastavam os figurantes faziam rápidas voltas meias luas harmónicas enroscavam os braços uns nos outros e balouçavam se cadenciados como suspensos sobre as notas formando",
+          "gtStartTimeMs": 134360,
+          "gtEndTimeMs": 154360,
+          "gtDurationMs": 20000
+        }
+      ]
+    },
+    {
+      "streamId": "mls_pt_stream_03_clean46dB",
+      "datasetSource": "facebook/multilingual_librispeech (portuguese/test)",
+      "audioPath": "/usr/local/google/home/vieiravitor/workspace/work/open-judy/notebooks/datasets/ground_truth_sync/streams/mls_pt_stream_03_clean46dB.wav",
+      "durationMs": 189200,
+      "durationSeconds": 189.2,
+      "backgroundNoiseFloorDb": -46.0,
+      "isNoisyCourtroomSimulation": false,
+      "segmentCount": 9,
+      "groundTruthSegments": [
+        {
+          "segmentIndex": 1,
+          "uttId": "11247_10229_000018",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "os olhos tinham sido devorados e as cavidades imensas e rubras escancaravam-lhe a testa alucinados em seu gozo satânico os corvos sem dar fé da gente continuavam a picar a comer avidamente embebidos os cães esquecidos deles faziam frente aos invasores",
+          "gtStartTimeMs": 2690,
+          "gtEndTimeMs": 22610,
+          "gtDurationMs": 19920
+        },
+        {
+          "segmentIndex": 2,
+          "uttId": "11247_10229_000019",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "a limpidez do azul e daí a pouco se ia baixando e restringindo a um ponto da mata o voo dos infectos urubus que os trabalhadores acompanhavam curiosos e divertidos em suas almas infantis mas ali naquele ponto é a",
+          "gtStartTimeMs": 26110,
+          "gtEndTimeMs": 46110,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 3,
+          "uttId": "11247_10229_000020",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "recomendava a gente da casa a maior caridade para a desgraçada pedindo que velassem por ela e a não desamparassem na próxima crise os colonos prometiam-lhe tudo mas na verdade o sentimento deles era outro tratavam a miserável com desdém",
+          "gtStartTimeMs": 46730,
+          "gtEndTimeMs": 65730,
+          "gtDurationMs": 19000
+        },
+        {
+          "segmentIndex": 4,
+          "uttId": "11247_10229_000021",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "voltara para novas medições o agrimensor depois do trabalho ia todas as tardes conversar na colônia de milkau e com a sua vivacidade e alegria entretinha os dois emigrados contando episódios da sua vida aventureira cenas do norte desse ceará trágico em cuja",
+          "gtStartTimeMs": 67180,
+          "gtEndTimeMs": 87140,
+          "gtDurationMs": 19960
+        },
+        {
+          "segmentIndex": 5,
+          "uttId": "11247_10229_000022",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "de alguma arvore assistindo aquelas festas no silencio da grande solidão o musico era o cigano com o inseparável violino sentado ao lado do velho dado o sinal os pares punham se em ordem e iniciavam as marchas polacas a musica tangia á festa",
+          "gtStartTimeMs": 89990,
+          "gtEndTimeMs": 109990,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 6,
+          "uttId": "11247_10229_000023",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "flagelador veio-lhe uma histérica insensibilidade uma rudimentar anestesia uma assassina obsessão estonteou-o uma vertigem mas o açoite não parou os sulcos na carne abriam-se mais fundos o sangue escorria frouxo mofino de dor o cavalo prosseguia arrastado regando a terra",
+          "gtStartTimeMs": 110370,
+          "gtEndTimeMs": 130370,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 7,
+          "uttId": "11247_10229_000024",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "e eu tenho que o estudo das coisas antigas o prestígio das próprias letras mortas são outros tantos venenos que acovardam a alma do homem de hoje e dão um encanto crescente ao mistério da autoridade",
+          "gtStartTimeMs": 131320,
+          "gtEndTimeMs": 147940,
+          "gtDurationMs": 16620
+        },
+        {
+          "segmentIndex": 8,
+          "uttId": "11247_10229_000025",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "maria não se queixava aos antigos tormentos juntava o desprezo e o ódio dos novos patrões e ainda assim se agarrava a essas raras migalhas de uma desdenhosa condescendência humana",
+          "gtStartTimeMs": 150040,
+          "gtEndTimeMs": 164130,
+          "gtDurationMs": 14090
+        },
+        {
+          "segmentIndex": 9,
+          "uttId": "11247_10229_000026",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "a calça de veludo e a cinta uma larga faixa de seda carmesim enlaçavam as raparigas cujo corpinho meio aberto ao colo vestia o busto esbelto e cujas saias ornadas de veludo e seda lhes envolviam as formas poderosas",
+          "gtStartTimeMs": 167630,
+          "gtEndTimeMs": 186800,
+          "gtDurationMs": 19170
+        }
+      ]
+    },
+    {
+      "streamId": "mls_pt_stream_04_noisy28dB",
+      "datasetSource": "facebook/multilingual_librispeech (portuguese/test)",
+      "audioPath": "/usr/local/google/home/vieiravitor/workspace/work/open-judy/notebooks/datasets/ground_truth_sync/streams/mls_pt_stream_04_noisy28dB.wav",
+      "durationMs": 168310,
+      "durationSeconds": 168.31,
+      "backgroundNoiseFloorDb": -28.5,
+      "isNoisyCourtroomSimulation": true,
+      "segmentCount": 9,
+      "groundTruthSegments": [
+        {
+          "segmentIndex": 1,
+          "uttId": "11247_10229_000027",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "se todo esse sangue essas flores esses frutos não são bálsamos para aquela ferida estranha que bem fariam a cor o perfume e o sabor das coisas",
+          "gtStartTimeMs": 3110,
+          "gtEndTimeMs": 13560,
+          "gtDurationMs": 10450
+        },
+        {
+          "segmentIndex": 2,
+          "uttId": "11247_10229_000028",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "ora milkau tu não sabes é a raça uma civilização particular que nos fala no sangue o nosso eu a nossa própria projeção no mundo a soma de nós mesmos multiplicados ao infinito",
+          "gtStartTimeMs": 14510,
+          "gtEndTimeMs": 29950,
+          "gtDurationMs": 15440
+        },
+        {
+          "segmentIndex": 3,
+          "uttId": "11247_10229_000029",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "amemos o sacrifício feito pelo amor humano a ciência a arte mas aquele amor inconsiderado por tudo o que é passado tudo o que foi é um dos sopros mais poderosos para a desordem universal",
+          "gtStartTimeMs": 32050,
+          "gtEndTimeMs": 48580,
+          "gtDurationMs": 16530
+        },
+        {
+          "segmentIndex": 4,
+          "uttId": "11247_10229_000030",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "não é no trabalho que está a salvação da miséria nem o estimulo para o desalento que importa que nos fatiguemos que ensopemos a terra com o nosso suor que cubramos o mundo de flores sabidas das nossas mãos infatigáveis si alli adeante ao nosso lado vive a dor",
+          "gtStartTimeMs": 52080,
+          "gtEndTimeMs": 70640,
+          "gtDurationMs": 18560
+        },
+        {
+          "segmentIndex": 5,
+          "uttId": "11247_10229_000031",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "vendo morrer o sol aos domingos a família se reunia na varanda o velho a um canto bonnet enterrado até os olhos cachimbo na boca quilotava repousadamente as longas barbas amarelas e as rugas da cara",
+          "gtStartTimeMs": 71260,
+          "gtEndTimeMs": 86480,
+          "gtDurationMs": 15220
+        },
+        {
+          "segmentIndex": 6,
+          "uttId": "11247_10229_000032",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "pelo terreiro perseguidos estes trataram logo de se unir traçando com os instrumentos um círculo de defesa não afrouxem ordenava felicíssimo avança avança para dentro para dentro recuaram os cães ante a energia do ataque e correndo sumiram-se como por encanto os",
+          "gtStartTimeMs": 87930,
+          "gtEndTimeMs": 107930,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 7,
+          "uttId": "11247_10229_000033",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "indagando com os olhos atilados o voo do corvo a grande ave solitária descia vagarosa boiando negligente num vasto círculo do espaço como um barco de velas negras logo depois outra subia no horizonte e não tardou muito que outras mais viessem sujar a",
+          "gtStartTimeMs": 110780,
+          "gtEndTimeMs": 130780,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 8,
+          "uttId": "11247_10229_000034",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "cavalo para a frente de chicote em punho o cigano seguia atrás e a primeira vergastada cortando o ar num sibilo caiu em cheio sobre o animal este como arrancando-se de si mesmo pinoteou assustado novas lambadas foram arremessadas por mão vigorosa estirou",
+          "gtStartTimeMs": 131160,
+          "gtEndTimeMs": 151160,
+          "gtDurationMs": 20000
+        },
+        {
+          "segmentIndex": 9,
+          "uttId": "11247_10229_000035",
+          "speakerId": "11247",
+          "speakerRole": "MAGISTRADO",
+          "speakerName": "Juiz Presidente (11247)",
+          "text": "fazendo parte de uma guarnição exigira dos moradores da casa onde se acampara uns cobertores e essa extorsão além do que era permitido reclamar ele ia pagando com a vida",
+          "gtStartTimeMs": 152110,
+          "gtEndTimeMs": 165910,
+          "gtDurationMs": 13800
+        }
+      ]
+    }
+  ]
+}

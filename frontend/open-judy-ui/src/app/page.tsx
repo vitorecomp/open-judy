@@ -97,13 +97,14 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-slate-200">
                 Status do Pipeline de Audiências
               </h3>
-              <button
+              <Link
+                href="/settings?tab=ui"
                 className="p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-input transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                 title="Configurar painel de pipeline"
                 aria-label="Configurar painel de pipeline"
               >
                 <Settings className="w-3.5 h-3.5" />
-              </button>
+              </Link>
             </div>
 
             {/* List of Hearings with Real Progress Bars */}
@@ -173,13 +174,14 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-slate-200">
                 Informações de Audiências & Pautas
               </h3>
-              <button
+              <Link
+                href="/settings?tab=ui"
                 className="p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-input transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                 title="Configurar indicadores de pautas"
                 aria-label="Configurar indicadores de pautas"
               >
                 <Settings className="w-3.5 h-3.5" />
-              </button>
+              </Link>
             </div>
 
             {/* 3 Prominent Stat Columns */}
@@ -317,13 +319,14 @@ export default function DashboardPage() {
                   {hearings.length}
                 </span>
               </div>
-              <button
+              <Link
+                href="/settings?tab=ui"
                 className="p-1.5 rounded-lg text-dark-muted hover:text-white hover:bg-dark-input transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                 title="Configurar lista de audiências recentes"
                 aria-label="Configurar lista de audiências recentes"
               >
                 <Settings className="w-3.5 h-3.5" />
-              </button>
+              </Link>
             </div>
 
             {/* Mini Table */}
@@ -426,13 +429,14 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="flex items-center gap-1 text-dark-muted">
-                <button
+                <Link
+                  href="/settings?tab=notifications"
                   className="p-1.5 rounded-lg hover:text-white hover:bg-dark-input transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                   title="Configurar notificações"
                   aria-label="Configurar notificações"
                 >
                   <Settings className="w-3.5 h-3.5" />
-                </button>
+                </Link>
                 <button
                   className="p-1.5 rounded-lg hover:text-white hover:bg-dark-input transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                   title="Limpar notificações"

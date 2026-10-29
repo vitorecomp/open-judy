@@ -437,16 +437,17 @@ export default function HearingWorkspacePage() {
               <Users className="w-3.5 h-3.5 text-dark-muted" />
               <span>{hearing.participants?.length || 0} Pessoas</span>
             </div>
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-950/40 border border-indigo-800/40 text-xs font-mono font-semibold text-indigo-300"
-              title={`Vídeo processado na v${videoProcessedVersion} • Prompt atual no sistema: ${activePromptCode} v${activePromptVersion}`}
+            <Link
+              href={`/config?tab=prompts&prompt=${encodeURIComponent(activePromptCode || 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION')}`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-800/40 text-xs font-mono font-semibold text-indigo-300 hover:text-indigo-200 transition-colors"
+              title={`Vídeo processado na v${videoProcessedVersion} • Prompt atual no sistema: ${activePromptCode} v${activePromptVersion}. Clique para abrir nas Configurações do Sistema.`}
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               <span>
                 Prompt: v{videoProcessedVersion}
                 {hasNewerPromptVersion ? ` (v${activePromptVersion} disp.)` : ' (atual)'}
               </span>
-            </div>
+            </Link>
             <button
               type="button"
               onClick={hasNewerPromptVersion && !isReprocessing ? handleReprocessHearing : undefined}

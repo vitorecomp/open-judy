@@ -45,18 +45,23 @@ import {
 } from 'lucide-react';
 
 interface AdminConfigModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   initialTab?: 'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings';
+  initialPromptCode?: string;
+  mode?: 'modal' | 'page';
 }
 
 export default function AdminConfigModal({
-  isOpen,
-  onClose,
+  isOpen = true,
+  onClose = () => {},
   initialTab = 'prompts',
+  initialPromptCode,
+  mode = 'modal',
 }: AdminConfigModalProps) {
-  const { role, permissions, adminConfigInitialTab, systemName, systemTagline, logoUrl, systemConfig, updateSystemConfig } = useAuth();
+  const { role, permissions, switchProfile, adminConfigInitialTab, systemName, systemTagline, logoUrl, systemConfig, updateSystemConfig } = useAuth();
   const isAdmin = role === 'ADMIN' || permissions.canEditSystemConfig;
+  const isPage = mode === 'page';
 
   const [activeTab, setActiveTab] = useState<'prompts' | 'models' | 'dashboards' | 'notifications' | 'settings'>('prompts');
   const [isLoading, setIsLoading] = useState(false);
@@ -130,18 +135,30 @@ export default function AdminConfigModal({
   };
 
   useEffect(() => {
-    if (adminConfigInitialTab) {
-      setActiveTab(adminConfigInitialTab);
-    } else if (initialTab) {
+    if (initialTab) {
       setActiveTab(initialTab);
+    } else if (adminConfigInitialTab) {
+      setActiveTab(adminConfigInitialTab);
     }
   }, [adminConfigInitialTab, initialTab, isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || isPage) {
       loadAllConfigs();
     }
-  }, [isOpen]);
+  }, [isOpen, isPage]);
+
+  useEffect(() => {
+    if (initialPromptCode && prompts.length > 0) {
+      const target = prompts.find(
+        (p) => p.code.toLowerCase() === initialPromptCode.toLowerCase()
+      );
+      if (target) {
+        setActiveTab('prompts');
+        setEditingPrompt(target);
+      }
+    }
+  }, [initialPromptCode, prompts]);
 
   const loadAllConfigs = async () => {
     setIsLoading(true);
@@ -181,7 +198,10 @@ export default function AdminConfigModal({
       const updated = await api.updatePromptTemplate(editingPrompt.id, editingPrompt);
       setPrompts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEditingPrompt(null);
-      showSuccess(`Prompt ${updated.code} atualizado com sucesso!`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open-judy-prompt-updated', { detail: updated }));
+      }
+      showSuccess(`Prompt ${updated.code} (v${updated.version}) atualizado com sucesso!`);
     } catch (e) {
       console.error(e);
     } finally {
@@ -289,7 +309,38 @@ export default function AdminConfigModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isPage) return null;
+
+  if (isPage && !isAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto my-12 p-8 rounded-2xl bg-dark-card border border-dark-border text-center space-y-4 shadow-xl">
+        <div className="w-12 h-12 rounded-2xl status-badge-danger border flex items-center justify-center mx-auto">
+          <Lock className="w-6 h-6 text-rose-400" />
+        </div>
+        <h2 className="text-base font-bold text-white">
+          Acesso Restrito — Configurações do Sistema (Admin)
+        </h2>
+        <p className="text-xs text-dark-muted max-w-[60ch] mx-auto leading-relaxed">
+          Esta página gerencia templates de prompts forenses (<code>tb_prompt_templates</code>), modelos LLM do Vertex AI e parâmetros globais do cluster (<code>config-service :8086</code>). Seu perfil atual (<strong>{role}</strong>) não possui permissão de administrador.
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => switchProfile('ADMIN')}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors min-h-[38px]"
+          >
+            Alternar para Perfil Admin TI (CNJ)
+          </button>
+          <a
+            href="/"
+            className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-semibold text-slate-200 hover:text-white transition-colors min-h-[38px] inline-flex items-center"
+          >
+            Voltar ao Dashboard
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const filteredPrompts = prompts.filter((p) => {
     const matchesCategory = selectedPromptCategory === 'ALL' || p.category === selectedPromptCategory;
@@ -302,23 +353,35 @@ export default function AdminConfigModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col h-[90vh] max-h-[850px] animate-in zoom-in-95 duration-150">
-        {/* Modal Header */}
-        <div className="p-4 sm:px-6 border-b border-dark-border bg-dark-bg/80 flex items-center justify-between">
+    <div
+      className={
+        isPage
+          ? 'w-full space-y-4'
+          : 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in'
+      }
+    >
+      <div
+        className={
+          isPage
+            ? 'bg-dark-card border border-dark-border rounded-2xl w-full overflow-hidden shadow-xl flex flex-col min-h-[calc(100vh-8.5rem)]'
+            : 'bg-dark-card border border-dark-border rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col h-[90vh] max-h-[850px] animate-in zoom-in-95 duration-150'
+        }
+      >
+        {/* Header */}
+        <div className="p-4 sm:px-6 border-b border-dark-border bg-dark-bg/80 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-base font-bold text-white tracking-tight">
                   Painel de Configurações do Sistema
                 </h2>
-                <span className="text-[11px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
                   config-service :8086
                 </span>
-                <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full status-badge-success border">
                   ADMIN MASTER
                 </span>
               </div>
@@ -328,14 +391,28 @@ export default function AdminConfigModal({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-            title="Fechar"
-            aria-label="Fechar painel de configurações do sistema"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={loadAllConfigs}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-dark-muted hover:text-white transition-colors disabled:opacity-50 min-h-[36px]"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Recarregar dados</span>
+            </button>
+            {!isPage && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                title="Fechar"
+                aria-label="Fechar painel de configurações do sistema"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -1048,24 +1125,28 @@ export default function AdminConfigModal({
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-4 border-t border-dark-border bg-dark-bg/60 flex items-center justify-between">
-          <button
-            onClick={loadAllConfigs}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-dark-muted hover:text-white transition disabled:opacity-50"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Recarregar do config-service</span>
-          </button>
+        {/* Footer (Modal Mode Only) */}
+        {!isPage && (
+          <div className="p-4 border-t border-dark-border bg-dark-bg/60 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={loadAllConfigs}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-dark-muted hover:text-white transition-colors disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Recarregar do config-service</span>
+            </button>
 
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-dark-pill hover:bg-dark-card border border-dark-border text-white transition"
-          >
-            Concluir & Fechar
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-dark-pill hover:bg-dark-card border border-dark-border text-white transition-colors"
+            >
+              Concluir &amp; Fechar
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ================================================================= */}

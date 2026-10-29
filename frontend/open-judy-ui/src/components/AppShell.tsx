@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
-import UserPreferencesModal from '@/components/UserPreferencesModal';
-import AdminConfigModal from '@/components/AdminConfigModal';
 import KeycloakLoginModal from '@/components/KeycloakLoginModal';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -16,10 +14,6 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const {
-    isPreferencesOpen,
-    setIsPreferencesOpen,
-    isAdminConfigOpen,
-    setIsAdminConfigOpen,
     isKeycloakModalOpen,
     setIsKeycloakModalOpen
   } = useAuth();
@@ -37,6 +31,9 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith('/notebooks')) return 'Cadernos de Pesquisa Jurídica (NotebookLM)';
     if (pathname.startsWith('/agents/')) return 'Workspace do Agente Jurídico (Agent Garden)';
     if (pathname.startsWith('/agents')) return 'Agent Garden — Catálogo de Agentes';
+    if (pathname.startsWith('/audit')) return 'Auditoria & Tasks RabbitMQ';
+    if (pathname.startsWith('/config')) return 'Configurações do Sistema (Admin)';
+    if (pathname.startsWith('/settings')) return 'Preferências do Usuário & Perfil';
     return 'Dashboard';
   };
 
@@ -77,18 +74,6 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onSuccess={handleUploadSuccess}
-      />
-
-      {/* Global User Preferences Modal */}
-      <UserPreferencesModal
-        isOpen={isPreferencesOpen}
-        onClose={() => setIsPreferencesOpen(false)}
-      />
-
-      {/* Global Admin System Configuration Modal */}
-      <AdminConfigModal
-        isOpen={isAdminConfigOpen}
-        onClose={() => setIsAdminConfigOpen(false)}
       />
 
       {/* Global Keycloak IAM Login & Session Modal */}

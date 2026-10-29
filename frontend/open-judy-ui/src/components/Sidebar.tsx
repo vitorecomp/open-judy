@@ -191,44 +191,60 @@ export default function Sidebar({
 
         {/* Bottom Section: Support, Settings, Current User Profile */}
         <div className="p-2.5 border-t border-dark-border/60 space-y-2">
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => openPreferencesWithTab('ui')}
+          <div className="space-y-1">
+            <Link
+              href="/settings"
+              onClick={onClose}
               title={isCollapsed ? 'Preferências' : undefined}
               aria-label="Abrir Preferências"
-              className={`w-full flex items-center rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill/50 transition-colors min-h-[36px] ${
+              className={`w-full flex items-center rounded-xl text-xs font-medium transition-colors min-h-[36px] ${
                 isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
+              } ${
+                pathname.startsWith('/settings')
+                  ? 'bg-dark-pill text-white shadow-sm'
+                  : 'text-dark-muted hover:text-white hover:bg-dark-pill/50'
               }`}
             >
-              <Settings className="w-4 h-4 text-dark-muted shrink-0" />
+              <Settings
+                className={`w-4 h-4 shrink-0 ${
+                  pathname.startsWith('/settings') ? 'text-white' : 'text-dark-muted'
+                }`}
+              />
               {!isCollapsed && <span className="truncate">Preferências</span>}
-            </button>
+            </Link>
 
-            {/* ADMIN ONLY SYSTEM CONFIGURATION BUTTON */}
+            {/* ADMIN ONLY SYSTEM CONFIGURATION LINK */}
             {isAdmin && (
-              <button
-                type="button"
-                onClick={() => openAdminConfig('prompts')}
+              <Link
+                href="/config"
+                onClick={onClose}
                 title={isCollapsed ? 'Configurações do Sistema (Admin)' : undefined}
                 aria-label="Configurações do Sistema (Admin)"
-                className={`w-full flex items-center rounded-xl text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/40 transition-colors shadow-sm min-h-[36px] ${
+                className={`w-full flex items-center rounded-xl text-xs font-bold transition-colors shadow-sm min-h-[36px] border ${
                   isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
+                } ${
+                  pathname.startsWith('/config')
+                    ? 'bg-emerald-900/50 text-emerald-200 border-emerald-500/60'
+                    : 'text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-900/40 border-emerald-800/40'
                 }`}
               >
                 <SlidersHorizontal className="w-4 h-4 text-emerald-400 shrink-0" />
                 {!isCollapsed && <span className="truncate">Configurações do Sistema</span>}
-              </button>
+              </Link>
             )}
           </div>
 
           {/* User Profile Card with Profile Switcher */}
           <div className="pt-2 border-t border-dark-border/40">
-            <button
-              type="button"
-              onClick={() => openPreferencesWithTab('ui')}
+            <Link
+              href="/settings?tab=ui"
+              onClick={onClose}
               aria-label="Abrir preferências do usuário"
-              className={`w-full text-left flex items-center rounded-xl bg-dark-card/80 hover:bg-dark-card border border-dark-border hover:border-crimson/40 cursor-pointer transition-colors ${
+              className={`w-full text-left flex items-center rounded-xl bg-dark-card/80 hover:bg-dark-card border transition-colors ${
+                pathname.startsWith('/settings')
+                  ? 'border-crimson/60 bg-dark-card'
+                  : 'border-dark-border hover:border-crimson/40'
+              } ${
                 isCollapsed ? 'justify-center p-2' : 'gap-3 p-2'
               }`}
               title={isCollapsed ? `${user.fullName} (${role}) — Preferências` : 'Abrir Preferências do Usuário'}
@@ -266,7 +282,7 @@ export default function Sidebar({
                   </div>
                 </div>
               )}
-            </button>
+            </Link>
 
             {/* Quick Profile Switcher */}
             {!isCollapsed && (

@@ -282,7 +282,7 @@ export default function Header({
               setSearchQuery(e.target.value);
               setIsSearchFocused(true);
             }}
-            className="w-full pl-9 pr-3.5 py-1.5 bg-dark-input hover:bg-dark-pill border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-all duration-150"
+            className="w-full pl-9 pr-3.5 py-1.5 bg-dark-input hover:bg-dark-pill border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors duration-150"
           />
         </form>
 
@@ -290,7 +290,7 @@ export default function Header({
         <div ref={filterDropdownRef} className="relative shrink-0">
           <button
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-slate-200 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-medium text-slate-200 transition-colors"
           >
             {React.createElement(selectedFilter.icon, { className: 'w-3.5 h-3.5 text-crimson' })}
             <span className="truncate max-w-[110px]">{selectedFilter.shortLabel}</span>
@@ -299,7 +299,7 @@ export default function Header({
 
           {isCategoryOpen && (
             <div className="absolute right-0 mt-1.5 w-56 py-1.5 bg-dark-card border border-dark-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 divide-y divide-dark-border/40">
-              <div className="px-3 py-1 text-[10px] uppercase font-mono font-bold text-dark-muted">
+              <div className="px-3 py-1 text-[11px] uppercase font-mono font-bold text-dark-muted">
                 Filtrar Índice por:
               </div>
               <div className="py-1">
@@ -313,7 +313,7 @@ export default function Header({
                         setSelectedFilter(opt);
                         setIsCategoryOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition text-left ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors text-left ${
                         isSelected
                           ? 'bg-crimson/20 text-red-300 font-bold'
                           : 'text-slate-300 hover:bg-dark-pill hover:text-white'
@@ -338,7 +338,7 @@ export default function Header({
                 <Search className="w-3.5 h-3.5 text-crimson" />
                 <span>Busca em: <strong className="text-white">{selectedFilter.label}</strong></span>
               </span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/40 font-bold">
+              <span className="text-[11px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/40 font-bold">
                 Elasticsearch Indexer
               </span>
             </div>
@@ -378,15 +378,15 @@ export default function Header({
                       key={item.id}
                       href={item.targetUrl || '/'}
                       onClick={() => setIsSearchFocused(false)}
-                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-dark-input transition group gap-3 pt-2"
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-dark-input transition-colors group gap-3 pt-2"
                     >
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase font-mono border ${badge.bg} ${badge.text} ${badge.border}`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold uppercase font-mono border ${badge.bg} ${badge.text} ${badge.border}`}>
                             {badge.label}
                           </span>
 
-                          <span className="text-xs font-bold text-white group-hover:text-red-300 transition font-mono truncate">
+                          <span className="text-xs font-bold text-white group-hover:text-red-300 transition-colors font-mono truncate">
                             {item.title}
                           </span>
                         </div>
@@ -398,7 +398,7 @@ export default function Header({
                           />
                         )}
 
-                        <div className="text-[10px] text-dark-muted flex items-center gap-2 pl-1 font-mono">
+                        <div className="text-[11px] text-dark-muted flex items-center gap-2 pl-1 font-mono">
                           {item.courtJurisdiction && <span>{item.courtJurisdiction}</span>}
                           {item.score && (
                             <span className="text-slate-400">Score: {item.score.toFixed(1)}</span>
@@ -433,7 +433,7 @@ export default function Header({
       <div className="relative flex items-center gap-2.5 shrink-0">
         <button
           onClick={() => setIsNotifOpen(!isNotifOpen)}
-          className={`relative p-2 rounded-xl border transition ${
+          className={`relative p-2 rounded-xl border transition-colors ${
             isNotifOpen
               ? 'bg-crimson/20 border-crimson/50 text-white'
               : 'bg-dark-input hover:bg-dark-pill border-dark-border text-dark-muted hover:text-white'
@@ -442,7 +442,7 @@ export default function Header({
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-crimson text-white text-[10px] font-bold flex items-center justify-center shadow-lg ring-2 ring-dark-bg animate-pulse">
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-crimson text-white text-[11px] font-bold flex items-center justify-center shadow-lg ring-2 ring-dark-bg animate-pulse">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -456,7 +456,7 @@ export default function Header({
                 <Bell className="w-4 h-4 text-crimson" />
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Notificações Judiciais</span>
                 {unreadCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-crimson/20 text-crimson text-[10px] font-semibold">
+                  <span className="px-1.5 py-0.5 rounded-full bg-crimson/20 text-crimson text-[11px] font-semibold">
                     {unreadCount} nova{unreadCount > 1 ? 's' : ''}
                   </span>
                 )}
@@ -464,7 +464,7 @@ export default function Header({
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1 text-[11px] text-dark-muted hover:text-slate-200 transition"
+                  className="flex items-center gap-1 text-[11px] text-dark-muted hover:text-slate-200 transition-colors"
                   title="Marcar todas como lidas"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
@@ -482,7 +482,7 @@ export default function Header({
                 notifications.slice(0, 10).map((n) => (
                   <div
                     key={n.id}
-                    className={`p-3.5 transition flex gap-3 items-start ${
+                    className={`p-3.5 transition-colors flex gap-3 items-start ${
                       !n.read ? 'bg-crimson/5 hover:bg-crimson/10' : 'hover:bg-dark-pill/40 opacity-75'
                     }`}
                   >
@@ -495,7 +495,7 @@ export default function Header({
                         {!n.read && (
                           <button
                             onClick={(e) => handleMarkAsRead(n.id, e)}
-                            className="text-[10px] text-dark-muted hover:text-crimson transition shrink-0"
+                            className="text-[11px] text-dark-muted hover:text-crimson transition-colors shrink-0"
                             title="Marcar como lida"
                           >
                             <CheckCheck className="w-3 h-3" />

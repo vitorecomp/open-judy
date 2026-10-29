@@ -13,7 +13,7 @@
 
     <artifactId>notification-service</artifactId>
     <name>Open Judy :: Real-Time Judicial Notification Service</name>
-    <description>Quarkus notification service with RabbitMQ, Kafka, Database persistence, and SSE streaming</description>
+    <description>Quarkus notification service with RabbitMQ, Database persistence, and SSE streaming</description>
 
     <dependencies>
         <dependency>
@@ -43,10 +43,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

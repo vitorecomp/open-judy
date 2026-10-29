@@ -188,13 +188,15 @@ export default function NotebookDetailPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-7rem)] bg-dark-bg text-slate-100 flex flex-col rounded-2xl border border-dark-border overflow-hidden shadow-xl">
+    <div className="lg:h-[calc(100vh-7rem)] lg:min-h-[640px] bg-dark-bg text-slate-100 flex flex-col rounded-2xl border border-dark-border overflow-hidden shadow-xl">
       {/* Sub-header Bar */}
       <div className="px-6 py-2.5 bg-dark-card border-b border-dark-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/notebooks"
-            className="p-1.5 rounded-lg bg-dark-input hover:bg-dark-pill text-dark-muted hover:text-white transition"
+            className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+            title="Voltar para Cadernos"
+            aria-label="Voltar para a lista de cadernos"
           >
             <ChevronLeft className="w-4 h-4" />
           </Link>
@@ -203,7 +205,7 @@ export default function NotebookDetailPage() {
             <h1 className="text-sm font-bold text-white flex items-center gap-2">
               <span>{notebook?.title || 'Carregando Caderno...'}</span>
               {notebook?.caseNumber && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-dark-input text-slate-300 border border-dark-border">
+                <span className="text-[11px] font-mono tabular-nums px-2 py-0.5 rounded bg-dark-input text-slate-300 border border-dark-border">
                   {notebook.caseNumber}
                 </span>
               )}
@@ -215,7 +217,7 @@ export default function NotebookDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-crimson/10 border border-crimson/30 text-red-300 flex items-center gap-1.5">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-crimson/10 border border-crimson/30 text-red-300 flex items-center gap-1.5 tabular-nums">
             <Sparkles className="w-3.5 h-3.5 text-crimson" />
             <span>{activeSources.length} Fontes Ativas (~{Math.round(totalActiveTokens / 1000)}k tokens)</span>
           </span>
@@ -223,20 +225,21 @@ export default function NotebookDetailPage() {
       </div>
 
       {/* 3-Column Interactive NotebookLM Workspace */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden">
+      <div className="flex-1 grid grid-cols-12 lg:overflow-hidden">
         {/* LEFT COLUMN: Sources & Context Selectors (3 cols) */}
-        <div className="col-span-12 lg:col-span-3 border-r border-dark-border bg-dark-bg/60 flex flex-col overflow-hidden">
+        <div className="col-span-12 lg:col-span-3 border-b lg:border-b-0 lg:border-r border-dark-border bg-dark-bg/60 flex flex-col lg:overflow-hidden">
           <div className="p-4 border-b border-dark-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-crimson" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              <h2 className="text-xs font-bold text-slate-200 tabular-nums">
                 Fontes de Contexto ({notebook?.sources.length || 0})
               </h2>
             </div>
             <button
               onClick={() => setIsAddSourceModalOpen(true)}
-              className="p-1.5 rounded-lg bg-crimson hover:bg-crimson-hover text-white text-xs font-semibold shadow-sm transition"
+              className="p-2 rounded-lg bg-crimson hover:bg-crimson-hover text-white text-xs font-semibold shadow-sm transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
               title="Adicionar Nova Fonte de Contexto"
+              aria-label="Adicionar nova fonte de contexto"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -247,11 +250,11 @@ export default function NotebookDetailPage() {
           </div>
 
           {/* Sources List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 max-h-[360px] lg:max-h-none">
             {notebook?.sources.map((source) => (
               <div
                 key={source.id}
-                className={`p-3 rounded-xl border transition ${
+                className={`p-3 rounded-xl border transition-colors ${
                   source.isActiveForChat
                     ? 'bg-dark-card border-crimson/40 shadow-sm'
                     : 'bg-dark-input/30 border-dark-border opacity-60'
@@ -263,17 +266,17 @@ export default function NotebookDetailPage() {
                       type="checkbox"
                       checked={source.isActiveForChat}
                       onChange={() => handleToggleSource(source.id, source.isActiveForChat)}
-                      className="mt-0.5 rounded border-dark-border text-crimson focus:ring-crimson accent-crimson"
+                      className="mt-0.5 rounded border-dark-border text-crimson focus:ring-crimson accent-crimson w-4 h-4 touch-target-expand"
                     />
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-dark-pill text-slate-300">
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-dark-pill text-slate-300">
                           {source.sourceType === 'VIDEO_BLOCK' && '🎬 Vídeo ~256k'}
                           {source.sourceType === 'JURISPRUDENCE' && '⚖️ Jurisprudência'}
                           {source.sourceType === 'CASE_PETICAO' && '📄 Petição'}
                           {source.sourceType === 'CUSTOM_TEXT' && '📝 Texto'}
                         </span>
-                        <span className="text-[10px] font-mono text-red-300">
+                        <span className="text-[11px] font-mono text-red-300 tabular-nums">
                           ~{Math.round(source.estimatedTokens / 1000)}k tks
                         </span>
                       </div>
@@ -290,8 +293,9 @@ export default function NotebookDetailPage() {
 
                   <button
                     onClick={() => handleDeleteSource(source.id)}
-                    className="text-dark-muted hover:text-red-400 p-1 transition"
+                    className="text-dark-muted hover:text-red-400 p-1.5 transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                     title="Remover Fonte"
+                    aria-label={`Remover fonte ${source.title}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -302,15 +306,15 @@ export default function NotebookDetailPage() {
         </div>
 
         {/* CENTER COLUMN: Open Gemini Chat (6 cols) */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col bg-dark-bg overflow-hidden">
+        <div className="col-span-12 lg:col-span-6 flex flex-col bg-dark-bg lg:overflow-hidden min-h-[420px]">
           {/* Active Context Banner */}
           <div className="p-3 border-b border-dark-border bg-dark-card/50 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-slate-300">
               <Bot className="w-4 h-4 text-crimson" />
-              <span>Chat do Caderno com <strong>{activeSources.length} fontes ativas</strong></span>
+              <span className="tabular-nums">Chat do Caderno com <strong>{activeSources.length} fontes ativas</strong></span>
             </div>
             <span className="text-[11px] font-mono text-dark-muted">
-              Gemini 2.0 Flash
+              Gemini 4 Argon
             </span>
           </div>
 
@@ -341,14 +345,14 @@ export default function NotebookDetailPage() {
                   {/* Assistant Citations & Actions */}
                   {m.role === 'assistant' && m.citations && m.citations.length > 0 && (
                     <div className="pt-2 border-t border-dark-border space-y-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="text-[11px] font-bold text-slate-400">
                         Fontes Citadas:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {m.citations.map((c, cIdx) => (
                           <div
                             key={cIdx}
-                            className="text-[10px] px-2 py-0.5 rounded-lg bg-dark-input border border-dark-border text-red-300 flex items-center gap-1"
+                            className="text-[11px] px-2 py-0.5 rounded-lg bg-dark-input border border-dark-border text-red-300 flex items-center gap-1"
                             title={c.snippet}
                           >
                             <Bookmark className="w-2.5 h-2.5 text-crimson" />
@@ -360,7 +364,7 @@ export default function NotebookDetailPage() {
                       <div className="pt-1 flex items-center justify-end">
                         <button
                           onClick={() => handleSaveToNotes(`Conclusão da Análise (${new Date().toLocaleTimeString()})`, m.content)}
-                          className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 bg-dark-input hover:bg-dark-pill px-2 py-1 rounded-lg border border-dark-border transition"
+                          className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1 bg-dark-input hover:bg-dark-pill px-2.5 py-1.5 rounded-lg border border-dark-border transition-colors min-h-[32px]"
                         >
                           <Plus className="w-2.5 h-2.5 text-crimson" />
                           <span>Salvar no Studio / Notas</span>
@@ -400,7 +404,7 @@ export default function NotebookDetailPage() {
               <button
                 key={idx}
                 onClick={() => handleSendMessage(p)}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 whitespace-nowrap transition"
+                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-300 whitespace-nowrap transition-colors min-h-[32px]"
               >
                 {p}
               </button>
@@ -425,12 +429,13 @@ export default function NotebookDetailPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading || activeSources.length === 0}
-              className="flex-1 px-4 py-2.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim() || activeSources.length === 0}
-              className="p-2.5 rounded-xl bg-crimson hover:bg-crimson-hover text-white transition disabled:opacity-40"
+              className="p-2.5 rounded-xl bg-crimson hover:bg-crimson-hover text-white transition-colors disabled:opacity-40 min-h-[36px] min-w-[36px] inline-flex items-center justify-center"
+              aria-label="Enviar mensagem ao assistente do caderno"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -438,11 +443,11 @@ export default function NotebookDetailPage() {
         </div>
 
         {/* RIGHT COLUMN: Studio & Anotações Judiciais (3 cols) */}
-        <div className="col-span-12 lg:col-span-3 border-l border-dark-border bg-dark-bg/60 flex flex-col overflow-hidden">
+        <div className="col-span-12 lg:col-span-3 border-t lg:border-t-0 lg:border-l border-dark-border bg-dark-bg/60 flex flex-col lg:overflow-hidden">
           <div className="p-4 border-b border-dark-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bookmark className="w-4 h-4 text-crimson" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              <h2 className="text-xs font-bold text-slate-200 tabular-nums">
                 Studio / Anotações ({notebook?.notes.length || 0})
               </h2>
             </div>
@@ -467,33 +472,34 @@ export default function NotebookDetailPage() {
             <button
               type="submit"
               disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
-              className="w-full py-1.5 rounded-lg bg-dark-input hover:bg-dark-pill text-white text-xs font-semibold border border-dark-border transition disabled:opacity-50"
+              className="w-full py-1.5 rounded-lg bg-dark-input hover:bg-dark-pill text-white text-xs font-semibold border border-dark-border transition-colors disabled:opacity-50 min-h-[36px]"
             >
               + Salvar Anotação
             </button>
           </form>
 
           {/* Notes List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[360px] lg:max-h-none">
             {notebook?.notes.map((note) => (
               <div
                 key={note.id}
-                className="p-3 rounded-xl bg-dark-card border border-dark-border space-y-1.5 hover:border-dark-muted transition"
+                className="p-3 rounded-xl bg-dark-card border border-dark-border space-y-1.5 hover:border-dark-muted transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-white">{note.title}</h4>
-                  <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-dark-pill text-slate-400">
+                  <span className="text-[11px] uppercase px-1.5 py-0.5 rounded bg-dark-pill text-slate-400">
                     {note.noteType}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
                   {note.content}
                 </p>
-                <div className="pt-1 flex items-center justify-between text-[10px] text-dark-muted">
+                <div className="pt-1 flex items-center justify-between text-[11px] text-dark-muted tabular-nums">
                   <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(note.content)}
-                    className="hover:text-white flex items-center gap-1"
+                    className="hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-dark-input transition-colors"
+                    aria-label={`Copiar anotação ${note.title}`}
                   >
                     <Copy className="w-2.5 h-2.5" />
                     <span>Copiar</span>
@@ -516,7 +522,8 @@ export default function NotebookDetailPage() {
               </h3>
               <button
                 onClick={() => setIsAddSourceModalOpen(false)}
-                className="text-dark-muted hover:text-white text-sm"
+                className="p-2 rounded-lg text-dark-muted hover:text-white hover:bg-dark-input text-sm transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                aria-label="Fechar modal de adicionar fonte"
               >
                 ✕
               </button>
@@ -537,6 +544,7 @@ export default function NotebookDetailPage() {
                     if (val === 'CASE_PETICAO') setNewSourceTokens(15000);
                     if (val === 'CUSTOM_TEXT') setNewSourceTokens(2000);
                   }}
+                  aria-label="Selecionar tipo da fonte de contexto"
                   className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white focus:outline-none focus:border-crimson"
                 >
                   <option value="VIDEO_BLOCK">🎬 Bloco de Vídeo / Áudio (~256k tokens)</option>

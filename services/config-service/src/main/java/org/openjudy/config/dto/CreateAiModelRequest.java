@@ -8,7 +8,7 @@ import org.openjudy.common.enums.AiModelType;
 import java.util.Map;
 
 public record CreateAiModelRequest(
-        @NotBlank(message = "O ID do modelo é obrigatório (ex: gemini-2.0-flash)")
+        @NotBlank(message = "O ID do modelo é obrigatório (ex: gemini-4-argon, gemini-3.8-flash)")
         String modelId,
 
         @NotBlank(message = "O nome amigável do modelo é obrigatório")

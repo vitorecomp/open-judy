@@ -18,10 +18,10 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  'Houve tentativa de conciliação e qual foi o resultado?',
-  'O que a autora declarou sobre as notificações extrajudiciais?',
-  'Quais foram as deliberações e prazos finais fixados pela juíza?',
-  'Identifique se houve confissão ou contradição sobre a obra.',
+  'Qual é a síntese dos debates e manifestações desta sessão?',
+  'Quais foram as principais teses apresentadas pelos participantes?',
+  'Quais foram as deliberações ou votos proferidos na sessão?',
+  'Identifique os pontos controvertidos ou divergências debatidos.',
 ];
 
 export default function CopilotChat({ hearingId, onSeek }: CopilotChatProps) {

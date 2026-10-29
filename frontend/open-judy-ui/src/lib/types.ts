@@ -22,10 +22,13 @@ export type HearingType =
 
 export type AudioProcessingStatus =
   | 'PENDING'
+  | 'PENDING_UPLOAD'
   | 'UPLOADED'
   | 'PROCESSING_TRANSCRIPTION'
   | 'TRANSCRIPTION_COMPLETED'
+  | 'PROCESSING_SUMMARY'
   | 'GENERATING_ANALYSIS'
+  | 'ANALYSIS_COMPLETED'
   | 'READY'
   | 'FAILED';
 
@@ -103,6 +106,8 @@ export interface TranscriptSegment {
   blockIndex?: number;
 }
 
+export type TranscriptBlockStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
 export interface TranscriptBlock {
   id: string;
   hearingId: string;
@@ -115,6 +120,31 @@ export interface TranscriptBlock {
   estimatedTokens: number;
   segmentCount: number;
   summary?: string;
+  processingDurationMs?: number;
+  status?: TranscriptBlockStatus;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  paddingSeconds?: number;
+  contextSegmentsCount?: number;
+  promptVersion?: string;
+  pipelineVersion?: string;
+}
+
+export interface HearingTelemetryStats {
+  completedBlocks: number;
+  totalBlocks?: number;
+  processingBlockIndex?: number | null;
+  processingStartedAt?: string | null;
+  totalProcessingMs: number;
+  lastCompletedAt?: string | null;
+  recentBlockDurationsMs: number[];
+  averageBlockDurationMs: number;
+}
+
+export interface PipelineTelemetrySummary {
+  averagePartDurationMs: number;
+  recentPartDurationsMs: number[];
+  hearings: Record<string, HearingTelemetryStats>;
 }
 
 export type NotebookSourceType =
@@ -213,6 +243,8 @@ export interface Contradiction {
   statementB: string;
   timestampMsB: number;
   legalImpact: string;
+  severity?: string;
+  confidence?: number;
 }
 
 export interface TimelineEvent {
@@ -238,6 +270,8 @@ export interface HearingSummary {
   contradictions: Contradiction[];
   timeline: TimelineEvent[];
   keyQuotes: KeyQuote[];
+  status?: string;
+  promptVersion?: string;
   generatedAt: string;
 }
 
@@ -263,6 +297,8 @@ export interface Hearing {
   transcriptSegments?: TranscriptSegment[];
   ataDraft?: AtaDraft;
   summary?: HearingSummary;
+  promptVersion?: string;
+  pipelineVersion?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -632,6 +668,107 @@ export interface UnifiedSearchResponse {
   results: UnifiedSearchResultItem[];
   facets?: Record<string, number>;
 }
+
+export type AsyncTaskType =
+  | 'TRANSCRIPTION'
+  | 'LEGAL_ANALYSIS'
+  | 'INDEXING'
+  | 'TIMESTAMP_REPAIR'
+  | 'REPROCESS';
+
+export type AsyncTaskStatus =
+  | 'QUEUED'
+  | 'PROCESSING'
+  | 'RETRYING_429'
+  | 'COMPLETED'
+  | 'FAILED';
+
+export interface AsyncTask {
+  id: string;
+  taskType: AsyncTaskType | string;
+  entityType: string;
+  entityId: string;
+  entityTitle: string;
+  queueName: string;
+  routingKey?: string;
+  status: AsyncTaskStatus | string;
+  progressPct: number;
+  promptVersion?: string;
+  pipelineVersion?: string;
+  workerId?: string;
+  retryCount?: number;
+  triggeredBy?: string;
+  payloadJson?: Record<string, any> | string;
+  resultSummary?: string;
+  errorMessage?: string | null;
+  createdAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  durationMs?: number | null;
+}
+
+export interface RabbitMqQueueInfo {
+  name: string;
+  description?: string;
+  messagesReady: number;
+  messagesUnacknowledged: number;
+  messagesTotal: number;
+  consumers: number;
+  state: 'RUNNING' | 'IDLE' | 'DEGRADED' | string;
+  exchange?: string;
+  routingKey?: string;
+}
+
+export interface RabbitMqBrokerStatus {
+  brokerName: string;
+  host: string;
+  amqpPort: number;
+  managementPort: number;
+  status: 'HEALTHY' | 'DEGRADED' | 'OFFLINE' | string;
+  queues: RabbitMqQueueInfo[];
+  checkedAt: string;
+}
+
+export interface TaskStats {
+  totalTasks: number;
+  queuedTasks: number;
+  processingTasks: number;
+  retrying429Tasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  byType: Record<string, number>;
+}
+
+export type AuditCategory =
+  | 'TASK'
+  | 'HEARING'
+  | 'CASE'
+  | 'ADMIN_CONFIG'
+  | 'SYSTEM';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorEmail: string;
+  actorName: string;
+  actorRole: string;
+  action: string;
+  category: AuditCategory | string;
+  entityType: string;
+  entityId: string;
+  entityName: string;
+  status: string;
+  rabbitmqQueue?: string | null;
+  detailsJson?: Record<string, any> | string | null;
+}
+
+export interface AuditStats {
+  totalEvents: number;
+  byCategory: Record<string, number>;
+  byStatus: Record<string, number>;
+  lastEventAt?: string | null;
+}
+
 
 
 

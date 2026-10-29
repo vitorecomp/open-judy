@@ -28,7 +28,7 @@ public class SystemConfigurationEntity extends PanacheEntityBase {
     public String logoUrl;
 
     @Column(name = "gemini_model", nullable = false, length = 64)
-    public String geminiModel = "gemini-2.0-flash";
+    public String geminiModel = "gemini-4-argon";
 
     @Column(name = "gemini_embedding_model", nullable = false, length = 64)
     public String geminiEmbeddingModel = "text-embedding-004";

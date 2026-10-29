@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Open Judy — Bulk Populate Script for Legal Cases (Processos) & Hearings (Audiências)
+Open Judy — Bulk Populate CLI for Legal Cases (Processos) & Hearings (Audiências)
+
+Populates Open Judy 100% through the system's HTTP REST APIs (API Gateway / Case Service /
+Transcription Service / Indexer Service) without raw database SQL or container exec calls.
 
 Usage:
-  ./scripts/populate <base_folder> [--case-service-url URL] [--transcription-service-url URL] [--indexer-service-url URL] [--enqueue-transcription]
+  ./scripts/populate [base_folder] [options]
+  ./scripts/populate --status
+  ./scripts/populate <base_folder> --dry-run
 
 Expected structure inside <base_folder>:
   <base_folder>/
@@ -29,7 +34,6 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -65,10 +69,16 @@ def deterministic_uuid(seed: str) -> str:
     return f"{digest[0:8]}-{digest[8:12]}-4{digest[13:16]}-a{digest[17:20]}-{digest[20:32]}"
 
 
-def http_request(url: str, method: str = "GET", payload: Optional[Dict[str, Any]] = None, timeout: int = 15) -> Tuple[int, Any]:
+def http_request(
+    url: str,
+    method: str = "GET",
+    payload: Optional[Dict[str, Any]] = None,
+    timeout: int = 15,
+) -> Tuple[int, Any]:
+    """Perform an HTTP JSON request against an Open Judy system REST API endpoint."""
     headers = {
         "Accept": "application/json",
-        "X-Dev-Mock-User": "admin.judy",
+        "X-Dev-Mock-User": os.environ.get("OPEN_JUDY_USER", "admin.judy"),
     }
     data = None
     if payload is not None:
@@ -87,39 +97,297 @@ def http_request(url: str, method: str = "GET", payload: Optional[Dict[str, Any]
                 return resp.status, raw
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", errors="replace") if e.fp else ""
-        return e.code, raw
+        try:
+            return e.code, json.loads(raw) if raw.strip() else None
+        except Exception:
+            return e.code, raw
     except Exception as e:
         return 0, str(e)
 
 
-def run_psql_sql(sql: str) -> bool:
-    """Execute SQL inside open-judy-alloydb container if running, to ensure persistence in AlloyDB."""
-    cmd = [
-        "podman",
-        "exec",
-        "-i",
-        "open-judy-alloydb",
-        "psql",
-        "-U",
-        "judy_user",
-        "-d",
-        "open_judy_db",
-        "-v",
-        "ON_ERROR_STOP=0",
-        "-q",
-    ]
-    try:
-        res = subprocess.run(cmd, input=sql.encode("utf-8"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
-        return res.returncode == 0
-    except Exception:
-        return False
+class OpenJudyPopulateApiClient:
+    """
+    REST API client for Open Judy microservices.
+    Routes requests through the API Gateway (--api-url) when reachable and automatically
+    falls back to the respective microservice URL (case-service, transcription-service,
+    indexer-service) when running in direct-port local/dev environments.
+    """
 
+    def __init__(
+        self,
+        api_url: str,
+        case_service_url: str,
+        transcription_service_url: str,
+        indexer_service_url: str,
+        prefer_gateway: bool = False,
+        timeout: int = 15,
+    ) -> None:
+        self.api_url = api_url.rstrip("/")
+        self.service_urls = {
+            "case": case_service_url.rstrip("/"),
+            "transcription": transcription_service_url.rstrip("/"),
+            "indexer": indexer_service_url.rstrip("/"),
+        }
+        self.prefer_gateway = prefer_gateway
+        self.timeout = timeout
 
-def sql_escape(val: Optional[str]) -> str:
-    if val is None:
-        return "NULL"
-    escaped = str(val).replace("'", "''")
-    return f"'{escaped}'"
+    def _candidate_base_urls(self, service: str) -> List[str]:
+        direct_url = self.service_urls.get(service, self.api_url)
+        if self.prefer_gateway:
+            candidates = [self.api_url, direct_url]
+        else:
+            candidates = [direct_url, self.api_url]
+        deduped: List[str] = []
+        for url in candidates:
+            if url and url not in deduped:
+                deduped.append(url)
+        return deduped
+
+    def request(
+        self,
+        service: str,
+        path: str,
+        method: str = "GET",
+        payload: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[int, Any, str]:
+        normalized_path = path if path.startswith("/") else f"/{path}"
+        last_status = 0
+        last_body: Any = None
+        last_url = ""
+
+        for base_url in self._candidate_base_urls(service):
+            full_url = f"{base_url}{normalized_path}"
+            status, body = http_request(full_url, method=method, payload=payload, timeout=self.timeout)
+            last_status, last_body, last_url = status, body, full_url
+            if status in (200, 201, 202, 204):
+                return status, body, full_url
+            # If gateway returned 404/502/503/504 or connection error (0), try fallback URL
+            if status not in (0, 404, 502, 503, 504):
+                return status, body, full_url
+
+        return last_status, last_body, last_url
+
+    def list_cases(self) -> List[Dict[str, Any]]:
+        status, data, _ = self.request("case", "/api/v1/cases", method="GET")
+        if status == 200 and isinstance(data, list):
+            return data
+        return []
+
+    def get_case_by_number(self, case_number: str) -> Optional[Dict[str, Any]]:
+        encoded = urllib.parse.quote(case_number, safe="")
+        status, data, _ = self.request("case", f"/api/v1/cases/number/{encoded}", method="GET")
+        if status == 200 and isinstance(data, dict):
+            return data
+        return None
+
+    def upsert_case(
+        self,
+        case_obj: Dict[str, Any],
+        existing_by_number: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> Tuple[int, Optional[Dict[str, Any]], str]:
+        case_number = str(case_obj.get("caseNumber", "")).strip()
+        existing = (
+            existing_by_number.get(case_number)
+            if existing_by_number is not None
+            else self.get_case_by_number(case_number)
+        )
+        docs = list(case_obj.get("documents") or [])
+
+        if existing and existing.get("id"):
+            case_id = str(existing["id"])
+            case_obj["id"] = case_id
+            status, updated, _ = self.request("case", f"/api/v1/cases/{case_id}", method="PUT", payload=case_obj)
+            action = "updated"
+            if status not in (200, 201):
+                status, updated, _ = self.request("case", "/api/v1/cases", method="POST", payload=case_obj)
+                action = "created"
+            self._sync_case_documents(case_id, docs, existing.get("documents") or [])
+            return status, updated if isinstance(updated, dict) else case_obj, action
+
+        status, created, _ = self.request("case", "/api/v1/cases", method="POST", payload=case_obj)
+        created_dict = created if isinstance(created, dict) else case_obj
+        case_id = str(created_dict.get("id") or case_obj["id"])
+        created_docs = created_dict.get("documents") if isinstance(created_dict, dict) else []
+        if docs and not created_docs:
+            self._sync_case_documents(case_id, docs, [])
+        return status, created_dict, "created"
+
+    def _sync_case_documents(
+        self,
+        case_id: str,
+        desired_docs: List[Dict[str, Any]],
+        existing_docs: List[Dict[str, Any]],
+    ) -> None:
+        if not desired_docs:
+            return
+        if not existing_docs:
+            status, fetched, _ = self.request("case", f"/api/v1/cases/{case_id}/documents", method="GET")
+            if status == 200 and isinstance(fetched, list):
+                existing_docs = fetched
+
+        existing_names = {
+            str(d.get("fileName", "")).strip().lower()
+            for d in existing_docs
+            if isinstance(d, dict) and d.get("fileName")
+        }
+        existing_ids = {
+            str(d.get("id", "")).strip()
+            for d in existing_docs
+            if isinstance(d, dict) and d.get("id")
+        }
+
+        for doc in desired_docs:
+            doc_id = str(doc.get("id") or "")
+            fname = str(doc.get("fileName") or "").strip().lower()
+            if (doc_id and doc_id in existing_ids) or (fname and fname in existing_names):
+                continue
+            self.request("case", f"/api/v1/cases/{case_id}/documents", method="POST", payload=doc)
+
+    def list_hearings(self) -> List[Dict[str, Any]]:
+        status, data, _ = self.request("case", "/api/v1/hearings", method="GET")
+        if status == 200 and isinstance(data, list):
+            return data
+        return []
+
+    def get_hearing_blocks(self, hearing_id: str) -> List[Dict[str, Any]]:
+        status, data, _ = self.request("transcription", f"/api/v1/transcriptions/hearing/{hearing_id}/blocks", method="GET")
+        if status == 200 and isinstance(data, list):
+            return data
+        status, data, _ = self.request("case", f"/api/v1/hearings/{hearing_id}/transcript/blocks", method="GET")
+        if status == 200 and isinstance(data, list):
+            return data
+        return []
+
+    def upsert_hearing(
+        self,
+        hearing_obj: Dict[str, Any],
+        existing_hearings: List[Dict[str, Any]],
+        force_reprocess: bool = False,
+    ) -> Tuple[int, Dict[str, Any], str]:
+        target_id = str(hearing_obj.get("id") or "")
+        target_filename = str(hearing_obj.get("mediaFilename") or "").strip()
+        target_case_num = str(hearing_obj.get("caseNumber") or "").strip()
+
+        matched: Optional[Dict[str, Any]] = None
+        for h in existing_hearings:
+            if not isinstance(h, dict):
+                continue
+            h_id = str(h.get("id") or "")
+            h_fname = str(h.get("mediaFilename") or h.get("audioFilename") or "").strip()
+            h_cnum = str(h.get("caseNumber") or "").strip()
+            if (target_id and h_id == target_id) or (
+                target_filename and h_fname == target_filename and (not target_case_num or h_cnum == target_case_num)
+            ) or (target_filename and h_fname == target_filename):
+                matched = h
+                break
+
+        if matched and matched.get("id"):
+            hearing_id = str(matched["id"])
+            hearing_obj["id"] = hearing_id
+            if matched.get("caseId"):
+                hearing_obj["caseId"] = str(matched["caseId"])
+            existing_status = str(matched.get("status") or "")
+            if existing_status in ("TRANSCRIPTION_COMPLETED", "READY") and not force_reprocess:
+                hearing_obj["status"] = existing_status
+
+            meta_payload: Dict[str, Any] = {
+                "status": hearing_obj.get("status", existing_status or "READY"),
+                "hearingType": hearing_obj.get("hearingType"),
+                "courtJurisdiction": hearing_obj.get("courtJurisdiction", ""),
+            }
+            if hearing_obj.get("participants"):
+                meta_payload["participants"] = hearing_obj["participants"]
+
+            status, updated, _ = self.request(
+                "case",
+                f"/api/v1/hearings/{hearing_id}/metadata",
+                method="PUT",
+                payload=meta_payload,
+            )
+            if status in (200, 201):
+                merged = dict(matched)
+                merged.update(hearing_obj)
+                if isinstance(updated, dict):
+                    merged.update(updated)
+                return status, merged, "updated"
+
+        status, created, _ = self.request("case", "/api/v1/hearings", method="POST", payload=hearing_obj)
+        created_dict = created if isinstance(created, dict) else hearing_obj
+        return status, created_dict, "created"
+
+    def trigger_transcription(
+        self,
+        hearing_obj: Dict[str, Any],
+        force_reprocess: bool = False,
+    ) -> Tuple[int, Any, str]:
+        hearing_id = str(hearing_obj["id"])
+        process_payload = {
+            "hearingId": hearing_id,
+            "caseNumber": hearing_obj.get("caseNumber", "0000000-00.2026.8.26.0100"),
+            "mediaFilename": hearing_obj.get("mediaFilename", "audiencia.mp4"),
+            "filename": hearing_obj.get("mediaFilename", "audiencia.mp4"),
+            "mediaType": hearing_obj.get("mediaType", "VIDEO"),
+            "mediaUrl": hearing_obj.get("mediaUrl", f"/media/hearings/{hearing_obj.get('mediaFilename', 'audiencia.mp4')}"),
+            "forceReprocess": force_reprocess,
+        }
+        status, resp, url = self.request(
+            "transcription",
+            "/api/v1/transcriptions/process",
+            method="POST",
+            payload=process_payload,
+        )
+        if status in (200, 201, 202):
+            return status, resp, url
+
+        params = urllib.parse.urlencode(
+            {
+                "caseNumber": process_payload["caseNumber"],
+                "mediaType": process_payload["mediaType"],
+                "filename": process_payload["mediaFilename"],
+                "forceReprocess": str(force_reprocess).lower(),
+            }
+        )
+        return self.request(
+            "transcription",
+            f"/api/v1/transcriptions/enqueue/{hearing_id}?{params}",
+            method="POST",
+        )
+
+    def trigger_analysis(
+        self,
+        hearing_obj: Dict[str, Any],
+        force: bool = False,
+    ) -> Tuple[int, Any, str]:
+        hearing_id = str(hearing_obj["id"])
+        payload = {"hearingId": hearing_id, "force": force, "sync": False}
+        status, resp, url = self.request(
+            "case",
+            f"/api/v1/hearings/{hearing_id}/analyze?force={str(force).lower()}&sync=false",
+            method="POST",
+            payload=payload,
+        )
+        if status in (200, 201, 202):
+            return status, resp, url
+        return self.request(
+            "transcription",
+            f"/api/v1/ai/hearings/{hearing_id}/analyze?force={str(force).lower()}&sync=false",
+            method="POST",
+            payload=payload,
+        )
+
+    def index_entity(self, payload: Dict[str, Any]) -> Tuple[int, Any]:
+        status, resp, _ = self.request("indexer", "/api/v1/indexer/index", method="POST", payload=payload)
+        return status, resp
+
+    def reindex_all(self) -> Tuple[int, Any]:
+        status, resp, _ = self.request("indexer", "/api/v1/indexer/reindex", method="POST")
+        return status, resp
+
+    def clean_all(self) -> Dict[str, int]:
+        c_status, _, _ = self.request("case", "/api/v1/cases/all", method="DELETE")
+        h_status, _, _ = self.request("case", "/api/v1/hearings/all", method="DELETE")
+        i_status, _, _ = self.request("indexer", "/api/v1/indexer/all", method="DELETE")
+        return {"cases": c_status, "hearings": h_status, "indexer": i_status}
 
 
 def infer_document_type(filename: str) -> str:
@@ -152,6 +420,44 @@ def infer_hearing_type(text: str) -> str:
     if "interrogatorio" in lower or "interrogatório" in lower:
         return "INTERROGATORIO"
     return "INSTRUCAO_E_JULGAMENTO"
+
+
+def infer_duration_seconds(filename: str, local_media_path: Optional[Path] = None) -> float:
+    """Probe real media duration via ffprobe when available, or parse duration hints from filenames."""
+    if local_media_path and local_media_path.is_file():
+        try:
+            res = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "default=noprint_wrappers=1:nokey=1",
+                    str(local_media_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5,
+            )
+            if res.returncode == 0:
+                val = float(res.stdout.decode("utf-8").strip())
+                if val > 0:
+                    return round(val, 2)
+        except Exception:
+            pass
+    lower = filename.lower()
+    m_hm = re.search(r"\b(\d+)\s*h\s*(\d{1,2})\b", lower)
+    if m_hm:
+        return float(int(m_hm.group(1)) * 3600 + int(m_hm.group(2)) * 60)
+    m_h = re.search(r"\b(\d+)\s*h(?:oras?)?\b", lower)
+    if m_h:
+        return float(int(m_h.group(1)) * 3600)
+    m_min = re.search(r"\b(\d+)\s*(?:min|minutos?|m)\b", lower)
+    if m_min:
+        return float(int(m_min.group(1)) * 60)
+    return 180.0
 
 
 def infer_legal_branch(text: str) -> str:
@@ -196,11 +502,12 @@ def find_subfolders(base_dir: Path) -> Tuple[Optional[Path], Optional[Path]]:
         if d == cases_dir:
             continue
         name_lower = d.name.lower()
-        if name_lower in HEARING_DIR_CANDIDATES or any(k in name_lower for k in ("audiencia", "audiência", "hearing", "sessao", "sessão")):
+        if name_lower in HEARING_DIR_CANDIDATES or any(
+            k in name_lower for k in ("audiencia", "audiência", "hearing", "sessao", "sessão")
+        ):
             if hearings_dir is None:
                 hearings_dir = d
 
-    # Fallback if user named the two subfolders something custom
     remaining = [d for d in subdirs if d not in (cases_dir, hearings_dir)]
     if cases_dir is None and remaining:
         cases_dir = remaining.pop(0)
@@ -243,37 +550,39 @@ def parse_case_from_folder(folder: Path, idx: int) -> Dict[str, Any]:
                     extracted_text = item.read_text(encoding="utf-8", errors="replace")[:50000]
                 except Exception:
                     pass
-            docs.append({
-                "id": deterministic_uuid(f"doc:{case_number}:{item.name}"),
-                "title": item.stem.replace("_", " ").replace("-", " ").title(),
-                "documentType": infer_document_type(item.name),
-                "fileName": item.name,
-                "fileSize": item.stat().st_size,
-                "mimeType": mime_type or "application/pdf",
-                "storageUri": f"s3://open-judy-docs/{case_number}/{item.name}",
-                "pageCount": max(1, item.stat().st_size // 3000),
-                "ocrStatus": "COMPLETED",
-                "extractedText": extracted_text,
-                "uploadedBy": case_data.get("uploadedBy", "Script Populate Open Judy"),
-                "_localPath": str(item),
-            })
+            docs.append(
+                {
+                    "id": deterministic_uuid(f"doc:{case_number}:{item.name}"),
+                    "title": item.stem.replace("_", " ").replace("-", " ").title(),
+                    "documentType": infer_document_type(item.name),
+                    "fileName": item.name,
+                    "fileSize": item.stat().st_size,
+                    "mimeType": mime_type or "application/pdf",
+                    "storageUri": f"s3://open-judy-docs/{case_number}/{item.name}",
+                    "pageCount": max(1, item.stat().st_size // 3000),
+                    "ocrStatus": "COMPLETED",
+                    "extractedText": extracted_text,
+                    "uploadedBy": case_data.get("uploadedBy", "Script Populate Open Judy"),
+                    "_localPath": str(item),
+                }
+            )
 
     return {
         "id": case_id,
         "caseNumber": case_number,
-        "courtJurisdiction": case_data.get("courtJurisdiction") or "3ª Vara Cível Central da Comarca de São Paulo/SP",
+        "courtJurisdiction": case_data.get("courtJurisdiction") or "",
         "legalBranch": legal_branch,
         "subject": subject,
-        "plaintiffName": case_data.get("plaintiffName") or "Parte Autora Cadastrada via Populate",
-        "defendantName": case_data.get("defendantName") or "Parte Ré Cadastrada via Populate",
-        "judgeName": case_data.get("judgeName") or "Dra. Camila Vasconcelos",
+        "plaintiffName": case_data.get("plaintiffName") or "",
+        "defendantName": case_data.get("defendantName") or "",
+        "judgeName": case_data.get("judgeName") or "",
         "prosecutorName": case_data.get("prosecutorName"),
         "status": case_data.get("status") or "EM_ANDAMENTO",
         "documents": docs,
     }
 
 
-def collect_cases(cases_dir: Path) -> List[Dict[str, Any]]:
+def collect_cases(cases_dir: Optional[Path]) -> List[Dict[str, Any]]:
     cases: List[Dict[str, Any]] = []
     if not cases_dir or not cases_dir.exists():
         return cases
@@ -294,12 +603,12 @@ def collect_cases(cases_dir: Path) -> List[Dict[str, Any]]:
                     c_num = item.get("caseNumber") or extract_cnj_or_generate(entry.stem, idx)
                     item["caseNumber"] = c_num
                     item["id"] = item.get("id") or deterministic_uuid(f"case:{c_num}")
-                    item.setdefault("courtJurisdiction", "3ª Vara Cível Central da Comarca de São Paulo/SP")
+                    item.setdefault("courtJurisdiction", "")
                     item.setdefault("legalBranch", infer_legal_branch(f"{c_num} {item.get('subject', '')}"))
-                    item.setdefault("subject", "Procedimento Judicial Cadastrado")
-                    item.setdefault("plaintiffName", "Autor Judicial")
-                    item.setdefault("defendantName", "Réu Judicial")
-                    item.setdefault("judgeName", "Dra. Camila Vasconcelos")
+                    item.setdefault("subject", entry.stem)
+                    item.setdefault("plaintiffName", "")
+                    item.setdefault("defendantName", "")
+                    item.setdefault("judgeName", "")
                     item.setdefault("status", "EM_ANDAMENTO")
                     item.setdefault("documents", [])
                     cases.append(item)
@@ -316,39 +625,41 @@ def collect_cases(cases_dir: Path) -> List[Dict[str, Any]]:
                     extracted_text = entry.read_text(encoding="utf-8", errors="replace")[:50000]
                 except Exception:
                     pass
-            cases.append({
-                "id": c_id,
-                "caseNumber": c_num,
-                "courtJurisdiction": "3ª Vara Cível Central da Comarca de São Paulo/SP",
-                "legalBranch": infer_legal_branch(entry.stem),
-                "subject": entry.stem.replace("_", " ").replace("-", " ").title(),
-                "plaintiffName": "Parte Autora Cadastrada",
-                "defendantName": "Parte Ré Cadastrada",
-                "judgeName": "Dra. Camila Vasconcelos",
-                "status": "EM_ANDAMENTO",
-                "documents": [
-                    {
-                        "id": deterministic_uuid(f"doc:{c_num}:{entry.name}"),
-                        "title": entry.stem.replace("_", " ").replace("-", " ").title(),
-                        "documentType": infer_document_type(entry.name),
-                        "fileName": entry.name,
-                        "fileSize": entry.stat().st_size,
-                        "mimeType": mime_type or "application/pdf",
-                        "storageUri": f"s3://open-judy-docs/{c_num}/{entry.name}",
-                        "pageCount": max(1, entry.stat().st_size // 3000),
-                        "ocrStatus": "COMPLETED",
-                        "extractedText": extracted_text,
-                        "uploadedBy": "Script Populate Open Judy",
-                        "_localPath": str(entry),
-                    }
-                ],
-            })
+            cases.append(
+                {
+                    "id": c_id,
+                    "caseNumber": c_num,
+                    "courtJurisdiction": "",
+                    "legalBranch": infer_legal_branch(entry.stem),
+                    "subject": entry.stem.replace("_", " ").replace("-", " ").title(),
+                    "plaintiffName": "",
+                    "defendantName": "",
+                    "judgeName": "",
+                    "status": "EM_ANDAMENTO",
+                    "documents": [
+                        {
+                            "id": deterministic_uuid(f"doc:{c_num}:{entry.name}"),
+                            "title": entry.stem.replace("_", " ").replace("-", " ").title(),
+                            "documentType": infer_document_type(entry.name),
+                            "fileName": entry.name,
+                            "fileSize": entry.stat().st_size,
+                            "mimeType": mime_type or "application/pdf",
+                            "storageUri": f"s3://open-judy-docs/{c_num}/{entry.name}",
+                            "pageCount": max(1, entry.stat().st_size // 3000),
+                            "ocrStatus": "COMPLETED",
+                            "extractedText": extracted_text,
+                            "uploadedBy": "Script Populate Open Judy",
+                            "_localPath": str(entry),
+                        }
+                    ],
+                }
+            )
             idx += 1
 
     return cases
 
 
-def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def collect_hearings(hearings_dir: Optional[Path], known_cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     hearings: List[Dict[str, Any]] = []
     if not hearings_dir or not hearings_dir.exists():
         return hearings
@@ -392,23 +703,26 @@ def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> L
             media_type = h_data.get("mediaType") or ("VIDEO" if media_ext in VIDEO_EXTENSIONS else "AUDIO")
             hearing_id = h_data.get("id") or deterministic_uuid(f"hearing:{c_num}:{media_filename}")
 
-            hearings.append({
-                "id": hearing_id,
-                "caseId": case_id,
-                "caseNumber": c_num,
-                "courtJurisdiction": h_data.get("courtJurisdiction")
-                or (matched_case.get("courtJurisdiction") if matched_case else "3ª Vara Cível Central da Comarca de São Paulo/SP"),
-                "hearingType": h_data.get("hearingType") or infer_hearing_type(f"{entry.name} {media_filename}"),
-                "scheduledDateTime": h_data.get("scheduledDateTime") or datetime.now(timezone.utc).isoformat(),
-                "status": h_data.get("status") or "READY",
-                "mediaType": media_type,
-                "mediaFilename": media_filename,
-                "audioDurationSeconds": h_data.get("audioDurationSeconds") or 180.0,
-                "audioSizeBytes": media_file.stat().st_size if media_file else h_data.get("audioSizeBytes", 25000000),
-                "participants": h_data.get("participants") or [],
-                "segments": h_data.get("segments") or [],
-                "_localMediaPath": str(media_file) if media_file else None,
-            })
+            hearings.append(
+                {
+                    "id": hearing_id,
+                    "caseId": case_id,
+                    "caseNumber": c_num,
+                    "courtJurisdiction": h_data.get("courtJurisdiction")
+                    or (matched_case.get("courtJurisdiction") if matched_case else ""),
+                    "hearingType": h_data.get("hearingType") or infer_hearing_type(f"{entry.name} {media_filename}"),
+                    "scheduledDateTime": h_data.get("scheduledDateTime") or datetime.now(timezone.utc).isoformat(),
+                    "status": h_data.get("status") or "PROCESSING_TRANSCRIPTION",
+                    "mediaType": media_type,
+                    "mediaFilename": media_filename,
+                    "audioDurationSeconds": h_data.get("audioDurationSeconds")
+                    or infer_duration_seconds(media_filename, media_file),
+                    "audioSizeBytes": media_file.stat().st_size if media_file else h_data.get("audioSizeBytes", 0),
+                    "participants": h_data.get("participants") or [],
+                    "segments": h_data.get("segments") or [],
+                    "_localMediaPath": str(media_file) if media_file else None,
+                }
+            )
             idx += 1
 
         elif entry.is_file() and entry.suffix.lower() == ".json":
@@ -416,7 +730,9 @@ def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> L
                 raw = json.loads(entry.read_text(encoding="utf-8"))
                 items = raw if isinstance(raw, list) else raw.get("hearings", raw.get("audiencias", [raw]))
                 for item in items:
-                    c_num = item.get("caseNumber") or (default_case["caseNumber"] if default_case else extract_cnj_or_generate(entry.stem, idx))
+                    c_num = item.get("caseNumber") or (
+                        default_case["caseNumber"] if default_case else extract_cnj_or_generate(entry.stem, idx)
+                    )
                     matched_case = case_by_number.get(c_num) or default_case
                     c_id = item.get("caseId") or (matched_case["id"] if matched_case else deterministic_uuid(f"case:{c_num}"))
                     media_filename = item.get("mediaFilename") or item.get("audioFilename") or f"{entry.stem}_{idx}.mp4"
@@ -424,29 +740,35 @@ def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> L
                     media_ext = Path(media_filename).suffix.lower()
                     local_media = hearings_dir / media_filename
 
-                    hearings.append({
-                        "id": h_id,
-                        "caseId": c_id,
-                        "caseNumber": c_num,
-                        "courtJurisdiction": item.get("courtJurisdiction")
-                        or (matched_case.get("courtJurisdiction") if matched_case else "3ª Vara Cível Central da Comarca de São Paulo/SP"),
-                        "hearingType": item.get("hearingType") or infer_hearing_type(media_filename),
-                        "scheduledDateTime": item.get("scheduledDateTime") or datetime.now(timezone.utc).isoformat(),
-                        "status": item.get("status") or "READY",
-                        "mediaType": item.get("mediaType") or ("VIDEO" if media_ext in VIDEO_EXTENSIONS else "AUDIO"),
-                        "mediaFilename": media_filename,
-                        "audioDurationSeconds": item.get("audioDurationSeconds") or 180.0,
-                        "audioSizeBytes": local_media.stat().st_size if local_media.is_file() else item.get("audioSizeBytes", 25000000),
-                        "participants": item.get("participants") or [],
-                        "segments": item.get("segments") or [],
-                        "_localMediaPath": str(local_media) if local_media.is_file() else None,
-                    })
+                    hearings.append(
+                        {
+                            "id": h_id,
+                            "caseId": c_id,
+                            "caseNumber": c_num,
+                            "courtJurisdiction": item.get("courtJurisdiction")
+                            or (matched_case.get("courtJurisdiction") if matched_case else ""),
+                            "hearingType": item.get("hearingType") or infer_hearing_type(media_filename),
+                            "scheduledDateTime": item.get("scheduledDateTime") or datetime.now(timezone.utc).isoformat(),
+                            "status": item.get("status") or "PROCESSING_TRANSCRIPTION",
+                            "mediaType": item.get("mediaType") or ("VIDEO" if media_ext in VIDEO_EXTENSIONS else "AUDIO"),
+                            "mediaFilename": media_filename,
+                            "audioDurationSeconds": item.get("audioDurationSeconds")
+                            or infer_duration_seconds(media_filename, local_media if local_media.is_file() else None),
+                            "audioSizeBytes": local_media.stat().st_size
+                            if local_media.is_file()
+                            else item.get("audioSizeBytes", 0),
+                            "participants": item.get("participants") or [],
+                            "segments": item.get("segments") or [],
+                            "_localMediaPath": str(local_media) if local_media.is_file() else None,
+                        }
+                    )
                     idx += 1
             except Exception as e:
                 print(f"  [!] Failed to load JSON hearing file {entry}: {e}")
 
-        elif entry.is_file() and entry.suffix.lower() in MEDIA_EXTENSIONS:
-            # Skip if this media file was already referenced by a JSON file
+        elif entry.is_file() or entry.is_symlink():
+            if entry.suffix.lower() not in MEDIA_EXTENSIONS:
+                continue
             if any(h.get("mediaFilename") == entry.name for h in hearings):
                 continue
             matched_case = None
@@ -454,7 +776,6 @@ def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> L
             if cnj_match and cnj_match.group(0) in case_by_number:
                 matched_case = case_by_number[cnj_match.group(0)]
             else:
-                # Match by partial digits in case number
                 stem_digits = re.sub(r"\D", "", entry.stem)
                 if len(stem_digits) >= 4:
                     for c_num_key, c_obj in case_by_number.items():
@@ -468,190 +789,93 @@ def collect_hearings(hearings_dir: Path, known_cases: List[Dict[str, Any]]) -> L
             c_id = matched_case["id"] if matched_case else deterministic_uuid(f"case:{c_num}")
             h_id = deterministic_uuid(f"hearing:{c_num}:{entry.name}")
             media_type = "VIDEO" if entry.suffix.lower() in VIDEO_EXTENSIONS else "AUDIO"
+            try:
+                file_size = entry.stat().st_size
+            except OSError:
+                file_size = 0
 
-            hearings.append({
-                "id": h_id,
-                "caseId": c_id,
-                "caseNumber": c_num,
-                "courtJurisdiction": matched_case.get("courtJurisdiction") if matched_case else "3ª Vara Cível Central da Comarca de São Paulo/SP",
-                "hearingType": infer_hearing_type(entry.stem),
-                "scheduledDateTime": datetime.now(timezone.utc).isoformat(),
-                "status": "READY",
-                "mediaType": media_type,
-                "mediaFilename": entry.name,
-                "audioDurationSeconds": 180.0,
-                "audioSizeBytes": entry.stat().st_size,
-                "participants": [],
-                "segments": [],
-                "_localMediaPath": str(entry),
-            })
+            hearings.append(
+                {
+                    "id": h_id,
+                    "caseId": c_id,
+                    "caseNumber": c_num,
+                    "courtJurisdiction": matched_case.get("courtJurisdiction") if matched_case else "",
+                    "hearingType": infer_hearing_type(entry.stem),
+                    "scheduledDateTime": datetime.now(timezone.utc).isoformat(),
+                    "status": "PROCESSING_TRANSCRIPTION",
+                    "mediaType": media_type,
+                    "mediaFilename": entry.name,
+                    "audioDurationSeconds": infer_duration_seconds(entry.name, entry),
+                    "audioSizeBytes": file_size,
+                    "participants": [],
+                    "segments": [],
+                    "_localMediaPath": str(entry),
+                }
+            )
             idx += 1
 
     return hearings
 
 
-def persist_case_to_db(case_obj: Dict[str, Any]) -> None:
-    sql_lines = [
-        f"""
-        INSERT INTO tb_cases (
-            id, case_number, court_jurisdiction, legal_branch, subject,
-            plaintiff_name, defendant_name, judge_name, prosecutor_name, status
-        ) VALUES (
-            {sql_escape(case_obj['id'])},
-            {sql_escape(case_obj['caseNumber'])},
-            {sql_escape(case_obj['courtJurisdiction'])},
-            {sql_escape(case_obj['legalBranch'])},
-            {sql_escape(case_obj.get('subject'))},
-            {sql_escape(case_obj.get('plaintiffName'))},
-            {sql_escape(case_obj.get('defendantName'))},
-            {sql_escape(case_obj.get('judgeName'))},
-            {sql_escape(case_obj.get('prosecutorName'))},
-            {sql_escape(case_obj.get('status', 'EM_ANDAMENTO'))}
+def print_system_status(client: OpenJudyPopulateApiClient) -> int:
+    """Query system REST APIs and display a summary of populated cases, hearings, and transcription telemetry."""
+    print("========================================================================")
+    print(" Open Judy — System REST API Status")
+    print("========================================================================")
+    cases = client.list_cases()
+    hearings = client.list_hearings()
+    t_status, telemetry, _ = client.request("transcription", "/api/v1/transcriptions/telemetry/summary", method="GET")
+    i_status, idx_info, _ = client.request("indexer", "/api/v1/indexer/status", method="GET")
+
+    print(f" Cases Registered (GET /api/v1/cases)       : {len(cases)}")
+    print(f" Hearings Registered (GET /api/v1/hearings) : {len(hearings)}")
+    if t_status == 200 and isinstance(telemetry, dict):
+        print(
+            f" Transcription Telemetry                    : "
+            f"completedBlocks={telemetry.get('completedBlocks', 0)}, "
+            f"pendingBlocks={telemetry.get('pendingBlocks', 0)}"
         )
-        ON CONFLICT (case_number) DO UPDATE SET
-            court_jurisdiction = EXCLUDED.court_jurisdiction,
-            legal_branch = EXCLUDED.legal_branch,
-            subject = EXCLUDED.subject,
-            plaintiff_name = EXCLUDED.plaintiff_name,
-            defendant_name = EXCLUDED.defendant_name,
-            judge_name = EXCLUDED.judge_name,
-            status = EXCLUDED.status,
-            updated_at = NOW();
-        """
-    ]
+    if i_status == 200 and isinstance(idx_info, dict):
+        print(f" Elasticsearch Indexer                      : totalIndexed={idx_info.get('totalIndexedDocuments', 0)}")
+    print("------------------------------------------------------------------------")
 
-    for doc in case_obj.get("documents", []):
-        doc_id = doc.get("id") or deterministic_uuid(f"doc:{case_obj['caseNumber']}:{doc.get('fileName', 'doc')}")
-        sql_lines.append(
-            f"""
-            INSERT INTO tb_case_documents (
-                id, case_id, title, document_type, file_name, file_size,
-                mime_type, storage_uri, page_count, ocr_status, extracted_text, uploaded_by
-            ) VALUES (
-                {sql_escape(doc_id)},
-                (SELECT id FROM tb_cases WHERE case_number = {sql_escape(case_obj['caseNumber'])} LIMIT 1),
-                {sql_escape(doc.get('title', 'Documento Judicial'))},
-                {sql_escape(doc.get('documentType', 'OUTROS'))},
-                {sql_escape(doc.get('fileName'))},
-                {int(doc.get('fileSize') or 0)},
-                {sql_escape(doc.get('mimeType', 'application/pdf'))},
-                {sql_escape(doc.get('storageUri'))},
-                {int(doc.get('pageCount') or 1)},
-                {sql_escape(doc.get('ocrStatus', 'COMPLETED'))},
-                {sql_escape(doc.get('extractedText'))},
-                {sql_escape(doc.get('uploadedBy', 'Script Populate'))}
-            )
-            ON CONFLICT (id) DO UPDATE SET
-                title = EXCLUDED.title,
-                document_type = EXCLUDED.document_type,
-                file_size = EXCLUDED.file_size,
-                extracted_text = COALESCE(EXCLUDED.extracted_text, tb_case_documents.extracted_text),
-                updated_at = NOW();
-            """
-        )
-
-    run_psql_sql("\n".join(sql_lines))
-
-
-def persist_hearing_to_db(hearing_obj: Dict[str, Any]) -> None:
-    sql_lines = [
-        f"""
-        INSERT INTO tb_cases (id, case_number, court_jurisdiction, legal_branch, subject, status)
-        VALUES (
-            {sql_escape(hearing_obj['caseId'])},
-            {sql_escape(hearing_obj['caseNumber'])},
-            {sql_escape(hearing_obj['courtJurisdiction'])},
-            'CIVIL',
-            'Processo Judicial Vinculado à Audiência',
-            'EM_ANDAMENTO'
-        )
-        ON CONFLICT (case_number) DO NOTHING;
-
-        INSERT INTO tb_hearings (
-            id, case_id, hearing_type, status, media_type,
-            audio_filename, audio_duration_seconds, audio_size_bytes,
-            media_filename, media_duration_seconds, media_size_bytes
-        ) VALUES (
-            {sql_escape(hearing_obj['id'])},
-            (SELECT id FROM tb_cases WHERE case_number = {sql_escape(hearing_obj['caseNumber'])} LIMIT 1),
-            {sql_escape(hearing_obj['hearingType'])},
-            {sql_escape(hearing_obj.get('status', 'READY'))},
-            {sql_escape(hearing_obj['mediaType'])},
-            {sql_escape(hearing_obj['mediaFilename'])},
-            {float(hearing_obj.get('audioDurationSeconds') or 180.0)},
-            {int(hearing_obj.get('audioSizeBytes') or 0)},
-            {sql_escape(hearing_obj['mediaFilename'])},
-            {float(hearing_obj.get('audioDurationSeconds') or 180.0)},
-            {int(hearing_obj.get('audioSizeBytes') or 0)}
-        )
-        ON CONFLICT (id) DO UPDATE SET
-            hearing_type = EXCLUDED.hearing_type,
-            status = EXCLUDED.status,
-            media_type = EXCLUDED.media_type,
-            media_filename = EXCLUDED.media_filename,
-            updated_at = NOW();
-        """
-    ]
-
-    segments = hearing_obj.get("segments") or []
-    if segments:
-        transcript_id = deterministic_uuid(f"transcript:{hearing_obj['id']}")
-        block_id = deterministic_uuid(f"block:{hearing_obj['id']}:1")
-        sql_lines.append(
-            f"""
-            INSERT INTO tb_transcripts (id, hearing_id, detected_language, total_segments, average_confidence, engine_used)
-            VALUES ({sql_escape(transcript_id)}, {sql_escape(hearing_obj['id'])}, 'pt-BR', {len(segments)}, 0.98, 'GEMINI-2.0-FLASH')
-            ON CONFLICT (hearing_id) DO UPDATE SET total_segments = EXCLUDED.total_segments, updated_at = NOW();
-
-            INSERT INTO tb_transcript_blocks (
-                id, hearing_id, block_index, title, start_time_ms, end_time_ms,
-                start_time_formatted, end_time_formatted, estimated_tokens, segment_count, summary
-            ) VALUES (
-                {sql_escape(block_id)}, {sql_escape(hearing_obj['id'])}, 1,
-                'Bloco 1: Instrução e Depoimentos da Audiência',
-                0, {int(segments[-1].get('endTimeMs', 120000))},
-                '00:00', '02:00', 128000, {len(segments)},
-                'Transcrição importada pelo utilitário de população do Open Judy.'
-            )
-            ON CONFLICT (hearing_id, block_index) DO UPDATE SET segment_count = EXCLUDED.segment_count;
-            """
-        )
-        for i, seg in enumerate(segments, start=1):
-            seg_id = seg.get("id") or deterministic_uuid(f"seg:{hearing_obj['id']}:{i}")
-            sql_lines.append(
-                f"""
-                INSERT INTO tb_transcript_segments (
-                    id, transcript_id, segment_index, start_time_ms, end_time_ms,
-                    speaker_role, speaker_name, text, confidence_score, is_key_statement, topic_tag, block_id, block_index
-                ) VALUES (
-                    {sql_escape(seg_id)},
-                    (SELECT id FROM tb_transcripts WHERE hearing_id = {sql_escape(hearing_obj['id'])} LIMIT 1),
-                    {int(seg.get('segmentIndex', i))},
-                    {int(seg.get('startTimeMs', (i - 1) * 15000))},
-                    {int(seg.get('endTimeMs', i * 15000))},
-                    {sql_escape(seg.get('speakerRole', 'MAGISTRADO'))},
-                    {sql_escape(seg.get('speakerName', 'Participante'))},
-                    {sql_escape(seg.get('text', ''))},
-                    {float(seg.get('confidenceScore', 0.98))},
-                    {'TRUE' if seg.get('isKeyStatement') else 'FALSE'},
-                    {sql_escape(seg.get('topicTag', 'Audiência'))},
-                    {sql_escape(block_id)},
-                    1
-                )
-                ON CONFLICT (id) DO NOTHING;
-                """
-            )
-
-    run_psql_sql("\n".join(sql_lines))
+    if hearings:
+        print(" Hearings Summary:")
+        for idx, h in enumerate(hearings, start=1):
+            h_id = h.get("id", "")
+            c_num = h.get("caseNumber", "")
+            fname = h.get("mediaFilename") or h.get("audioFilename") or ""
+            st = h.get("status", "")
+            prompt_ver = h.get("promptVersion") or ""
+            blocks = client.get_hearing_blocks(str(h_id)) if h_id else []
+            if not prompt_ver and blocks:
+                for b in blocks:
+                    if isinstance(b, dict) and b.get("promptVersion"):
+                        prompt_ver = str(b["promptVersion"])
+                        break
+            prompt_label = f" | prompt={prompt_ver}" if prompt_ver else ""
+            print(f"  [{idx:02d}] {h_id} | {c_num} | {fname} | status={st} | blocks={len(blocks)}{prompt_label}")
+    print("========================================================================")
+    return 0
 
 
 def main() -> int:
+    repo_root = Path(__file__).resolve().parent.parent
+    default_data_dir = repo_root / "data"
+
     parser = argparse.ArgumentParser(
-        description="Populate Open Judy with Legal Cases (Processos) and Hearings (Audiências) from a base directory."
+        description="Populate Open Judy with Legal Cases (Processos) and Hearings (Audiências) via System REST APIs."
     )
     parser.add_argument(
         "base_folder",
-        help="Path to the base folder containing two subfolders: one for legal cases and another for audiencias.",
+        nargs="?",
+        default=str(default_data_dir) if default_data_dir.is_dir() else None,
+        help="Path to the base folder containing subfolders for legal cases and audiencias (defaults to ./data).",
+    )
+    parser.add_argument(
+        "--api-url",
+        default=os.environ.get("OPEN_JUDY_API_URL", "http://localhost:8080"),
+        help="Base URL of the Open Judy API Gateway (default: http://localhost:8080)",
     )
     parser.add_argument(
         "--case-service-url",
@@ -669,45 +893,144 @@ def main() -> int:
         help="Base URL of indexer-service (default: http://localhost:8089)",
     )
     parser.add_argument(
+        "--status",
+        action="store_true",
+        help="Query system REST APIs and display current cases, hearings, blocks, and prompt versions without modifying data.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Discover cases and hearings and check existing records via REST APIs without mutating state.",
+    )
+    parser.add_argument(
+        "--clean",
+        "--reset",
+        dest="clean",
+        action="store_true",
+        help="Clear existing cases, hearings, and search index via REST APIs (DELETE /api/v1/.../all) before populating.",
+    )
+    parser.add_argument(
+        "--skip-transcription",
+        action="store_true",
+        help="Skip enqueuing transcription jobs via transcription-service REST API.",
+    )
+    parser.add_argument(
         "--enqueue-transcription",
         action="store_true",
-        help="Also enqueue RabbitMQ transcription jobs for populated audiencias.",
+        default=True,
+        help="Enqueue transcription jobs via transcription-service REST API (enabled by default).",
+    )
+    parser.add_argument(
+        "--force-reprocess",
+        action="store_true",
+        help="Force transcription reprocessing via REST API even for hearings already marked TRANSCRIPTION_COMPLETED.",
+    )
+    parser.add_argument(
+        "--skip-analysis",
+        action="store_true",
+        help="Skip triggering the async Analysis & Contradiction task via REST API.",
+    )
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Explicitly trigger the async Analysis & Contradiction task via REST API for all populated hearings.",
     )
 
     args = parser.parse_args()
-    base_dir = Path(args.base_folder).expanduser().resolve()
+    prefer_gateway = "--api-url" in sys.argv or "OPEN_JUDY_API_URL" in os.environ
 
+    client = OpenJudyPopulateApiClient(
+        api_url=args.api_url,
+        case_service_url=args.case_service_url,
+        transcription_service_url=args.transcription_service_url,
+        indexer_service_url=args.indexer_service_url,
+        prefer_gateway=prefer_gateway,
+    )
+
+    if args.status:
+        return print_system_status(client)
+
+    if not args.base_folder:
+        print("[ERROR] Please provide <base_folder> or run with --status.", file=sys.stderr)
+        return 1
+
+    base_dir = Path(args.base_folder).expanduser().resolve()
     if not base_dir.exists() or not base_dir.is_dir():
         print(f"[ERROR] Base folder does not exist or is not a directory: {base_dir}", file=sys.stderr)
         return 1
 
-    repo_root = Path(__file__).resolve().parent.parent
     repo_data_cases = repo_root / "data" / "cases"
     repo_data_hearings = repo_root / "data" / "hearings"
-    repo_data_cases.mkdir(parents=True, exist_ok=True)
-    repo_data_hearings.mkdir(parents=True, exist_ok=True)
+    ui_public_hearings = repo_root / "frontend" / "open-judy-ui" / "public" / "media" / "hearings"
+    pipeline_media_hearings = repo_root / "pipelines" / "transcription-pipeline" / ".media" / "hearings"
+    if not args.dry_run:
+        repo_data_cases.mkdir(parents=True, exist_ok=True)
+        repo_data_hearings.mkdir(parents=True, exist_ok=True)
+        ui_public_hearings.mkdir(parents=True, exist_ok=True)
+        pipeline_media_hearings.mkdir(parents=True, exist_ok=True)
 
     cases_dir, hearings_dir = find_subfolders(base_dir)
 
     print("========================================================================")
-    print(" Open Judy — Populate Legal Cases & Audiências")
+    print(" Open Judy — Populate Legal Cases & Audiências (via System REST APIs)")
     print("========================================================================")
-    print(f" Base Folder      : {base_dir}")
-    print(f" Cases Subfolder  : {cases_dir if cases_dir else 'Not found'}")
-    print(f" Hearings Subfolder: {hearings_dir if hearings_dir else 'Not found'}")
+    print(f" Base Folder        : {base_dir}")
+    print(f" Cases Subfolder    : {cases_dir if cases_dir else 'Not found'}")
+    print(f" Hearings Subfolder : {hearings_dir if hearings_dir else 'Not found'}")
+    print(f" Case Service API   : {args.case_service_url}")
+    print(f" Transcription API  : {args.transcription_service_url}")
+    print(f" Indexer API        : {args.indexer_service_url}")
+    print(f" Mode               : {'DRY-RUN (no mutations)' if args.dry_run else ('CLEAN + POPULATE' if args.clean else 'IDEMPOTENT UPSERT')}")
     print("------------------------------------------------------------------------")
 
     if not cases_dir and not hearings_dir:
         print(
-            f"[ERROR] Could not find the two subfolders inside {base_dir}. "
-            "Expected one subfolder for legal cases (e.g. 'cases' or 'processos') and one for hearings (e.g. 'audiencias' or 'hearings').",
+            f"[ERROR] Could not find the subfolders inside {base_dir}. "
+            "Expected one subfolder for legal cases (e.g. 'cases' or 'processos') and/or one for hearings (e.g. 'audiencias' or 'hearings').",
             file=sys.stderr,
         )
         return 1
 
-    # 1. Collect & Populate Legal Cases
+    if args.clean and not args.dry_run:
+        print("\n[0/3] Clearing existing cases, hearings, and index via System REST APIs (--clean)...")
+        clean_res = client.clean_all()
+        print(
+            f"  [+] Cleared via REST APIs (cases HTTP {clean_res['cases']}, "
+            f"hearings HTTP {clean_res['hearings']}, indexer HTTP {clean_res['indexer']})."
+        )
+
+    existing_cases = client.list_cases()
+    existing_cases_by_num: Dict[str, Dict[str, Any]] = {
+        str(c.get("caseNumber")): c for c in existing_cases if isinstance(c, dict) and c.get("caseNumber")
+    }
+    existing_hearings = client.list_hearings()
+
     cases = collect_cases(cases_dir) if cases_dir else []
-    print(f"\n[1/3] Populating Legal Cases ({len(cases)} found)...")
+    hearings = collect_hearings(hearings_dir, cases or existing_cases) if hearings_dir else []
+
+    # Synthesize companion cases for any hearings whose CNJ caseNumber is not yet in cases
+    known_case_numbers = {c["caseNumber"] for c in cases} | set(existing_cases_by_num.keys())
+    for h in hearings:
+        c_num = h.get("caseNumber")
+        if c_num and c_num not in known_case_numbers:
+            cases.append(
+                {
+                    "id": h.get("caseId") or deterministic_uuid(f"case:{c_num}"),
+                    "caseNumber": c_num,
+                    "courtJurisdiction": h.get("courtJurisdiction") or "1ª Vara Cível e Empresarial",
+                    "legalBranch": infer_legal_branch(f"{c_num} {h.get('mediaFilename', '')}"),
+                    "subject": f"Autos vinculados à Audiência ({h.get('mediaFilename', c_num)})",
+                    "plaintiffName": "",
+                    "defendantName": "",
+                    "judgeName": "",
+                    "status": "EM_ANDAMENTO",
+                    "documents": [],
+                }
+            )
+            known_case_numbers.add(c_num)
+
+    # 1. Populate Legal Cases via Case Service & Indexer REST APIs
+    print(f"\n[1/3] Populating Legal Cases via REST API ({len(cases)} total)...")
     populated_cases = 0
 
     for c in cases:
@@ -715,71 +1038,183 @@ def main() -> int:
         clean_docs = []
         for d in local_docs:
             local_path = d.pop("_localPath", None)
-            if local_path:
+            if local_path and not args.dry_run:
                 src = Path(local_path)
                 dst_dir = repo_data_cases / c["caseNumber"]
                 dst_dir.mkdir(parents=True, exist_ok=True)
                 dst = dst_dir / src.name
-                if src.resolve() != dst.resolve():
+                if src.exists() and src.resolve() != dst.resolve():
                     shutil.copy2(src, dst)
             clean_docs.append(d)
         c["documents"] = clean_docs
 
-        status_code, resp = http_request(f"{args.case_service_url}/api/v1/cases", method="POST", payload=c)
-        persist_case_to_db(c)
+        if args.dry_run:
+            action = "update" if c["caseNumber"] in existing_cases_by_num else "create"
+            print(f"  [DRY-RUN] Would {action} Case {c['caseNumber']} ({c['legalBranch']}) [{len(clean_docs)} doc(s)]")
+            populated_cases += 1
+            continue
+
+        status_code, saved_case, action = client.upsert_case(c, existing_cases_by_num)
+        if isinstance(saved_case, dict) and saved_case.get("id"):
+            c["id"] = str(saved_case["id"])
+            existing_cases_by_num[c["caseNumber"]] = saved_case
+
+        client.index_entity(
+            {
+                "id": f"case-{c['id']}",
+                "entityType": "CASE",
+                "title": f"Processo {c['caseNumber']} - {c.get('subject', 'Autos Judiciais')}",
+                "caseNumber": c["caseNumber"],
+                "courtJurisdiction": c["courtJurisdiction"],
+                "content": (
+                    f"{c.get('subject', '')}. Autor: {c.get('plaintiffName', '')}. "
+                    f"Réu: {c.get('defendantName', '')}. Juízo: {c.get('judgeName', '')}."
+                ),
+                "targetUrl": f"/cases/{c['id']}",
+            }
+        )
 
         if status_code in (200, 201):
-            print(f"  [+] Case {c['caseNumber']} ({c['legalBranch']}) -> {c['subject']} [{len(clean_docs)} doc(s)]")
+            print(f"  [+] Case {c['caseNumber']} ({c['legalBranch']}) [{action}] -> {c['subject']} [{len(clean_docs)} doc(s)]")
             populated_cases += 1
         else:
-            print(f"  [~] Case {c['caseNumber']} persisted to DB (case-service HTTP {status_code})")
-            populated_cases += 1
+            print(f"  [!] Case {c['caseNumber']} API returned HTTP {status_code}", file=sys.stderr)
 
-    # 2. Collect & Populate Hearings (Audiências)
-    hearings = collect_hearings(hearings_dir, cases) if hearings_dir else []
-    print(f"\n[2/3] Populating Audiências / Hearings ({len(hearings)} found)...")
+    # 2. Populate Hearings (Audiências) via Case/Hearing Service & Transcription Service REST APIs
+    print(f"\n[2/3] Populating Audiências / Hearings via REST API ({len(hearings)} found)...")
     populated_hearings = 0
+    hearings_to_transcribe: List[Dict[str, Any]] = []
 
     for h in hearings:
         local_media = h.pop("_localMediaPath", None)
-        if local_media:
-            src = Path(local_media)
-            dst = repo_data_hearings / src.name
-            if src.resolve() != dst.resolve():
-                shutil.copy2(src, dst)
+        if h["caseNumber"] in existing_cases_by_num and existing_cases_by_num[h["caseNumber"]].get("id"):
+            h["caseId"] = str(existing_cases_by_num[h["caseNumber"]]["id"])
 
-        status_code, resp = http_request(f"{args.case_service_url}/api/v1/hearings", method="POST", payload=h)
-        persist_hearing_to_db(h)
+        if local_media and not args.dry_run:
+            src = Path(local_media)
+            if src.exists():
+                real_src = src.resolve()
+                dst = repo_data_hearings / src.name
+                if not dst.exists() and not dst.is_symlink():
+                    if real_src.stat().st_size > 10 * 1024 * 1024:
+                        dst.symlink_to(real_src)
+                    elif real_src != dst.resolve():
+                        shutil.copy2(real_src, dst)
+                ui_dst = ui_public_hearings / src.name
+                if not ui_dst.exists():
+                    try:
+                        os.link(real_src, ui_dst)
+                    except OSError:
+                        shutil.copy2(real_src, ui_dst)
+                for stale in pipeline_media_hearings.glob(f"{src.name}.*"):
+                    try:
+                        stale.unlink()
+                    except OSError:
+                        pass
+                pipe_dst = pipeline_media_hearings / src.name
+                if not pipe_dst.exists():
+                    try:
+                        os.link(real_src, pipe_dst)
+                    except OSError:
+                        shutil.copy2(real_src, pipe_dst)
+
+        encoded_name = urllib.parse.quote(h["mediaFilename"])
+        h["mediaUrl"] = f"/media/hearings/{encoded_name}"
+        h["videoUrl"] = f"/media/hearings/{encoded_name}"
+        h["enqueueTranscription"] = False
+
+        dur_min = round(float(h.get("audioDurationSeconds", 180.0)) / 60.0, 1)
+        size_mb = round(float(h.get("audioSizeBytes", 0)) / (1024 * 1024), 1)
+
+        if args.dry_run:
+            print(
+                f"  [DRY-RUN] Would upsert Audiência [{h['hearingType']}] "
+                f"Processo {h['caseNumber']} -> {h['mediaFilename']} ({dur_min} min, {size_mb} MB)"
+            )
+            populated_hearings += 1
+            continue
+
+        status_code, saved_hearing, action = client.upsert_hearing(
+            h,
+            existing_hearings,
+            force_reprocess=args.force_reprocess,
+        )
+        if isinstance(saved_hearing, dict) and saved_hearing.get("id"):
+            h["id"] = str(saved_hearing["id"])
+            h["status"] = str(saved_hearing.get("status") or h.get("status") or "PROCESSING_TRANSCRIPTION")
+
+        client.index_entity(
+            {
+                "id": f"hearing-{h['id']}",
+                "entityType": "HEARING_TRANSCRIPT",
+                "title": f"Audiência {h['mediaFilename']} ({h['caseNumber']})",
+                "caseNumber": h["caseNumber"],
+                "courtJurisdiction": h["courtJurisdiction"],
+                "content": f"Gravação de audiência judicial ({h['mediaFilename']}) vinculada ao processo {h['caseNumber']}.",
+                "targetUrl": f"/hearings/{h['id']}",
+            }
+        )
 
         if status_code in (200, 201):
-            print(f"  [+] Audiência [{h['hearingType']}] Processo {h['caseNumber']} ({h['mediaFilename']})")
+            print(
+                f"  [+] Audiência [{h['hearingType']}] ({action}) Processo {h['caseNumber']} "
+                f"-> {h['mediaFilename']} ({dur_min} min, {size_mb} MB, status={h['status']})"
+            )
             populated_hearings += 1
         else:
-            print(f"  [~] Audiência [{h['hearingType']}] Processo {h['caseNumber']} persisted to DB (HTTP {status_code})")
-            populated_hearings += 1
-
-        if args.enqueue_transcription:
-            params = urllib.parse.urlencode({
-                "caseNumber": h["caseNumber"],
-                "mediaType": h["mediaType"],
-                "filename": h["mediaFilename"],
-            })
-            enq_code, _ = http_request(
-                f"{args.transcription_service_url}/api/v1/transcriptions/enqueue/{h['id']}?{params}",
-                method="POST",
+            print(
+                f"  [!] Audiência [{h['hearingType']}] Processo {h['caseNumber']} API returned HTTP {status_code}",
+                file=sys.stderr,
             )
-            print(f"      -> Enqueued transcription job for {h['id']} (HTTP {enq_code})")
 
-    # 3. Trigger Unified Elasticsearch Reindexing
-    print("\n[3/3] Synchronizing Unified Search Index (Elasticsearch)...")
-    idx_code, idx_resp = http_request(f"{args.indexer_service_url}/api/v1/indexer/reindex", method="POST")
-    if idx_code in (200, 201, 202):
-        print("  [+] Elasticsearch reindex completed successfully.")
-    else:
-        print(f"  [i] Elasticsearch reindex skipped or unavailable (HTTP {idx_code}).")
+        # Decide whether transcription needs to be triggered via REST API
+        if not args.skip_transcription:
+            if args.force_reprocess or action == "created" or h.get("status") not in ("TRANSCRIPTION_COMPLETED", "READY"):
+                hearings_to_transcribe.append(h)
+            else:
+                blocks = client.get_hearing_blocks(str(h["id"]))
+                if not blocks:
+                    hearings_to_transcribe.append(h)
+
+    if not args.dry_run and hearings:
+        subprocess.run(
+            ["chcon", "-Rt", "container_file_t", str(ui_public_hearings), str(pipeline_media_hearings)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    if not args.dry_run and not args.skip_transcription and hearings_to_transcribe:
+        def _enqueue_sort_key(item: Dict[str, Any]) -> Tuple[int, float]:
+            fname = str(item.get("mediaFilename", "")).lower()
+            is_priority = 0 if ("1min" in fname or "2h" in fname) else 1
+            return (is_priority, float(item.get("audioDurationSeconds", 180.0)))
+
+        for h in sorted(hearings_to_transcribe, key=_enqueue_sort_key):
+            enq_code, _, used_url = client.trigger_transcription(h, force_reprocess=args.force_reprocess)
+            print(
+                f"      -> Triggered transcription via REST API ({used_url}) "
+                f"for {h['id']} [{h['mediaFilename']}] (HTTP {enq_code})"
+            )
+
+    if not args.dry_run and not args.skip_analysis and (args.analyze or not args.skip_transcription):
+        for h in hearings:
+            an_code, _, an_url = client.trigger_analysis(h, force=args.analyze or args.force_reprocess)
+            print(
+                f"      -> Triggered Analysis & Contradiction Task via REST API ({an_url}) "
+                f"for {h['id']} [{h['mediaFilename']}] (HTTP {an_code})"
+            )
+
+    # 3. Trigger Unified Elasticsearch Reindexing via Indexer REST API
+    if not args.dry_run:
+        print("\n[3/3] Synchronizing Unified Search Index (Elasticsearch REST API)...")
+        idx_code, _ = client.reindex_all()
+        if idx_code in (200, 201, 202):
+            print("  [+] Elasticsearch reindex completed successfully via REST API.")
+        else:
+            print(f"  [i] Elasticsearch reindex skipped or unavailable (HTTP {idx_code}).")
 
     print("\n========================================================================")
-    print(f" Done! Populated {populated_cases} Legal Case(s) and {populated_hearings} Audiência(s).")
+    print(f" Done! Processed {populated_cases} Legal Case(s) and {populated_hearings} Audiência(s) via System REST APIs.")
     print("========================================================================")
     return 0
 

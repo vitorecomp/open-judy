@@ -94,6 +94,10 @@ public class RabbitMqTranscriptionProducer {
     }
 
     public synchronized void enqueueJob(UUID hearingId, String caseNumber, String storagePath, String mediaUrl, String filename, String mimeType, MediaType mediaType) {
+        enqueueJob(hearingId, caseNumber, storagePath, mediaUrl, filename, mimeType, mediaType, false);
+    }
+
+    public synchronized void enqueueJob(UUID hearingId, String caseNumber, String storagePath, String mediaUrl, String filename, String mimeType, MediaType mediaType, boolean forceReprocess) {
         try {
             if (channel == null || !channel.isOpen()) {
                 initRabbitMq();
@@ -111,6 +115,7 @@ public class RabbitMqTranscriptionProducer {
             payload.put("filename", filename);
             payload.put("mimeType", mimeType);
             payload.put("mediaType", mediaType != null ? mediaType.name() : "VIDEO");
+            payload.put("forceReprocess", forceReprocess);
             payload.put("retry_count", 0);
             payload.put("enqueued_at", System.currentTimeMillis());
 

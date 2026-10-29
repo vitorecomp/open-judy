@@ -1,12 +1,16 @@
 package org.openjudy.caseservice.service;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.openjudy.caseservice.model.CaseDocument;
 import org.openjudy.caseservice.model.JudicialCase;
-import org.openjudy.common.enums.DocumentType;
 import org.openjudy.common.enums.LegalBranch;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,140 +19,35 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class CaseService {
 
+    private static final Path STORE_PATH = Path.of("target/populated-cases.json");
+
+    @Inject
+    ObjectMapper objectMapper;
+
     private final Map<UUID, JudicialCase> cases = new ConcurrentHashMap<>();
 
     @PostConstruct
-    void initSampleCasesAndDocuments() {
-        // Case 1: Reclamação Trabalhista - Horas Extras e Rescisão
-        UUID caseId1 = UUID.fromString("f1e2d3c4-b5a6-9788-7654-3210fedcba98");
-        JudicialCase c1 = new JudicialCase(
-                caseId1,
-                "0014238-89.2024.8.26.0100",
-                "2ª Vara Cível da Comarca de São Paulo",
-                LegalBranch.CIVIL,
-                "Indenização por Danos Morais e Rescisão Contratual",
-                "Carlos Eduardo Mendes",
-                "Construtora e Incorporadora Metrópole S.A.",
-                "Dra. Camila Vasconcelos"
-        );
-        c1.setStatus("EM_ANDAMENTO");
-        c1.setProsecutorName("Dr. Fernando Meirelles");
-        c1.getHearingIds().add(UUID.fromString("f1e2d3c4-b5a6-9788-7654-3210fedcba98"));
+    void init() {
+        try {
+            if (Files.exists(STORE_PATH)) {
+                List<JudicialCase> loaded = objectMapper.readValue(
+                        STORE_PATH.toFile(),
+                        new TypeReference<List<JudicialCase>>() {}
+                );
+                for (JudicialCase c : loaded) {
+                    if (c.getId() != null) {
+                        cases.put(c.getId(), c);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
 
-        // Documents for Case 1
-        c1.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId1,
-                "Petição Inicial com Pedido Liminar de Urgência",
-                DocumentType.PETICAO_INICIAL,
-                "peticao_inicial_0014238.pdf",
-                1420500L, "application/pdf",
-                "s3://open-judy-docs/0014238/peticao_inicial.pdf",
-                18, "Dra. Luciana Ferreira"
-        ));
-        c1.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId1,
-                "Procuração Ad Judicia e Comprovante de Custas",
-                DocumentType.PROCURACAO,
-                "procuracao_comprovante_custas.pdf",
-                250300L, "application/pdf",
-                "s3://open-judy-docs/0014238/procuracao.pdf",
-                2, "Dra. Luciana Ferreira"
-        ));
-        c1.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId1,
-                "Contestação com Documentos e Preliminares",
-                DocumentType.CONTESTACAO,
-                "contestacao_metropole_sa.pdf",
-                3100200L, "application/pdf",
-                "s3://open-judy-docs/0014238/contestacao.pdf",
-                34, "Dr. Roberto Silva"
-        ));
-        c1.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId1,
-                "Laudo Pericial de Engenharia Civil e Segurança da Obra",
-                DocumentType.LAUDO_TECNICO,
-                "laudo_pericial_engenharia.pdf",
-                5420100L, "application/pdf",
-                "s3://open-judy-docs/0014238/laudo_pericial.pdf",
-                42, "Perito Eng. Marcelo Rossi"
-        ));
-        c1.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId1,
-                "Termo e Ata de Audiência de Instrução e Julgamento",
-                DocumentType.ATA_AUDIENCIA,
-                "ata_audiencia_instrucao.pdf",
-                320100L, "application/pdf",
-                "s3://open-judy-docs/0014238/ata_audiencia.pdf",
-                4, "Open Judy AI System"
-        ));
-        cases.put(c1.getId(), c1);
-
-        // Case 2: Ação de Cobrança e Execução de Título
-        UUID caseId2 = UUID.randomUUID();
-        JudicialCase c2 = new JudicialCase(
-                caseId2,
-                "0004521-12.2024.5.02.0001",
-                "1ª Vara do Trabalho da Zona Sul",
-                LegalBranch.LABOR,
-                "Horas Extras, Intervalo Intrajornada e Equiparação Salarial",
-                "Juliana Almeida Prado",
-                "Banco Continental de Investimentos S.A.",
-                "Dr. Alexandre Martins"
-        );
-        c2.setStatus("AUDIENCIA_DESIGNADA");
-        c2.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId2,
-                "Petição Inicial Trabalhista e Cartões de Ponto",
-                DocumentType.PETICAO_INICIAL,
-                "peticao_trabalhista_juliana.pdf",
-                2100400L, "application/pdf",
-                "s3://open-judy-docs/0004521/peticao.pdf",
-                24, "Dr. Thiago Barreto"
-        ));
-        c2.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId2,
-                "Contestação com Registros de Ponto Eletrônico",
-                DocumentType.CONTESTACAO,
-                "contestacao_banco_continental.pdf",
-                4500100L, "application/pdf",
-                "s3://open-judy-docs/0004521/contestacao.pdf",
-                52, "Dra. Beatriz Toledo"
-        ));
-        cases.put(c2.getId(), c2);
-
-        // Case 3: Ação Penal - Estelionato Qualificado
-        UUID caseId3 = UUID.randomUUID();
-        JudicialCase c3 = new JudicialCase(
-                caseId3,
-                "0009832-44.2024.8.19.0001",
-                "4ª Vara Criminal da Capital - RJ",
-                LegalBranch.CRIMINAL,
-                "Art. 171 do CP - Fraude Eletrônica e Associação Criminosa",
-                "Ministério Público do Estado",
-                "Rodrigo Santoro de Oliveira e Outros",
-                "Dra. Mariana Bittencourt"
-        );
-        c3.setStatus("EM_ANDAMENTO");
-        c3.setProsecutorName("Dr. Carlos Alberto Gouveia");
-        c3.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId3,
-                "Denúncia do Ministério Público e Relatório Policial",
-                DocumentType.PETICAO_INICIAL,
-                "denuncia_mperj_0009832.pdf",
-                1800000L, "application/pdf",
-                "s3://open-judy-docs/0009832/denuncia.pdf",
-                16, "Dr. Carlos Alberto Gouveia"
-        ));
-        c3.getDocuments().add(new CaseDocument(
-                UUID.randomUUID(), caseId3,
-                "Relatório Técnico de Perícia Forense Digital",
-                DocumentType.LAUDO_TECNICO,
-                "pericia_forense_digital.pdf",
-                8900400L, "application/pdf",
-                "s3://open-judy-docs/0009832/pericia.pdf",
-                68, "Instituto de Criminalística"
-        ));
-        cases.put(c3.getId(), c3);
+    private void saveToDisk() {
+        try {
+            Files.createDirectories(STORE_PATH.getParent());
+            objectMapper.writeValue(STORE_PATH.toFile(), new ArrayList<>(cases.values()));
+        } catch (Exception ignored) {}
     }
 
     public List<JudicialCase> listCases(String search, String status, LegalBranch branch) {
@@ -186,6 +85,9 @@ public class CaseService {
     }
 
     public JudicialCase createCase(JudicialCase c) {
+        if (c.getCaseNumber() != null) {
+            cases.values().removeIf(existing -> c.getCaseNumber().equalsIgnoreCase(existing.getCaseNumber()));
+        }
         if (c.getId() == null) {
             c.setId(UUID.randomUUID());
         }
@@ -195,7 +97,13 @@ public class CaseService {
             c.setDocuments(new ArrayList<>());
         }
         cases.put(c.getId(), c);
+        saveToDisk();
         return c;
+    }
+
+    public void clearAllCases() {
+        cases.clear();
+        saveToDisk();
     }
 
     public Optional<JudicialCase> updateCase(UUID id, JudicialCase update) {
@@ -212,12 +120,15 @@ public class CaseService {
         if (update.getStatus() != null) existing.setStatus(update.getStatus());
         if (update.getLegalBranch() != null) existing.setLegalBranch(update.getLegalBranch());
         existing.setUpdatedAt(Instant.now());
+        saveToDisk();
 
         return Optional.of(existing);
     }
 
     public boolean deleteCase(UUID id) {
-        return cases.remove(id) != null;
+        boolean removed = cases.remove(id) != null;
+        if (removed) saveToDisk();
+        return removed;
     }
 
     // =========================================================================

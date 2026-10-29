@@ -46,7 +46,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-[var(--foreground)] flex transition-colors duration-200">
+    <div className="min-h-screen bg-dark-bg text-[var(--foreground)] flex">
       {/* Navigation Sidebar (Collapsible on Desktop, Drawer on Mobile) */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -57,7 +57,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area (Dynamic offset for collapsed w-20 = 5rem or expanded w-64 = 16rem) */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+        className={`flex-1 flex flex-col min-w-0 transition-[padding] duration-300 ease-in-out ${
           isCollapsed ? 'lg:pl-20' : 'lg:pl-64'
         }`}
       >

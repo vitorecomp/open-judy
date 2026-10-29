@@ -25,7 +25,7 @@ public class AgentRegistryService {
                 "GEMINI_ENTERPRISE_USER_AGENT",
                 List.of("Busca Semântica Multitribunal", "Validação de Súmulas Vinculantes", "Análise de Distinguishing"),
                 List.of("stf_jurisprudencia_store", "stj_repetitivos_store", "tjsp_acordaos_store"),
-                "gemini-2.0-flash",
+                "gemini-4-argon",
                 true
         );
         jurisprudencia.setSystemInstruction(
@@ -44,7 +44,7 @@ public class AgentRegistryService {
                 "ADK",
                 List.of("Cruzamento de Depoimentos", "Detecção de Inconsistências", "Mapeamento Fático"),
                 List.of("hearings_transcripts_store", "case_documents_store"),
-                "gemini-2.0-flash",
+                "gemini-4-argon",
                 false
         );
         contradicoes.setSystemInstruction(
@@ -63,7 +63,7 @@ public class AgentRegistryService {
                 "GEMINI_ENTERPRISE_USER_AGENT",
                 List.of("Minutas de Atas Judiciais", "Padronização CNJ", "Dosimetria e Dispositivo"),
                 List.of("judicial_templates_store", "legal_codes_store"),
-                "gemini-2.0-flash",
+                "gemini-4-argon",
                 false
         );
         redator.setSystemInstruction(
@@ -82,7 +82,7 @@ public class AgentRegistryService {
                 "A2A",
                 List.of("Extrator de Prazos", "Gestão de Pautas", "Notificações aos Advogados"),
                 List.of("case_dockets_store"),
-                "gemini-2.0-flash-lite",
+                "gemini-4-argon",
                 false
         );
         pautas.setSystemInstruction(

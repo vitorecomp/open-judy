@@ -25,9 +25,9 @@ public class AiModelResourceTest {
                 .when().get("/api/v1/config/models")
                 .then()
                 .statusCode(200)
-                .body("size()", greaterThanOrEqualTo(4))
-                .body("find { it.modelId == 'gemini-2.0-flash' }.name", equalTo("Google Gemini 2.0 Flash"))
-                .body("find { it.modelId == 'gemini-2.0-flash' }.isDefault", equalTo(true));
+                .body("size()", greaterThanOrEqualTo(3))
+                .body("find { it.modelId == 'gemini-4-argon' }.name", equalTo("Gemini 4 Argon"))
+                .body("find { it.modelId == 'gemini-4-argon' }.isDefault", equalTo(true));
     }
 
     @Test
@@ -37,7 +37,7 @@ public class AiModelResourceTest {
                 .when().get("/api/v1/config/models/default/LLM_MULTIMODAL")
                 .then()
                 .statusCode(200)
-                .body("modelId", equalTo("gemini-2.0-flash"))
+                .body("modelId", equalTo("gemini-4-argon"))
                 .body("provider", equalTo("GOOGLE_GEMINI"));
     }
 

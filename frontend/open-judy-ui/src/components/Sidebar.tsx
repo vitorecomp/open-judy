@@ -6,12 +6,12 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Scale,
-  Headphones,
   Settings,
   SlidersHorizontal,
   Bot,
   Layers,
   BookOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import JudyLogo from './JudyLogo';
@@ -27,7 +27,6 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
   active?: boolean;
 }
 
@@ -43,7 +42,6 @@ export default function Sidebar({
     role,
     permissions,
     systemName,
-    systemTagline,
     logoUrl,
     openPreferencesWithTab,
     openAdminConfig,
@@ -64,30 +62,36 @@ export default function Sidebar({
       name: 'Processos',
       href: '/cases',
       icon: Layers,
-      badge: '3',
       active: pathname.startsWith('/cases'),
     },
     {
       name: 'Audiências',
       href: '/hearings',
       icon: Scale,
-      badge: '5',
       active: pathname.startsWith('/hearings'),
     },
     {
       name: 'Cadernos',
       href: '/notebooks',
       icon: BookOpen,
-      badge: 'Novo',
       active: pathname.startsWith('/notebooks'),
     },
     {
       name: 'Agent Garden',
       href: '/agents',
       icon: Bot,
-      badge: 'Gemini',
       active: pathname.startsWith('/agents'),
     },
+    ...(isAdmin
+      ? [
+          {
+            name: 'Auditoria & Tasks',
+            href: '/audit',
+            icon: ShieldCheck,
+            active: pathname.startsWith('/audit'),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -101,7 +105,7 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 bg-dark-sidebar border-r border-dark-border flex flex-col justify-between transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 bottom-0 z-50 bg-dark-sidebar border-r border-dark-border flex flex-col justify-between transition-[width,transform] duration-300 ease-in-out ${
           isCollapsed ? 'w-20' : 'w-64'
         } ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -121,7 +125,7 @@ export default function Sidebar({
             <div
               className={`absolute top-0 ${
                 isCollapsed ? 'left-1/2 -translate-x-1/2' : 'left-4'
-              } transition-all duration-300 z-10`}
+              } transition-transform duration-300 z-10`}
             >
               <JudyLogo
                 size="md"
@@ -152,7 +156,8 @@ export default function Sidebar({
                   href={item.href}
                   onClick={onClose}
                   title={isCollapsed ? item.name : undefined}
-                  className={`flex items-center rounded-xl text-xs font-medium transition-all group relative ${
+                  aria-label={item.name}
+                  className={`flex items-center rounded-xl text-xs font-medium transition-colors group relative min-h-[36px] ${
                     isCollapsed
                       ? 'justify-center p-2.5'
                       : 'justify-between px-3 py-2.5'
@@ -178,19 +183,6 @@ export default function Sidebar({
                       <span className="truncate">{item.name}</span>
                     )}
                   </div>
-
-                  {/* Badge */}
-                  {item.badge && (
-                    <>
-                      {!isCollapsed ? (
-                        <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-crimson/80 text-white shadow-sm shadow-crimson/30 shrink-0">
-                          {item.badge}
-                        </span>
-                      ) : (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-crimson ring-2 ring-dark-sidebar" />
-                      )}
-                    </>
-                  )}
                 </Link>
               );
             })}
@@ -201,9 +193,11 @@ export default function Sidebar({
         <div className="p-2.5 border-t border-dark-border/60 space-y-2">
           <div className="space-y-0.5">
             <button
+              type="button"
               onClick={() => openPreferencesWithTab('ui')}
               title={isCollapsed ? 'Preferências' : undefined}
-              className={`w-full flex items-center rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill/50 transition ${
+              aria-label="Abrir Preferências"
+              className={`w-full flex items-center rounded-xl text-xs font-medium text-dark-muted hover:text-white hover:bg-dark-pill/50 transition-colors min-h-[36px] ${
                 isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
               }`}
             >
@@ -214,30 +208,27 @@ export default function Sidebar({
             {/* ADMIN ONLY SYSTEM CONFIGURATION BUTTON */}
             {isAdmin && (
               <button
+                type="button"
                 onClick={() => openAdminConfig('prompts')}
                 title={isCollapsed ? 'Configurações do Sistema (Admin)' : undefined}
-                className={`w-full flex items-center rounded-xl text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/40 transition shadow-sm ${
-                  isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
+                aria-label="Configurações do Sistema (Admin)"
+                className={`w-full flex items-center rounded-xl text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/40 transition-colors shadow-sm min-h-[36px] ${
+                  isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <SlidersHorizontal className="w-4 h-4 text-emerald-400 shrink-0" />
-                  {!isCollapsed && <span className="truncate">Configurações do Sistema</span>}
-                </div>
-                {!isCollapsed && (
-                  <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
-                    Admin
-                  </span>
-                )}
+                <SlidersHorizontal className="w-4 h-4 text-emerald-400 shrink-0" />
+                {!isCollapsed && <span className="truncate">Configurações do Sistema</span>}
               </button>
             )}
           </div>
 
           {/* User Profile Card with Profile Switcher */}
           <div className="pt-2 border-t border-dark-border/40">
-            <div
+            <button
+              type="button"
               onClick={() => openPreferencesWithTab('ui')}
-              className={`flex items-center rounded-xl bg-dark-card/80 hover:bg-dark-card border border-dark-border hover:border-crimson/40 cursor-pointer transition-all ${
+              aria-label="Abrir preferências do usuário"
+              className={`w-full text-left flex items-center rounded-xl bg-dark-card/80 hover:bg-dark-card border border-dark-border hover:border-crimson/40 cursor-pointer transition-colors ${
                 isCollapsed ? 'justify-center p-2' : 'gap-3 p-2'
               }`}
               title={isCollapsed ? `${user.fullName} (${role}) — Preferências` : 'Abrir Preferências do Usuário'}
@@ -263,30 +254,32 @@ export default function Sidebar({
                       {user.fullName}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 mt-0.5">
+                  <div className="flex items-center gap-1.5 mt-0.5">
                     <span
-                      className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider border ${currentPreset.badgeColor}`}
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-bold border ${currentPreset.badgeColor}`}
                     >
                       {role}
                     </span>
-                    <span className="text-[9px] text-dark-muted truncate">
+                    <span className="text-[11px] text-dark-muted truncate">
                       {currentPreset.title}
                     </span>
                   </div>
                 </div>
               )}
-            </div>
+            </button>
 
             {/* Quick Profile Switcher */}
             {!isCollapsed && (
               <div className="mt-2 flex items-center justify-between gap-1 px-0.5 flex-nowrap whitespace-nowrap">
-                <span className="text-[8px] text-dark-muted font-semibold uppercase shrink-0">Perfil:</span>
-                <div className="flex items-center gap-0.5 flex-nowrap justify-end min-w-0">
+                <span className="text-[11px] text-dark-muted font-medium shrink-0">Perfil:</span>
+                <div className="flex items-center gap-1 flex-nowrap justify-end min-w-0">
                   {availablePresets.map((p) => (
                     <button
+                      type="button"
                       key={p.username}
                       onClick={() => switchProfile(p.role)}
-                      className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase transition whitespace-nowrap shrink-0 ${
+                      aria-label={`Alternar perfil para ${p.name}`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap shrink-0 touch-target-expand ${
                         role === p.role
                           ? 'bg-crimson text-white shadow-sm'
                           : 'text-dark-muted hover:text-white hover:bg-dark-pill'

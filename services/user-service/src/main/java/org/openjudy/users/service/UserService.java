@@ -210,7 +210,7 @@ public class UserService {
 
         logActivity(user, "KEYCLOAK_JIT_PROVISIONED", "Usuário provisionado automaticamente via Keycloak IAM com perfil: " + resolvedRole);
 
-        // Emit Kafka event
+        // Emit RabbitMQ event
         eventProducer.emitUserCreated(new UserCreatedEvent(
                 user.id,
                 user.username,
@@ -279,7 +279,7 @@ public class UserService {
 
         logActivity(user, "USER_CREATED", "Usuário criado com papel: " + user.role);
 
-        // Emit Kafka event
+        // Emit RabbitMQ event
         eventProducer.emitUserCreated(new UserCreatedEvent(
                 user.id,
                 user.username,

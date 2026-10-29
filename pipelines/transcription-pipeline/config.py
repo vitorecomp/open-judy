@@ -37,7 +37,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "judy_password")
 
 # Gemini AI Settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "mock_or_set_real_gemini_key")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+_raw_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_MODEL = "gemini-3.8-flash" if _raw_model in ("gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro") else _raw_model
 GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta")
 
 # Pipeline Resilience Settings (Defaults, can be dynamically overridden from tb_system_settings)

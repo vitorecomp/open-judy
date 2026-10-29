@@ -38,8 +38,16 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Podman & Docker & Env
+# Podman & Docker & Env & Keys
 volumes/
+data/
+keys/
+services/.keys/
+pipelines/transcription-pipeline/.keys/
+pipelines/transcription-pipeline/.media/
+*service-account*.json
+study-deploys-*.json
+frontend/open-judy-ui/public/media/
 .env
 .env.local
 .env.*.local

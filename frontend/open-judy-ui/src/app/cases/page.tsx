@@ -39,11 +39,11 @@ export default function CasesPage() {
   // New Case Form State
   const [newCaseNumber, setNewCaseNumber] = useState('');
   const [newSubject, setNewSubject] = useState('');
-  const [newCourt, setNewCourt] = useState('2ª Vara Cível da Comarca de São Paulo');
+  const [newCourt, setNewCourt] = useState('');
   const [newBranch, setNewBranch] = useState('CIVIL');
   const [newPlaintiff, setNewPlaintiff] = useState('');
   const [newDefendant, setNewDefendant] = useState('');
-  const [newJudge, setNewJudge] = useState('Dra. Camila Vasconcelos');
+  const [newJudge, setNewJudge] = useState('');
 
   const viewMode = (config?.hearingsViewMode as 'TABLE' | 'CARDS') || 'CARDS';
 
@@ -165,17 +165,17 @@ export default function CasesPage() {
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="px-4 py-2.5 rounded-xl bg-dark-input border border-dark-border">
-            <div className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Total de Processos</div>
-            <div className="text-sm font-bold text-white">{cases.length} Autos</div>
+            <div className="text-[11px] text-dark-muted font-medium">Total de Processos</div>
+            <div className="text-sm font-bold text-white tabular-nums">{cases.length} Autos</div>
           </div>
           <div className="px-4 py-2.5 rounded-xl bg-dark-input border border-dark-border">
-            <div className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Documentos Anexados</div>
-            <div className="text-sm font-bold text-emerald-400">{totalDocuments} Peças</div>
+            <div className="text-[11px] text-dark-muted font-medium">Documentos Anexados</div>
+            <div className="text-sm font-bold text-emerald-400 tabular-nums">{totalDocuments} Peças</div>
           </div>
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition shadow-md shadow-crimson/25"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-md shadow-crimson/25 min-h-[36px]"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Processo</span>
@@ -198,7 +198,7 @@ export default function CasesPage() {
             <button
               key={branch.id}
               onClick={() => setFilterBranch(branch.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap min-h-[36px] ${
                 filterBranch === branch.id
                   ? 'bg-crimson text-white border-crimson shadow-sm font-semibold'
                   : 'bg-dark-input border-dark-border text-dark-muted hover:text-white hover:bg-dark-pill'
@@ -218,30 +218,32 @@ export default function CasesPage() {
               placeholder="Buscar por número CNJ, partes ou vara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition shadow-inner"
+              className="w-full pl-10 pr-4 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors shadow-inner min-h-[36px]"
             />
           </div>
 
           <div className="flex items-center bg-dark-input border border-dark-border rounded-xl p-1 shrink-0">
             <button
               onClick={() => handleToggleViewMode('CARDS')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition ${
+              className={`p-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center ${
                 viewMode === 'CARDS'
                   ? 'bg-crimson text-white shadow-sm'
                   : 'text-dark-muted hover:text-white'
               }`}
               title="Exibição em Cards"
+              aria-label="Exibir processos em grade de cards"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleToggleViewMode('TABLE')}
-              className={`p-1.5 rounded-lg text-xs font-medium transition ${
+              className={`p-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center ${
                 viewMode === 'TABLE'
                   ? 'bg-crimson text-white shadow-sm'
                   : 'text-dark-muted hover:text-white'
               }`}
               title="Exibição em Tabela"
+              aria-label="Exibir processos em tabela"
             >
               <LayoutList className="w-4 h-4" />
             </button>
@@ -269,22 +271,22 @@ export default function CasesPage() {
             return (
               <div
                 key={c.id}
-                className="bg-dark-card border border-dark-border hover:border-crimson/60 rounded-2xl p-5 shadow-xl transition-all duration-200 flex flex-col justify-between group"
+                className="bg-dark-card border border-dark-border hover:border-crimson/60 rounded-2xl p-5 shadow-xl transition-colors duration-200 flex flex-col justify-between group"
               >
                 <div className="space-y-3.5">
                   {/* Card Header: CNJ Number & Branch */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="text-[10px] text-dark-muted uppercase font-mono tracking-wider">Processo Judicial</span>
+                      <span className="text-[11px] text-dark-muted font-medium">Processo Judicial</span>
                       <Link
                         href={`/cases/${c.id}`}
-                        className="text-sm font-black text-white font-mono group-hover:text-red-300 transition-colors block"
+                        className="text-sm font-black text-white font-mono tabular-nums group-hover:text-red-300 transition-colors block"
                       >
                         {c.caseNumber}
                       </Link>
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${branchBadge.bg} ${branchBadge.text} ${branchBadge.border} shrink-0`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${branchBadge.bg} ${branchBadge.text} ${branchBadge.border} shrink-0`}>
                       {branchBadge.label}
                     </span>
                   </div>
@@ -303,7 +305,7 @@ export default function CasesPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 truncate">
-                      <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span className="truncate text-dark-muted">
                         <strong className="text-slate-300 font-medium">Réu:</strong> {c.defendantName}
                       </span>
@@ -316,12 +318,12 @@ export default function CasesPage() {
 
                   {/* Documents & Status Counter */}
                   <div className="flex items-center justify-between text-[11px] pt-1">
-                    <span className="flex items-center gap-1.5 text-emerald-300 font-medium bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-900/30">
+                    <span className="flex items-center gap-1.5 text-emerald-300 font-medium bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-900/30 tabular-nums">
                       <FileCheck className="w-3.5 h-3.5 text-emerald-400" />
                       <span>{docCount} documento{docCount === 1 ? '' : 's'} anexado{docCount === 1 ? '' : 's'}</span>
                     </span>
 
-                    <span className="text-[10px] text-dark-muted font-mono">
+                    <span className="text-[11px] text-dark-muted font-mono">
                       {c.status || 'EM ANDAMENTO'}
                     </span>
                   </div>
@@ -329,13 +331,13 @@ export default function CasesPage() {
 
                 {/* Bottom Action Link */}
                 <div className="pt-4 mt-4 border-t border-dark-border flex items-center justify-between">
-                  <span className="text-[10px] text-dark-muted font-mono">
+                  <span className="text-[11px] text-dark-muted font-medium">
                     Juiz: {c.judgeName}
                   </span>
 
                   <Link
                     href={`/cases/${c.id}`}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition shadow-sm group-hover:translate-x-0.5"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-sm min-h-[36px]"
                   >
                     <span>Abrir Autos</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -350,14 +352,14 @@ export default function CasesPage() {
         <div className="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-dark-bg/80 border-b border-dark-border text-dark-muted font-mono uppercase text-[10px]">
+              <thead className="bg-dark-bg/80 border-b border-dark-border text-dark-muted text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">Número do Processo</th>
-                  <th className="py-3 px-4">Assunto / Causa</th>
-                  <th className="py-3 px-4">Partes</th>
-                  <th className="py-3 px-4">Vara & Juiz</th>
-                  <th className="py-3 px-4 text-center">Documentos</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
+                  <th className="py-3 px-4 font-semibold">Número do Processo</th>
+                  <th className="py-3 px-4 font-semibold">Assunto / Causa</th>
+                  <th className="py-3 px-4 font-semibold">Partes</th>
+                  <th className="py-3 px-4 font-semibold">Vara & Juiz</th>
+                  <th className="py-3 px-4 text-center font-semibold">Documentos</th>
+                  <th className="py-3 px-4 text-right font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-border">
@@ -366,13 +368,13 @@ export default function CasesPage() {
                   const docCount = c.documents?.length || 0;
 
                   return (
-                    <tr key={c.id} className="hover:bg-dark-input/50 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-white">
-                        <Link href={`/cases/${c.id}`} className="hover:text-red-300 transition">
+                    <tr key={c.id} className="hover:bg-dark-input/50 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-white tabular-nums">
+                        <Link href={`/cases/${c.id}`} className="hover:text-red-300 transition-colors">
                           {c.caseNumber}
                         </Link>
                         <div className="mt-1">
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${branchBadge.bg} ${branchBadge.text} ${branchBadge.border}`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold border ${branchBadge.bg} ${branchBadge.text} ${branchBadge.border}`}>
                             {branchBadge.label}
                           </span>
                         </div>
@@ -389,7 +391,7 @@ export default function CasesPage() {
                         <div className="text-dark-muted text-[11px] truncate max-w-[200px]">{c.judgeName}</div>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 font-bold font-mono text-[11px]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 font-bold font-mono text-[11px] tabular-nums">
                           <FileCheck className="w-3 h-3 text-emerald-400" />
                           <span>{docCount}</span>
                         </span>
@@ -397,7 +399,7 @@ export default function CasesPage() {
                       <td className="py-3.5 px-4 text-right">
                         <Link
                           href={`/cases/${c.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition shadow-sm"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-sm min-h-[36px]"
                         >
                           <span>Abrir</span>
                           <ArrowRight className="w-3 h-3" />
@@ -425,7 +427,8 @@ export default function CasesPage() {
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                aria-label="Fechar modal de cadastro de processo"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -450,6 +453,7 @@ export default function CasesPage() {
                   <select
                     value={newBranch}
                     onChange={(e) => setNewBranch(e.target.value)}
+                    aria-label="Selecionar ramo do direito"
                     className="w-full bg-dark-input border border-dark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson"
                   >
                     <option value="CIVIL">Cível</option>

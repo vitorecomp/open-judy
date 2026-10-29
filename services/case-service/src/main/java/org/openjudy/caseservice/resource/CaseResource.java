@@ -72,6 +72,14 @@ public class CaseResource {
     }
 
     @DELETE
+    @Path("/all")
+    @Operation(summary = "Clear all judicial cases")
+    public Response clearAllCases() {
+        caseService.clearAllCases();
+        return Response.noContent().build();
+    }
+
+    @DELETE
     @Path("/{id}")
     @Operation(summary = "Delete judicial case")
     public Response deleteCase(@PathParam("id") UUID id) {

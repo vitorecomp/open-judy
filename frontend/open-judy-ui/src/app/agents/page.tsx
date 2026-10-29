@@ -105,7 +105,7 @@ export default function AgentGardenHubPage() {
             <div className="px-4 py-3 rounded-xl bg-dark-input border border-dark-border flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <div>
-                <div className="text-[10px] text-dark-muted uppercase font-mono font-semibold">StreamAssist Gateway</div>
+                <div className="text-[11px] text-dark-muted font-medium">StreamAssist Gateway</div>
                 <div className="text-xs font-bold text-white">Google Cloud Enterprise</div>
               </div>
             </div>
@@ -113,7 +113,7 @@ export default function AgentGardenHubPage() {
             <div className="px-4 py-3 rounded-xl bg-dark-input border border-dark-border flex items-center gap-3">
               <Database className="w-4 h-4 text-sky-400" />
               <div>
-                <div className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Data Stores</div>
+                <div className="text-[11px] text-dark-muted font-medium">Data Stores</div>
                 <div className="text-xs font-bold text-white">STF, STJ & Tribunais</div>
               </div>
             </div>
@@ -137,7 +137,7 @@ export default function AgentGardenHubPage() {
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap min-h-[36px] ${
                 filterCategory === cat.id
                   ? 'bg-crimson text-white border-crimson shadow-sm font-semibold'
                   : 'bg-dark-input border-dark-border text-dark-muted hover:text-white hover:bg-dark-pill'
@@ -156,7 +156,7 @@ export default function AgentGardenHubPage() {
             placeholder="Buscar por nome, função ou dados..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition shadow-inner"
+            className="w-full pl-10 pr-4 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors shadow-inner min-h-[36px]"
           />
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function AgentGardenHubPage() {
           return (
             <div
               key={agent.id}
-              className="bg-dark-card border border-dark-border hover:border-crimson/60 rounded-2xl p-5 shadow-xl transition-all duration-200 flex flex-col justify-between group"
+              className="bg-dark-card border border-dark-border hover:border-crimson/60 rounded-2xl p-5 shadow-xl transition-colors duration-200 flex flex-col justify-between group"
             >
               <div className="space-y-4">
                 {/* Top Row: Icon, Title & Badges */}
@@ -184,17 +184,17 @@ export default function AgentGardenHubPage() {
                         {agent.name}
                       </h2>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${badge.bg} ${badge.text} ${badge.border}`}>
                           {badge.label}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-dark-input text-dark-muted font-mono border border-dark-border">
+                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-dark-input text-dark-muted font-mono border border-dark-border">
                           {agent.agentType.replace(/_/g, ' ')}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-800/40 font-semibold shrink-0">
+                  <span className="flex items-center gap-1 text-[11px] status-badge-success px-2.5 py-1 rounded-lg border font-semibold shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     <span>Ativo</span>
                   </span>
@@ -207,7 +207,7 @@ export default function AgentGardenHubPage() {
 
                 {/* Capabilities Chips */}
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-slate-400">
                     Habilidades do Agente:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -224,27 +224,27 @@ export default function AgentGardenHubPage() {
 
                 {/* Data Stores & Model Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-dark-border/60 text-[11px] text-dark-muted">
-                  <div className="flex items-center gap-1.5 truncate">
+                  <div className="flex items-center gap-1.5 truncate tabular-nums">
                     <Database className="w-3.5 h-3.5 text-crimson shrink-0" />
                     <span className="truncate">Data Stores: <strong className="text-slate-200">{agent.dataStores.length} conectados</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Cpu className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                    <span className="truncate">Modelo: <strong className="text-slate-200">{agent.defaultModel || 'gemini-2.0-flash'}</strong></span>
+                    <span className="truncate">Modelo: <strong className="text-slate-200 font-mono">{agent.defaultModel || 'gemini-4-argon'}</strong></span>
                   </div>
                 </div>
               </div>
 
               {/* Bottom Action Button: Go to Agent Conversations */}
               <div className="pt-5 mt-4 border-t border-dark-border flex items-center justify-between gap-3">
-                <span className="text-[11px] text-dark-muted flex items-center gap-1.5 font-mono">
+                <span className="text-[11px] text-dark-muted flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
                   <span>Sessões Multi-turn via StreamAssist</span>
                 </span>
 
                 <Link
                   href={`/agents/${agent.id}`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition shadow-md shadow-crimson/20 group-hover:translate-x-0.5 duration-150"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-md shadow-crimson/20 min-h-[36px]"
                 >
                   <span>Abrir Conversas</span>
                   <ArrowRight className="w-3.5 h-3.5" />

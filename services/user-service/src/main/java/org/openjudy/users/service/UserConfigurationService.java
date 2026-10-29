@@ -116,7 +116,7 @@ public class UserConfigurationService {
         // Log activity
         logActivity(config.user, "CONFIG_UPDATED", "Preferências e configurações do usuário atualizadas");
 
-        // Emit Kafka event
+        // Emit RabbitMQ event
         eventProducer.emitConfigUpdated(new UserConfigUpdatedEvent(
                 userId,
                 config.theme,

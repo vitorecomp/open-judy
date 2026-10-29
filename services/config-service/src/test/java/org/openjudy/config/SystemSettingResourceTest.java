@@ -20,7 +20,7 @@ public class SystemSettingResourceTest {
                 .then()
                 .statusCode(200)
                 .body("size()", greaterThanOrEqualTo(5))
-                .body("find { it.key == 'gemini.default.model' }.value", equalTo("gemini-2.0-flash"));
+                .body("find { it.key == 'gemini.default.model' }.value", equalTo("gemini-4-argon"));
 
         given()
                 .queryParam("category", "AI_CORE")

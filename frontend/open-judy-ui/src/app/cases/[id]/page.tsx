@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import { Case, CaseDocument, DocumentType } from '@/lib/types';
+import { api, formatPromptVersionBadge } from '@/lib/api';
+import { Case, CaseDocument, DocumentType, Hearing } from '@/lib/types';
 import {
   ArrowLeft,
   Layers,
@@ -40,6 +40,7 @@ export default function CaseDetailPage() {
 
   const [judicialCase, setJudicialCase] = useState<Case | null>(null);
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
+  const [caseHearings, setCaseHearings] = useState<Hearing[]>([]);
   const [loading, setLoading] = useState(true);
   const [docSearch, setDocSearch] = useState('');
   const [filterDocType, setFilterDocType] = useState<string>('ALL');
@@ -71,6 +72,8 @@ export default function CaseDetailPage() {
         const docs = await api.getCaseDocuments(caseId);
         setDocuments(docs);
       }
+      const linkedHearings = await api.getHearingsByCase(c?.caseNumber || caseId);
+      setCaseHearings(linkedHearings);
     } catch (e) {
       console.error(e);
     } finally {
@@ -174,19 +177,21 @@ export default function CaseDetailPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/cases"
-              className="p-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition"
+              className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
               title="Voltar para a lista de processos"
+              aria-label="Voltar para a lista de processos"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-dark-muted font-mono uppercase tracking-wider">Autos do Processo</span>
-              <span className="text-sm font-black text-white font-mono">{judicialCase?.caseNumber || '0014238-89.2024.8.26.0100'}</span>
+              <span className="text-xs text-dark-muted font-medium">Autos do Processo</span>
+              <span className="text-sm font-black text-white font-mono tabular-nums">{judicialCase?.caseNumber || '0014238-89.2024.8.26.0100'}</span>
               <button
                 onClick={handleCopyCaseNumber}
-                className="p-1 rounded hover:bg-dark-input text-dark-muted hover:text-white transition"
+                className="p-1.5 rounded hover:bg-dark-input text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                 title="Copiar número do processo"
+                aria-label="Copiar número do processo"
               >
                 {copiedCaseNumber ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
@@ -196,7 +201,7 @@ export default function CaseDetailPage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link
               href="/hearings"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
             >
               <Scale className="w-3.5 h-3.5 text-crimson" />
               <span>Audiências do Processo</span>
@@ -204,7 +209,7 @@ export default function CaseDetailPage() {
 
             <Link
               href="/agents"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
             >
               <Bot className="w-3.5 h-3.5 text-sky-400" />
               <span>Analisar no Agent Garden</span>
@@ -212,7 +217,7 @@ export default function CaseDetailPage() {
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition shadow-md shadow-crimson/20"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-md shadow-crimson/20 min-h-[36px]"
             >
               <Plus className="w-4 h-4" />
               <span>Anexar Peça</span>
@@ -220,31 +225,107 @@ export default function CaseDetailPage() {
           </div>
         </div>
 
-        {/* Case Subject & Meta Grid */}
-        <div className="space-y-2">
+        {/* Case Subject & Meta Grid (Distilled Hairlined Strip) */}
+        <div className="space-y-3">
           <h1 className="text-base sm:text-lg font-bold text-white leading-snug">
-            {judicialCase?.subject || 'Indenização por Danos Morais e Rescisão Contratual'}
+            {judicialCase?.subject || judicialCase?.caseNumber || 'Processo Judicial'}
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-xs">
-            <div className="p-3 rounded-xl bg-dark-input/60 border border-dark-border/60 space-y-1">
-              <span className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Polo Ativo (Autor)</span>
-              <div className="font-semibold text-white truncate">{judicialCase?.plaintiffName || 'Carlos Eduardo Mendes'}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-dark-border/60 border-t border-dark-border/60 pt-3 text-xs">
+            <div className="py-2 md:py-0 md:pr-4 space-y-1">
+              <span className="text-[11px] text-dark-muted font-semibold">Polo Ativo (Autor)</span>
+              <div className="font-semibold text-white truncate">{judicialCase?.plaintiffName || '—'}</div>
             </div>
 
-            <div className="p-3 rounded-xl bg-dark-input/60 border border-dark-border/60 space-y-1">
-              <span className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Polo Passivo (Réu)</span>
-              <div className="font-semibold text-white truncate">{judicialCase?.defendantName || 'Construtora Metrópole S.A.'}</div>
+            <div className="py-2 md:py-0 md:px-4 space-y-1">
+              <span className="text-[11px] text-dark-muted font-semibold">Polo Passivo (Réu)</span>
+              <div className="font-semibold text-white truncate">{judicialCase?.defendantName || '—'}</div>
             </div>
 
-            <div className="p-3 rounded-xl bg-dark-input/60 border border-dark-border/60 space-y-1">
-              <span className="text-[10px] text-dark-muted uppercase font-mono font-semibold">Juízo & Vara</span>
-              <div className="font-semibold text-white truncate">{judicialCase?.courtJurisdiction || '2ª Vara Cível da Capital'}</div>
-              <div className="text-[11px] text-dark-muted truncate">Juiz: {judicialCase?.judgeName || 'Dra. Camila Vasconcelos'}</div>
+            <div className="py-2 md:py-0 md:pl-4 space-y-1">
+              <span className="text-[11px] text-dark-muted font-semibold">Juízo & Vara</span>
+              <div className="font-semibold text-white truncate">{judicialCase?.courtJurisdiction || '—'}</div>
+              {judicialCase?.judgeName && (
+                <div className="text-[11px] text-dark-muted truncate">Juiz: {judicialCase.judgeName}</div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* Linked Hearings Card Grid (with Prompt Version Badge) */}
+      {/* ========================================================================= */}
+      {caseHearings.length > 0 && (
+        <div className="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-3.5">
+          <div className="flex items-center justify-between gap-3 border-b border-dark-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <Scale className="w-5 h-5 text-crimson" />
+              <h2 className="text-sm font-bold text-white">Audiências Vinculadas ao Processo</h2>
+              <span className="text-xs font-mono text-dark-muted px-2 py-0.5 bg-dark-input rounded-md border border-dark-border tabular-nums">
+                {caseHearings.length} {caseHearings.length === 1 ? 'audiência' : 'audiências'}
+              </span>
+            </div>
+            <Link
+              href="/hearings"
+              className="text-xs text-crimson hover:underline font-semibold flex items-center gap-1"
+            >
+              <span>Ver Pauta Completa</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {caseHearings.map((h) => {
+              const promptLabel = formatPromptVersionBadge(h.promptVersion, h.pipelineVersion);
+              const isCompleted =
+                h.status === 'TRANSCRIPTION_COMPLETED' ||
+                h.status === 'ANALYSIS_COMPLETED' ||
+                h.status === 'READY';
+              return (
+                <Link
+                  key={h.id}
+                  href={`/hearings/${h.id}`}
+                  className="p-4 rounded-xl bg-dark-input/60 hover:bg-dark-input border border-dark-border hover:border-crimson/50 transition-colors flex flex-col justify-between gap-2.5 group"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-white group-hover:text-crimson transition-colors truncate">
+                        {h.mediaFilename || h.audioFilename || h.caseNumber}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${
+                          isCompleted
+                            ? 'status-badge-success'
+                            : 'status-badge-warning'
+                        }`}
+                      >
+                        {isCompleted ? 'concluído' : 'transcrevendo'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-mono text-dark-muted truncate tabular-nums">
+                      {h.caseNumber}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-dark-border/60 flex-wrap">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-indigo-950/40 text-indigo-300 border border-indigo-800/40 truncate"
+                      title={`Versão do Prompt utilizada na transcrição: ${h.promptVersion || promptLabel}`}
+                    >
+                      <Sparkles className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                      <span className="truncate">Prompt: {promptLabel}</span>
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                      {h.participants?.length || 0} part.
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* Bottom Card: Case Documents Explorer */}
@@ -255,7 +336,7 @@ export default function CaseDetailPage() {
           <div className="flex items-center gap-2.5">
             <FileText className="w-5 h-5 text-crimson" />
             <h2 className="text-sm font-bold text-white">Acervo Documental dos Autos</h2>
-            <span className="text-xs font-mono text-dark-muted px-2 py-0.5 bg-dark-input rounded-md border border-dark-border">
+            <span className="text-xs font-mono text-dark-muted px-2 py-0.5 bg-dark-input rounded-md border border-dark-border tabular-nums">
               {documents.length} peças anexadas
             </span>
           </div>
@@ -268,7 +349,7 @@ export default function CaseDetailPage() {
                 placeholder="Buscar nas peças do processo..."
                 value={docSearch}
                 onChange={(e) => setDocSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition shadow-inner"
+                className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors shadow-inner min-h-[36px]"
               />
             </div>
           </div>
@@ -287,7 +368,7 @@ export default function CaseDetailPage() {
             <button
               key={type.id}
               onClick={() => setFilterDocType(type.id)}
-              className={`px-3 py-1 rounded-xl text-xs font-medium border transition whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap min-h-[36px] ${
                 filterDocType === type.id
                   ? 'bg-crimson text-white border-crimson shadow-sm font-semibold'
                   : 'bg-dark-input border-dark-border text-dark-muted hover:text-white hover:bg-dark-pill'
@@ -313,23 +394,23 @@ export default function CaseDetailPage() {
             </div>
           ) : (
             <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-dark-bg/80 border-b border-dark-border text-dark-muted font-mono uppercase text-[10px]">
+              <thead className="bg-dark-bg/80 border-b border-dark-border text-dark-muted text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">Tipo da Peça</th>
-                  <th className="py-3 px-4">Título & Arquivo</th>
-                  <th className="py-3 px-4 text-center">Extensão / Páginas</th>
-                  <th className="py-3 px-4">Juntada por</th>
-                  <th className="py-3 px-4 text-center">Status OCR</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
+                  <th className="py-3 px-4 font-semibold">Tipo da Peça</th>
+                  <th className="py-3 px-4 font-semibold">Título & Arquivo</th>
+                  <th className="py-3 px-4 text-center font-semibold">Extensão / Páginas</th>
+                  <th className="py-3 px-4 font-semibold">Juntada por</th>
+                  <th className="py-3 px-4 text-center font-semibold">Status OCR</th>
+                  <th className="py-3 px-4 text-right font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-border">
                 {filteredDocs.map((doc) => {
                   const badge = getDocTypeBadge(doc.documentType);
                   return (
-                    <tr key={doc.id} className="hover:bg-dark-input/40 transition">
+                    <tr key={doc.id} className="hover:bg-dark-input/40 transition-colors">
                       <td className="py-3.5 px-4">
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${badge.bg} ${badge.text} ${badge.border}`}>
                           {badge.label}
                         </span>
                       </td>
@@ -338,12 +419,12 @@ export default function CaseDetailPage() {
                         <div className="font-bold text-white flex items-center gap-1.5">
                           <span>{doc.title}</span>
                         </div>
-                        <div className="text-[11px] text-dark-muted font-mono mt-0.5">
+                        <div className="text-[11px] text-dark-muted font-mono mt-0.5 tabular-nums">
                           {doc.fileName} • {formatFileSize(doc.fileSize)}
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center font-mono">
+                      <td className="py-3.5 px-4 text-center font-mono tabular-nums">
                         <span className="px-2 py-0.5 bg-dark-input rounded-md border border-dark-border text-slate-300">
                           {doc.pageCount || 1} pág{doc.pageCount === 1 ? '' : 's'}
                         </span>
@@ -351,13 +432,13 @@ export default function CaseDetailPage() {
 
                       <td className="py-3.5 px-4">
                         <div className="text-white font-medium">{doc.uploadedBy || 'Advocacia'}</div>
-                        <div className="text-[10px] text-dark-muted font-mono">
+                        <div className="text-[11px] text-dark-muted font-mono tabular-nums">
                           {new Date(doc.uploadedAt).toLocaleDateString()}
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 text-[10px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full status-badge-success border text-[11px] font-semibold">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                           <span>Indexado</span>
                         </span>
@@ -367,22 +448,25 @@ export default function CaseDetailPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setPreviewDoc(doc)}
-                            className="p-1.5 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition"
+                            className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                             title="Visualizar Peça e Texto OCR"
+                            aria-label={`Visualizar peça ${doc.title}`}
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => alert(`Baixando arquivo ${doc.fileName}...`)}
-                            className="p-1.5 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition"
+                            className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                             title="Download do PDF"
+                            aria-label={`Baixar PDF de ${doc.title}`}
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteDocument(doc.id)}
-                            className="p-1.5 rounded-lg bg-dark-input hover:bg-red-950/50 border border-dark-border text-dark-muted hover:text-red-400 transition"
+                            className="p-2 rounded-lg bg-dark-input hover:bg-red-950/50 border border-dark-border text-dark-muted hover:text-red-400 transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
                             title="Remover Peça"
+                            aria-label={`Remover peça ${doc.title}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -410,7 +494,8 @@ export default function CaseDetailPage() {
               </div>
               <button
                 onClick={() => setIsUploadModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                aria-label="Fechar modal de juntada de peça"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -435,6 +520,7 @@ export default function CaseDetailPage() {
                   <select
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as DocumentType)}
+                    aria-label="Selecionar tipo de documento processual"
                     className="w-full bg-dark-input border border-dark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson"
                   >
                     <option value="PETICAO_INICIAL">Petição Inicial</option>
@@ -454,7 +540,7 @@ export default function CaseDetailPage() {
                     min={1}
                     value={newDocPageCount}
                     onChange={(e) => setNewDocPageCount(Number(e.target.value))}
-                    className="w-full bg-dark-input border border-dark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson font-mono"
+                    className="w-full bg-dark-input border border-dark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson font-mono tabular-nums"
                   />
                 </div>
               </div>
@@ -484,13 +570,13 @@ export default function CaseDetailPage() {
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill text-dark-muted hover:text-white font-semibold transition"
+                  className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill text-dark-muted hover:text-white font-semibold transition-colors min-h-[36px]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-white font-bold transition shadow-md shadow-crimson/20 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-white font-bold transition-colors shadow-md shadow-crimson/20 flex items-center gap-1.5 min-h-[36px]"
                 >
                   <Check className="w-4 h-4" />
                   <span>Anexar aos Autos</span>
@@ -510,17 +596,18 @@ export default function CaseDetailPage() {
             <div className="flex items-start justify-between border-b border-dark-border pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-dark-input text-red-300 font-mono border border-dark-border">
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-dark-input text-red-300 font-mono border border-dark-border">
                     {previewDoc.documentType}
                   </span>
-                  <span className="text-[10px] text-dark-muted font-mono">{previewDoc.pageCount || 1} Páginas</span>
+                  <span className="text-[11px] text-dark-muted font-mono tabular-nums">{previewDoc.pageCount || 1} Páginas</span>
                 </div>
                 <h2 className="text-base font-bold text-white mt-1">{previewDoc.title}</h2>
                 <p className="text-xs text-dark-muted font-mono">{previewDoc.fileName}</p>
               </div>
               <button
                 onClick={() => setPreviewDoc(null)}
-                className="p-1.5 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white"
+                className="p-2 rounded-lg hover:bg-dark-input text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                aria-label="Fechar visualização da peça"
               >
                 <X className="w-4 h-4" />
               </button>

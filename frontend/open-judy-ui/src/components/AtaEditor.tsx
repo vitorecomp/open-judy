@@ -18,6 +18,11 @@ export default function AtaEditor({ ata, onRegenerate }: AtaEditorProps) {
   const [isSubmittedToJudge, setIsSubmittedToJudge] = useState<boolean>(false);
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
 
+  React.useEffect(() => {
+    setContent(ata.fullFormattedText || '');
+    setIsSigned(Boolean(ata.isApprovedByJudge));
+  }, [ata.fullFormattedText, ata.isApprovedByJudge]);
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
     setIsCopied(true);
@@ -104,7 +109,7 @@ export default function AtaEditor({ ata, onRegenerate }: AtaEditorProps) {
           <div className="flex items-center gap-2">
             <ShieldCheck className={`w-4 h-4 ${isSigned ? 'text-emerald-400' : 'text-dark-muted'}`} />
             <span className="text-dark-muted text-[11px] sm:text-xs">
-              Titular da Assinatura: <strong className="text-slate-200">{ata.judgeSignature || 'Dra. Camila Vasconcelos de Albuquerque'}</strong>
+              Titular da Assinatura: <strong className="text-slate-200">{ata.judgeSignature || 'Magistrado(a) Presidente'}</strong>
             </span>
           </div>
 

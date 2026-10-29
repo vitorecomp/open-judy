@@ -1,11 +1,8 @@
 package org.openjudy.transcription.service;
 
 import io.agroal.api.AgroalDataSource;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.openjudy.common.dto.TranscriptSegmentDTO;
 import org.openjudy.common.enums.AudioProcessingStatus;
 import org.openjudy.common.enums.ParticipantRole;
@@ -35,11 +32,6 @@ public class TranscriptionService {
     @Inject
     AgroalDataSource dataSource;
 
-    @Inject
-    @Channel("transcription-completed")
-    @Broadcast
-    Emitter<TranscriptionCompletedEvent> completedEmitter;
-
     public void processAudioUploaded(AudioUploadedEvent event) {
         UUID hearingId = event.hearingId();
         try {
@@ -60,6 +52,13 @@ public class TranscriptionService {
     }
 
     public void enqueueHearingTranscription(UUID hearingId, String caseNumber, String mediaUrl, String filename, String mimeType, org.openjudy.common.enums.MediaType mediaType) {
+        enqueueHearingTranscription(hearingId, caseNumber, mediaUrl, filename, mimeType, mediaType, false);
+    }
+
+    public void enqueueHearingTranscription(UUID hearingId, String caseNumber, String mediaUrl, String filename, String mimeType, org.openjudy.common.enums.MediaType mediaType, boolean forceReprocess) {
+        if (forceReprocess) {
+            resetHearingBlocksForReprocessing(hearingId);
+        }
         try {
             rabbitMqProducer.enqueueJob(
                     hearingId,
@@ -68,7 +67,8 @@ public class TranscriptionService {
                     mediaUrl,
                     filename,
                     mimeType,
-                    mediaType
+                    mediaType,
+                    forceReprocess
             );
         } catch (Exception e) {
             processDirectSync(new AudioUploadedEvent(
@@ -84,6 +84,30 @@ public class TranscriptionService {
                     mediaType,
                     Instant.now()
             ));
+        }
+    }
+
+    public void resetHearingBlocksForReprocessing(UUID hearingId) {
+        if (hearingId == null) return;
+        try (Connection conn = dataSource.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "DELETE FROM tb_transcript_segments WHERE transcript_id IN (SELECT id FROM tb_transcripts WHERE hearing_id = ?)")) {
+                ps.setObject(1, hearingId);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE tb_transcript_blocks SET status = 'QUEUED', segment_count = 0, started_at = NULL, completed_at = NULL, " +
+                    "summary = 'Aguardando reprocessamento na fila sequencial com novo prompt...' WHERE hearing_id = ?")) {
+                ps.setObject(1, hearingId);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE tb_hearings SET status = 'PROCESSING_TRANSCRIPTION', updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
+                ps.setObject(1, hearingId);
+                ps.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -119,7 +143,7 @@ public class TranscriptionService {
                 ps.setString(3, result.language());
                 ps.setInt(4, result.segments().size());
                 ps.setDouble(5, result.averageConfidence());
-                ps.setString(6, "GEMINI-2.0-FLASH");
+                ps.setString(6, "GEMINI-3.8-FLASH");
                 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -162,21 +186,6 @@ public class TranscriptionService {
                 ps.setString(1, AudioProcessingStatus.TRANSCRIPTION_COMPLETED.name());
                 ps.setObject(2, hearingId);
                 ps.executeUpdate();
-            }
-
-            // 7. Publish TranscriptionCompletedEvent to Kafka (non-blocking fallback)
-            try {
-                TranscriptionCompletedEvent completedEvent = new TranscriptionCompletedEvent(
-                        hearingId,
-                        transcriptId,
-                        result.segments().size(),
-                        result.language(),
-                        event.durationSeconds(),
-                        result.averageConfidence(),
-                        Instant.now()
-                );
-                completedEmitter.send(completedEvent);
-            } catch (Exception ignored) {
             }
 
         } catch (Exception e) {
@@ -267,6 +276,136 @@ public class TranscriptionService {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public List<java.util.Map<String, Object>> getBlocksWithTelemetryByHearingId(UUID hearingId) {
+        List<java.util.Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT id, hearing_id, block_index, title, start_time_ms, end_time_ms, start_time_formatted, " +
+                     "end_time_formatted, estimated_tokens, segment_count, summary, " +
+                     "COALESCE(processing_duration_ms, 0) AS processing_duration_ms, " +
+                     "COALESCE(status, 'COMPLETED') AS status, " +
+                     "started_at, COALESCE(completed_at, created_at) AS completed_at, " +
+                     "COALESCE(padding_seconds, 0) AS padding_seconds, " +
+                     "COALESCE(context_segments_count, 0) AS context_segments_count, " +
+                     "COALESCE(prompt_version, 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)') AS prompt_version, " +
+                     "COALESCE(pipeline_version, 'v3.2-VAD-SYNC (gemini-3.8-flash)') AS pipeline_version " +
+                     "FROM tb_transcript_blocks WHERE hearing_id = ? ORDER BY block_index ASC";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, hearingId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    java.util.Map<String, Object> row = new java.util.LinkedHashMap<>();
+                    row.put("id", rs.getObject("id"));
+                    row.put("hearingId", rs.getObject("hearing_id"));
+                    row.put("blockIndex", rs.getInt("block_index"));
+                    row.put("title", rs.getString("title"));
+                    row.put("startTimeMs", rs.getLong("start_time_ms"));
+                    row.put("endTimeMs", rs.getLong("end_time_ms"));
+                    row.put("startTimeFormatted", rs.getString("start_time_formatted"));
+                    row.put("endTimeFormatted", rs.getString("end_time_formatted"));
+                    row.put("estimatedTokens", rs.getInt("estimated_tokens"));
+                    row.put("segmentCount", rs.getInt("segment_count"));
+                    row.put("summary", rs.getString("summary"));
+                    row.put("processingDurationMs", rs.getLong("processing_duration_ms"));
+                    String blkStatus = rs.getString("status");
+                    row.put("status", blkStatus != null ? blkStatus : "COMPLETED");
+                    java.sql.Timestamp stTs = rs.getTimestamp("started_at");
+                    row.put("startedAt", stTs != null ? stTs.toInstant().toString() : null);
+                    java.sql.Timestamp cmpTs = rs.getTimestamp("completed_at");
+                    row.put("completedAt", ("COMPLETED".equalsIgnoreCase(blkStatus) && cmpTs != null) ? cmpTs.toInstant().toString() : null);
+                    row.put("paddingSeconds", rs.getInt("padding_seconds"));
+                    row.put("contextSegmentsCount", rs.getInt("context_segments_count"));
+                    row.put("promptVersion", rs.getString("prompt_version"));
+                    row.put("pipelineVersion", rs.getString("pipeline_version"));
+                    list.add(row);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public java.util.Map<String, Object> getPipelineTelemetrySummary() {
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        List<Long> recentDurations = new ArrayList<>();
+        java.util.Map<String, java.util.Map<String, Object>> byHearing = new java.util.LinkedHashMap<>();
+
+        String sql = "SELECT hearing_id, block_index, COALESCE(status, 'COMPLETED') AS status, " +
+                     "COALESCE(processing_duration_ms, 0) AS dur_ms, started_at, COALESCE(completed_at, created_at) AS completed_at " +
+                     "FROM tb_transcript_blocks ORDER BY COALESCE(completed_at, created_at) DESC";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String hid = String.valueOf(rs.getObject("hearing_id"));
+                int bIdx = rs.getInt("block_index");
+                String blkStatus = rs.getString("status");
+                long durMs = rs.getLong("dur_ms");
+                java.sql.Timestamp stTs = rs.getTimestamp("started_at");
+                String stIso = stTs != null ? stTs.toInstant().toString() : null;
+                java.sql.Timestamp cmpTs = rs.getTimestamp("completed_at");
+                String cmpIso = cmpTs != null ? cmpTs.toInstant().toString() : null;
+
+                java.util.Map<String, Object> hStats = byHearing.computeIfAbsent(hid, k -> {
+                    java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("completedBlocks", 0);
+                    m.put("totalBlocks", 0);
+                    m.put("processingBlockIndex", null);
+                    m.put("processingStartedAt", null);
+                    m.put("totalProcessingMs", 0L);
+                    m.put("lastCompletedAt", null);
+                    m.put("recentBlockDurationsMs", new ArrayList<Long>());
+                    return m;
+                });
+
+                hStats.put("totalBlocks", (int) hStats.get("totalBlocks") + 1);
+
+                if ("PROCESSING".equalsIgnoreCase(blkStatus)) {
+                    hStats.put("processingBlockIndex", bIdx);
+                    hStats.put("processingStartedAt", stIso);
+                } else if ("COMPLETED".equalsIgnoreCase(blkStatus)) {
+                    if (durMs > 0 && recentDurations.size() < 12) {
+                        recentDurations.add(durMs);
+                    }
+                    if (hStats.get("lastCompletedAt") == null && cmpIso != null) {
+                        hStats.put("lastCompletedAt", cmpIso);
+                    }
+                    int count = (int) hStats.get("completedBlocks") + 1;
+                    long totalMs = (long) hStats.get("totalProcessingMs") + (durMs > 0 ? durMs : 34000L);
+                    hStats.put("completedBlocks", count);
+                    hStats.put("totalProcessingMs", totalMs);
+                    @SuppressWarnings("unchecked")
+                    List<Long> hRecent = (List<Long>) hStats.get("recentBlockDurationsMs");
+                    if (durMs > 0 && hRecent.size() < 6) {
+                        hRecent.add(durMs);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        long globalAvgMs = recentDurations.isEmpty()
+                ? 34000L
+                : Math.round(recentDurations.stream().mapToLong(Long::longValue).average().orElse(34000.0));
+
+        for (java.util.Map<String, Object> hStats : byHearing.values()) {
+            @SuppressWarnings("unchecked")
+            List<Long> hRecent = (List<Long>) hStats.get("recentBlockDurationsMs");
+            long hAvg = hRecent.isEmpty()
+                    ? globalAvgMs
+                    : Math.round(hRecent.stream().mapToLong(Long::longValue).average().orElse(globalAvgMs));
+            hStats.put("averageBlockDurationMs", hAvg);
+        }
+
+        result.put("averagePartDurationMs", globalAvgMs);
+        result.put("recentPartDurationsMs", recentDurations);
+        result.put("hearings", byHearing);
+        return result;
     }
 
     public String getBlockContextText(UUID hearingId, Integer blockIndex) {
@@ -459,5 +598,205 @@ public class TranscriptionService {
                 update != null && update.get("topicTag") != null ? update.get("topicTag").toString() : "Audiência",
                 1
         );
+    }
+
+    public int resetSingleBlockForReprocessing(UUID hearingId, String blockIdOrIndex) {
+        if (hearingId == null || blockIdOrIndex == null || blockIdOrIndex.isBlank()) {
+            return 1;
+        }
+        int targetBlockIndex = -1;
+        try (Connection conn = dataSource.getConnection()) {
+            try {
+                int parsedIdx = Integer.parseInt(blockIdOrIndex.trim());
+                targetBlockIndex = parsedIdx;
+            } catch (NumberFormatException ignored) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT block_index FROM tb_transcript_blocks WHERE hearing_id = ? AND id::text = ? LIMIT 1")) {
+                    ps.setObject(1, hearingId);
+                    ps.setString(2, blockIdOrIndex.trim());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            targetBlockIndex = rs.getInt(1);
+                        }
+                    }
+                }
+            }
+            if (targetBlockIndex <= 0) {
+                targetBlockIndex = 1;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "DELETE FROM tb_transcript_segments WHERE transcript_id IN (SELECT id FROM tb_transcripts WHERE hearing_id = ?) AND block_index = ?")) {
+                ps.setObject(1, hearingId);
+                ps.setInt(2, targetBlockIndex);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE tb_transcript_blocks SET status = 'QUEUED', segment_count = 0, started_at = NULL, completed_at = NULL, " +
+                    "summary = 'Aguardando reprocessamento individual desta parte...' WHERE hearing_id = ? AND block_index = ?")) {
+                ps.setObject(1, hearingId);
+                ps.setInt(2, targetBlockIndex);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE tb_hearings SET status = 'PROCESSING_TRANSCRIPTION', updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
+                ps.setObject(1, hearingId);
+                ps.executeUpdate();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Math.max(1, targetBlockIndex);
+    }
+
+    public java.util.Map<String, Object> repairHearingTimestamps(UUID hearingId) {
+        int blocksChecked = 0;
+        int blocksRepaired = 0;
+        int totalSegments = 0;
+        int distinctWindows = 0;
+
+        try (Connection conn = dataSource.getConnection()) {
+            List<int[]> blockBounds = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT block_index, start_time_ms, end_time_ms FROM tb_transcript_blocks WHERE hearing_id = ? ORDER BY block_index ASC")) {
+                ps.setObject(1, hearingId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        blockBounds.add(new int[]{
+                                rs.getInt("block_index"),
+                                (int) rs.getLong("start_time_ms"),
+                                (int) rs.getLong("end_time_ms")
+                        });
+                    }
+                }
+            }
+
+            for (int[] blk : blockBounds) {
+                blocksChecked++;
+                int bIdx = blk[0];
+                long bStart = Math.max(0L, blk[1]);
+                long bEnd = Math.max(bStart + 5000L, blk[2]);
+
+                List<UUID> segIds = new ArrayList<>();
+                List<Long> stList = new ArrayList<>();
+                List<Long> etList = new ArrayList<>();
+                List<Integer> weights = new ArrayList<>();
+                java.util.Set<String> winSet = new java.util.HashSet<>();
+                boolean hasZeroOrOverlap = false;
+
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT s.id, s.start_time_ms, s.end_time_ms, s.text " +
+                        "FROM tb_transcript_segments s JOIN tb_transcripts t ON s.transcript_id = t.id " +
+                        "WHERE t.hearing_id = ? AND COALESCE(s.block_index, 1) = ? ORDER BY s.segment_index ASC")) {
+                    ps.setObject(1, hearingId);
+                    ps.setInt(2, bIdx);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        long prevEnd = -1L;
+                        while (rs.next()) {
+                            UUID sid = (UUID) rs.getObject("id");
+                            long st = rs.getLong("start_time_ms");
+                            long et = rs.getLong("end_time_ms");
+                            String txt = rs.getString("text");
+                            segIds.add(sid);
+                            stList.add(st);
+                            etList.add(et);
+                            int w = Math.max(8, txt != null ? txt.replaceAll("[\\W_]+", "").length() : 8);
+                            weights.add(w);
+                            winSet.add(st + ":" + et);
+                            if (et <= st || (prevEnd >= 0 && st < prevEnd)) {
+                                hasZeroOrOverlap = true;
+                            }
+                            prevEnd = et;
+                        }
+                    }
+                }
+
+                int n = segIds.size();
+                if (n == 0) continue;
+                totalSegments += n;
+
+                java.util.Set<Long> distinctStarts = new java.util.HashSet<>(stList);
+                boolean isCollapsed = (n >= 2 && distinctStarts.size() <= Math.max(2, (int) (n * 0.65)));
+
+                if (isCollapsed) {
+                    blocksRepaired++;
+                    double totalW = 0.0;
+                    for (int w : weights) totalW += w;
+                    long span = Math.max(n * 450L, bEnd - bStart);
+                    long minStep = Math.min(450L, Math.max(120L, span / Math.max(1, n + 1)));
+                    double cumW = 0.0;
+                    long prevEnd = bStart;
+
+                    try (PreparedStatement ups = conn.prepareStatement(
+                            "UPDATE tb_transcript_segments SET start_time_ms = ?, end_time_ms = ? WHERE id = ?")) {
+                        for (int i = 0; i < n; i++) {
+                            double v0 = span * (cumW / totalW);
+                            cumW += weights.get(i);
+                            double v1 = span * (cumW / totalW);
+                            long remAfter = n - 1 - i;
+                            long maxSt = bEnd - (remAfter + 1) * minStep;
+                            long st = Math.max(prevEnd, Math.min(maxSt, bStart + Math.round(v0)));
+                            long maxEt = bEnd - remAfter * minStep;
+                            long rawEt = bStart + Math.round(v1);
+                            if (i + 1 < n && rawEt - st >= minStep + 200) {
+                                rawEt -= 80;
+                            }
+                            long et = Math.max(st + minStep, Math.min(maxEt, rawEt));
+                            prevEnd = et;
+                            ups.setLong(1, st);
+                            ups.setLong(2, et);
+                            ups.setObject(3, segIds.get(i));
+                            ups.addBatch();
+                        }
+                        ups.executeBatch();
+                    }
+                    distinctWindows += n;
+                } else if (hasZeroOrOverlap) {
+                    // Local surgical repair: trim previous endTimeMs on micro-overlaps without destroying block sync
+                    blocksRepaired++;
+                    long span = Math.max(n * 450L, bEnd - bStart);
+                    long minStep = Math.min(450L, Math.max(120L, span / Math.max(1, n + 1)));
+                    long[] newSt = new long[n];
+                    long[] newEt = new long[n];
+                    for (int i = 0; i < n; i++) {
+                        newSt[i] = Math.max(bStart, Math.min(bEnd - minStep, stList.get(i)));
+                        newEt[i] = Math.max(newSt[i] + minStep, Math.min(bEnd, etList.get(i)));
+                        if (i > 0 && newEt[i - 1] > newSt[i] && newSt[i] >= newSt[i - 1] + minStep) {
+                            newEt[i - 1] = newSt[i];
+                        }
+                    }
+                    long prevEnd = bStart;
+                    try (PreparedStatement ups = conn.prepareStatement(
+                            "UPDATE tb_transcript_segments SET start_time_ms = ?, end_time_ms = ? WHERE id = ?")) {
+                        for (int i = 0; i < n; i++) {
+                            long remAfter = n - 1 - i;
+                            long maxSt = bEnd - (remAfter + 1) * minStep;
+                            long st = Math.max(prevEnd, Math.min(maxSt, newSt[i]));
+                            long maxEt = bEnd - remAfter * minStep;
+                            long et = Math.max(st + minStep, Math.min(maxEt, newEt[i]));
+                            prevEnd = et;
+                            ups.setLong(1, st);
+                            ups.setLong(2, et);
+                            ups.setObject(3, segIds.get(i));
+                            ups.addBatch();
+                        }
+                        ups.executeBatch();
+                    }
+                    distinctWindows += n;
+                } else {
+                    distinctWindows += winSet.size();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        java.util.Map<String, Object> res = new java.util.LinkedHashMap<>();
+        res.put("hearingId", hearingId);
+        res.put("blocksChecked", blocksChecked);
+        res.put("blocksRepaired", blocksRepaired);
+        res.put("totalSegments", totalSegments);
+        res.put("distinctSegmentWindows", distinctWindows);
+        res.put("status", "REPAIRED");
+        return res;
     }
 }

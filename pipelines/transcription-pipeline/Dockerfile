@@ -1,12 +1,13 @@
-FROM docker.io/python:3.11-slim
+FROM docker.io/python:3.12-slim
 
 WORKDIR /app
 
-# Install build dependencies for psycopg2
+# Install build dependencies for psycopg2 and ffmpeg for media chunking
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies

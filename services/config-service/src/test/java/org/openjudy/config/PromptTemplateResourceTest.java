@@ -39,7 +39,7 @@ public class PromptTemplateResourceTest {
                 .then()
                 .statusCode(200)
                 .body("code", equalTo("PROMPT_ATA_GENERATION"))
-                .body("defaultModel", equalTo("gemini-2.0-flash"))
+                .body("defaultModel", equalTo("gemini-4-argon"))
                 .body("category", equalTo("DOCUMENT_GENERATION"));
     }
 
@@ -82,7 +82,7 @@ public class PromptTemplateResourceTest {
                 "Você é um assistente de teste",
                 "Analise o processo {{case_number}} e o depoimento {{testimony}}",
                 List.of("case_number", "testimony"),
-                "gemini-2.0-flash",
+                "gemini-4-argon",
                 0.2,
                 4096,
                 true
@@ -107,7 +107,7 @@ public class PromptTemplateResourceTest {
                 "Nova instrução",
                 "Resuma {{case_number}}",
                 List.of("case_number"),
-                "gemini-1.5-pro",
+                "gemini-4-argon",
                 0.1,
                 2048,
                 true

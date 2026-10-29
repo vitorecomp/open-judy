@@ -98,7 +98,8 @@ public class PromptTemplateService {
         entity.systemInstruction = request.systemInstruction();
         entity.userPromptTemplate = request.userPromptTemplate();
         entity.setVariables(request.variables() != null ? request.variables() : extractVariables(request.userPromptTemplate(), request.systemInstruction()));
-        entity.defaultModel = request.defaultModel() != null ? request.defaultModel() : "gemini-2.0-flash";
+        String fallbackModel = request.category() == PromptCategory.TRANSCRIPTION ? "gemini-3.8-flash" : "gemini-4-argon";
+        entity.defaultModel = request.defaultModel() != null ? request.defaultModel() : fallbackModel;
         entity.defaultTemperature = request.defaultTemperature() != null ? request.defaultTemperature() : 0.2;
         entity.defaultMaxTokens = request.defaultMaxTokens() != null ? request.defaultMaxTokens() : 8192;
         entity.version = 1;

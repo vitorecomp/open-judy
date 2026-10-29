@@ -46,7 +46,7 @@ public class AiModelResource {
 
     @GET
     @Path("/code/{modelId}")
-    @Operation(summary = "Obter modelo de IA por identificador (ex: gemini-2.0-flash)")
+    @Operation(summary = "Obter modelo de IA por identificador (ex: gemini-4-argon, gemini-3.8-flash)")
     public Response getModelByModelId(@PathParam("modelId") String modelId) {
         return Response.ok(modelService.getModelByModelId(modelId)).build();
     }

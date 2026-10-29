@@ -28,7 +28,7 @@ export default function Navbar({ onOpenUpload }: NavbarProps) {
         <div className="hidden md:flex items-center gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Gemini 2.0 Audio</span>
+            <span>Gemini 3.8 Flash Audio/Video</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
             <Database className="w-3.5 h-3.5 text-sky-400" />

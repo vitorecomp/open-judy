@@ -25,7 +25,7 @@ public record SystemConfigurationDTO(
                 null,
                 "Open Judy",
                 null,
-                "gemini-2.0-flash",
+                "gemini-4-argon",
                 "text-embedding-004",
                 240,
                 0.75,

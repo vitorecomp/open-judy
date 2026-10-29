@@ -32,9 +32,63 @@ public record HearingDTO(
     List<TranscriptSegmentDTO> transcriptSegments,
     AtaDraftDTO ataDraft,
     HearingSummaryDTO summary,
+    String promptVersion,
+    String pipelineVersion,
     Instant createdAt,
     Instant updatedAt
 ) {
+    public HearingDTO(
+        UUID id,
+        UUID caseId,
+        String caseNumber,
+        String courtJurisdiction,
+        HearingType hearingType,
+        Instant scheduledDateTime,
+        AudioProcessingStatus status,
+        MediaType mediaType,
+        String audioUrl,
+        String audioFilename,
+        Double audioDurationSeconds,
+        long audioSizeBytes,
+        String mediaUrl,
+        String mediaFilename,
+        Double mediaDurationSeconds,
+        long mediaSizeBytes,
+        List<ParticipantDTO> participants,
+        List<TranscriptSegmentDTO> transcriptSegments,
+        AtaDraftDTO ataDraft,
+        HearingSummaryDTO summary,
+        Instant createdAt,
+        Instant updatedAt
+    ) {
+        this(
+            id,
+            caseId,
+            caseNumber,
+            courtJurisdiction,
+            hearingType,
+            scheduledDateTime,
+            status,
+            mediaType,
+            audioUrl,
+            audioFilename,
+            audioDurationSeconds,
+            audioSizeBytes,
+            mediaUrl,
+            mediaFilename,
+            mediaDurationSeconds,
+            mediaSizeBytes,
+            participants,
+            transcriptSegments,
+            ataDraft,
+            summary,
+            "PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)",
+            "v3.2-VAD-SYNC (gemini-3.8-flash)",
+            createdAt,
+            updatedAt
+        );
+    }
+
     public HearingDTO(
         UUID id,
         UUID caseId,
@@ -75,6 +129,8 @@ public record HearingDTO(
             transcriptSegments,
             ataDraft,
             summary,
+            "PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)",
+            "v3.2-VAD-SYNC (gemini-3.8-flash)",
             createdAt,
             updatedAt
         );

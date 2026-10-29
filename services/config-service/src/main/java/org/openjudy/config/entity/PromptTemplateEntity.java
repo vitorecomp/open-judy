@@ -45,7 +45,7 @@ public class PromptTemplateEntity extends PanacheEntityBase {
     public String variablesJson = "[]";
 
     @Column(name = "default_model", length = 64)
-    public String defaultModel = "gemini-2.0-flash";
+    public String defaultModel = "gemini-4-argon";
 
     @Column(name = "default_temperature")
     public Double defaultTemperature = 0.2;

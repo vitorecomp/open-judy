@@ -196,11 +196,15 @@ services:
       RABBITMQ_PASSWORD: judy_password
       RABBITMQ_VHOST: /
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-3.8-flash
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       QUARKUS_HTTP_HOST: "0.0.0.0"
       QUARKUS_HTTP_PORT: "8083"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
@@ -343,7 +347,10 @@ services:
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-4-argon
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -351,6 +358,7 @@ services:
       QUARKUS_HTTP_PORT: "8090"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
@@ -373,16 +381,18 @@ services:
       - "5014:5005"
     environment:
       SERVICE_NAME: agent-garden
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-open-judy-cloud}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
       GCP_LOCATION: ${GCP_LOCATION:-global}
       GCP_ENDPOINT_LOCATION: ${GCP_ENDPOINT_LOCATION:-global}
       GCP_APP_ID: ${GCP_APP_ID:-judy-legal-agents}
       GCP_ASSISTANT_ID: ${GCP_ASSISTANT_ID:-default_assistant}
       GCP_API_KEY: ${GCP_API_KEY:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       QUARKUS_HTTP_HOST: "0.0.0.0"
       QUARKUS_HTTP_PORT: "8088"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
@@ -448,11 +458,15 @@ services:
       DB_USER: judy_user
       DB_PASSWORD: judy_password
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-3.8-flash
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       MAX_RETRIES: "3"
       RETRY_BACKOFF_SECONDS: "5"
     volumes:
       - ./pipelines/transcription-pipeline:/app:z
+      - ./keys:/keys:ro,z
     depends_on:
       - rabbitmq
       - alloydb-local

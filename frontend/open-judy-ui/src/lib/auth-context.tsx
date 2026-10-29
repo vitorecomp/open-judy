@@ -133,6 +133,9 @@ export function applyAccentColorToDOM(colorOrPreset: string) {
   document.documentElement.style.setProperty('--accent-color-light', light);
   document.documentElement.style.setProperty('--accent-color-glow', glow);
   document.documentElement.setAttribute('data-accent', colorOrPreset || 'red');
+  try {
+    document.cookie = `open_judy_accent=${encodeURIComponent(colorOrPreset || '#e63946')}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch (_) {}
 }
 
 const DEFAULT_CONFIG: UserConfiguration = {
@@ -171,7 +174,7 @@ const DEFAULT_SYSTEM_CONFIG: SystemConfiguration = {
   systemTagline: 'IA Judiciária Zero-Trust (Keycloak IAM)',
   logoUrl: '',
   accentColor: '#e63946',
-  geminiModel: 'gemini-2.0-flash',
+  geminiModel: 'gemini-4-argon',
   geminiEmbeddingModel: 'text-embedding-004',
   maxAudioDurationMinutes: 240,
   vectorSimilarityThreshold: 0.75,
@@ -232,8 +235,43 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export function applyThemeToDOM(theme: string) {
+  if (typeof document === 'undefined') return;
+  const upper = String(theme || 'DARK').toUpperCase();
+  const effectiveTheme: 'dark' | 'light' =
+    upper === 'SYSTEM'
+      ? typeof window !== 'undefined' &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+      : upper === 'LIGHT'
+      ? 'light'
+      : 'dark';
+
+  const root = document.documentElement;
+  if (root.getAttribute('data-theme') !== effectiveTheme) {
+    root.setAttribute('data-theme', effectiveTheme);
+  }
+  if (!root.classList.contains(effectiveTheme) || !root.classList.contains(`theme-${effectiveTheme}`)) {
+    root.classList.remove('dark', 'light', 'theme-dark', 'theme-light');
+    root.classList.add(effectiveTheme, `theme-${effectiveTheme}`);
+  }
+  root.style.colorScheme = effectiveTheme;
+
+  try {
+    localStorage.setItem('openjudy_theme', upper === 'SYSTEM' ? 'SYSTEM' : effectiveTheme.toUpperCase());
+    document.cookie = `open_judy_theme=${effectiveTheme}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch (_) {}
+}
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [activeUsername, setActiveUsername] = useState<string>('camila.vasconcelos');
+  // Initialize with DEFAULT_CONFIG so SSR and first client hydration pass match 100%,
+  // then sync synchronously before paint via useIsomorphicLayoutEffect.
   const [config, setConfig] = useState<UserConfiguration>(DEFAULT_CONFIG);
   const [systemConfig, setSystemConfig] = useState<SystemConfiguration>(DEFAULT_SYSTEM_CONFIG);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
@@ -264,17 +302,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatedAt: '2026-08-06T10:00:00Z',
     };
   });
-
-  // Apply theme to document
-  const applyThemeToDOM = (theme: string) => {
-    const effectiveTheme =
-      theme === 'SYSTEM'
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light'
-        : theme.toLowerCase();
-    document.documentElement.setAttribute('data-theme', effectiveTheme);
-  };
 
   const applyPreset = useCallback((preset: ProfilePreset) => {
     const keycloakSub =
@@ -317,6 +344,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setKeycloakStatus('DEV_MODE');
   }, []);
 
+  useIsomorphicLayoutEffect(() => {
+    try {
+      const root = document.documentElement;
+      root.classList.add('theme-preload-no-transitions');
+      const savedConfigStr = localStorage.getItem('openjudy_user_config');
+      const savedTheme = localStorage.getItem('openjudy_theme');
+      const savedAccent = localStorage.getItem('openjudy_accent_color');
+      const ssrDomTheme = (root.getAttribute('data-theme') || 'dark').toUpperCase();
+
+      if (savedConfigStr) {
+        const parsed = JSON.parse(savedConfigStr);
+        const resolvedTheme = savedTheme || parsed?.theme || ssrDomTheme || 'DARK';
+        applyThemeToDOM(resolvedTheme);
+        if (savedAccent || parsed?.accentColor) {
+          applyAccentColorToDOM(savedAccent || parsed.accentColor);
+        }
+      } else {
+        applyThemeToDOM(savedTheme || ssrDomTheme || 'DARK');
+        if (savedAccent) {
+          applyAccentColorToDOM(savedAccent);
+        }
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          root.classList.remove('theme-preload-no-transitions');
+        });
+      });
+    } catch (_) {}
+  }, []);
+
   useEffect(() => {
     // 1. Check for stored Keycloak token or active profile
     const storedToken = getStoredKeycloakToken();
@@ -353,9 +411,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 2. Load configurations from localStorage or API
+    // 2. Load configurations from localStorage or API without post-mount theme flicker
     const savedConfig = localStorage.getItem('openjudy_user_config');
+    const savedTheme = localStorage.getItem('openjudy_theme');
     const savedAccent = localStorage.getItem('openjudy_accent_color');
+    const initialDomTheme = (
+      document.documentElement.getAttribute('data-theme') || 'dark'
+    ).toUpperCase();
+
     if (savedAccent) {
       applyAccentColorToDOM(savedAccent);
     }
@@ -363,26 +426,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
-        setConfig(parsed);
-        applyThemeToDOM(parsed.theme || 'DARK');
-        if (parsed.accentColor) {
-          applyAccentColorToDOM(parsed.accentColor);
+        const resolvedTheme = savedTheme || parsed.theme || initialDomTheme || 'DARK';
+        const mergedLocal = { ...DEFAULT_CONFIG, ...parsed, theme: resolvedTheme };
+        setConfig(mergedLocal);
+        applyThemeToDOM(resolvedTheme);
+        if (mergedLocal.accentColor) {
+          applyAccentColorToDOM(mergedLocal.accentColor);
         }
       } catch (_) {
-        applyThemeToDOM('dark');
+        applyThemeToDOM(initialDomTheme);
       }
     } else {
-      // Fetch from user-service
+      // Lock the pre-paint theme immediately so async API resolution never flips the screen after first paint
+      const lockedTheme = savedTheme || initialDomTheme || 'DARK';
+      applyThemeToDOM(lockedTheme);
       api.getCurrentUser().then((userData) => {
         if (userData && userData.configuration) {
-          const merged = { ...DEFAULT_CONFIG, ...userData.configuration };
+          const merged = {
+            ...DEFAULT_CONFIG,
+            ...userData.configuration,
+            theme: lockedTheme,
+          };
           setConfig(merged);
-          applyThemeToDOM(merged.theme);
-          if (merged.accentColor) {
+          try {
+            localStorage.setItem('openjudy_user_config', JSON.stringify(merged));
+          } catch (_) {}
+          if (merged.accentColor && !savedAccent) {
             applyAccentColorToDOM(merged.accentColor);
           }
         } else {
-          applyThemeToDOM('dark');
+          try {
+            localStorage.setItem(
+              'openjudy_user_config',
+              JSON.stringify({ ...DEFAULT_CONFIG, theme: lockedTheme })
+            );
+          } catch (_) {}
         }
       });
     }

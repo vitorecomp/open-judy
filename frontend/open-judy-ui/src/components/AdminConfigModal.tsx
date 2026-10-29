@@ -315,10 +315,10 @@ export default function AdminConfigModal({
                 <h2 className="text-base font-bold text-white tracking-tight">
                   Painel de Configurações do Sistema
                 </h2>
-                <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
+                <span className="text-[11px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
                   config-service :8086
                 </span>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                   ADMIN MASTER
                 </span>
               </div>
@@ -330,8 +330,9 @@ export default function AdminConfigModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition"
+            className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
             title="Fechar"
+            aria-label="Fechar painel de configurações do sistema"
           >
             <X className="w-5 h-5" />
           </button>
@@ -341,7 +342,7 @@ export default function AdminConfigModal({
         <div className="flex border-b border-dark-border bg-dark-bg/40 px-4 sm:px-6 pt-2 gap-2 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('prompts')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
               activeTab === 'prompts'
                 ? 'border-crimson text-white bg-dark-card shadow-sm'
                 : 'border-transparent text-dark-muted hover:text-slate-200'
@@ -349,14 +350,14 @@ export default function AdminConfigModal({
           >
             <FileCode2 className="w-4 h-4 text-crimson" />
             <span>Prompts do Sistema</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-dark-pill text-dark-muted font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
               {prompts.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('models')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
               activeTab === 'models'
                 ? 'border-sky-500 text-white bg-dark-card shadow-sm'
                 : 'border-transparent text-dark-muted hover:text-slate-200'
@@ -364,14 +365,14 @@ export default function AdminConfigModal({
           >
             <Cpu className="w-4 h-4 text-sky-400" />
             <span>Modelos de IA & LLM</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-dark-pill text-dark-muted font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
               {models.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('dashboards')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
               activeTab === 'dashboards'
                 ? 'border-amber-500 text-white bg-dark-card shadow-sm'
                 : 'border-transparent text-dark-muted hover:text-slate-200'
@@ -379,14 +380,14 @@ export default function AdminConfigModal({
           >
             <LayoutGrid className="w-4 h-4 text-amber-400" />
             <span>Tipos de Dashboard</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-dark-pill text-dark-muted font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
               {dashboards.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('notifications')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
               activeTab === 'notifications'
                 ? 'border-purple-500 text-white bg-dark-card shadow-sm'
                 : 'border-transparent text-dark-muted hover:text-slate-200'
@@ -394,14 +395,14 @@ export default function AdminConfigModal({
           >
             <BellRing className="w-4 h-4 text-purple-400" />
             <span>Tipos de Notificações</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-dark-pill text-dark-muted font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
               {notifications.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-colors border-b-2 shrink-0 ${
               activeTab === 'settings'
                 ? 'border-emerald-500 text-white bg-dark-card shadow-sm'
                 : 'border-transparent text-dark-muted hover:text-slate-200'
@@ -409,7 +410,7 @@ export default function AdminConfigModal({
           >
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Parâmetros Globais</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-dark-pill text-dark-muted font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-dark-pill text-dark-muted font-mono tabular-nums">
               {settings.length}
             </span>
           </button>
@@ -417,7 +418,7 @@ export default function AdminConfigModal({
 
         {/* Feedback Alert */}
         {successMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-2 animate-in fade-in">
+          <div className="mx-6 mt-4 p-3 rounded-xl status-badge-success border text-xs flex items-center gap-2 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{successMessage}</span>
           </div>
@@ -446,6 +447,7 @@ export default function AdminConfigModal({
                   <select
                     value={selectedPromptCategory}
                     onChange={(e) => setSelectedPromptCategory(e.target.value)}
+                    aria-label="Filtrar prompts por categoria"
                     className="bg-dark-input border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-crimson"
                   >
                     <option value="ALL">Todas as Categorias</option>
@@ -463,7 +465,11 @@ export default function AdminConfigModal({
                 {filteredPrompts.map((p) => (
                   <div
                     key={p.id}
-                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition flex flex-col gap-3"
+                    className={`p-4 rounded-xl border transition-colors flex flex-col gap-3 ${
+                      p.code === 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION'
+                        ? 'bg-dark-input/90 border-emerald-500/50 shadow-lg shadow-emerald-500/5'
+                        : 'bg-dark-input/60 border-dark-border hover:border-dark-muted/60'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -472,10 +478,16 @@ export default function AdminConfigModal({
                             {p.code}
                           </span>
                           <span className="text-xs font-bold text-slate-200">{p.name}</span>
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-crimson/15 text-crimson border border-crimson/30">
+                          <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-crimson/15 text-crimson border border-crimson/30">
                             {p.category}
                           </span>
-                          <span className="text-[10px] font-mono text-dark-muted">v{p.version}</span>
+                          {p.code === 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION' && (
+                            <span className="text-[11px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" />
+                              <span>Pipeline de Produção (Otimizado Argon)</span>
+                            </span>
+                          )}
+                          <span className="text-[11px] font-mono text-dark-muted">v{p.version}</span>
                         </div>
                         <p className="text-xs text-dark-muted mt-1">{p.description}</p>
                       </div>
@@ -484,9 +496,22 @@ export default function AdminConfigModal({
                         <button
                           onClick={() => {
                             setTestingPrompt(p);
+                            const sampleDefaults: Record<string, string> = {
+                              case_number: '1000001-88.2026.8.26.0100',
+                              media_filename: '00 - video 2h 194MB .mp4',
+                              block_index: '2',
+                              total_parts: '14',
+                              core_start_hms: '09:17',
+                              core_end_hms: '18:34',
+                              padding_mmss: '02:00',
+                              clip_dur_mmss: '11:17',
+                              target_range_instruction: 'de `02:00` até `11:17` deste clipe (não repita as falas do padding inicial `00:00`–`02:00`)',
+                              context_section: '=== CONTEXTO DA PARTE 1/14 (ÚLTIMOS 5 MINUTOS + 2 MIN PADDING) ===',
+                              detected_hearing_type: 'INSTRUCAO_E_JULGAMENTO',
+                            };
                             const initialVars: Record<string, string> = {};
                             (p.variables || []).forEach((v) => {
-                              initialVars[v] = `[Exemplo ${v}]`;
+                              initialVars[v] = sampleDefaults[v] || `[Exemplo ${v}]`;
                             });
                             setTestVariables(initialVars);
                             setRenderedPreview(null);
@@ -508,8 +533,14 @@ export default function AdminConfigModal({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-[11px] text-dark-muted bg-dark-bg/60 p-2 rounded-lg border border-dark-border/40 font-mono">
-                      <span>Modelo: <strong className="text-white">{p.defaultModel || 'gemini-2.0-flash'}</strong></span>
+                    {p.userPromptTemplate && (
+                      <div className="p-2.5 rounded-lg bg-dark-bg/80 border border-dark-border/50 text-[11px] font-mono text-slate-300 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                        {p.userPromptTemplate}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 flex-wrap text-[11px] text-dark-muted bg-dark-bg/60 p-2 rounded-lg border border-dark-border/40 font-mono">
+                      <span>Modelo: <strong className="text-white">{p.defaultModel || 'gemini-4-argon'}</strong></span>
                       <span>Temp: <strong className="text-white">{p.defaultTemperature}</strong></span>
                       <span>Max Tokens: <strong className="text-white">{p.defaultMaxTokens}</strong></span>
                       <span>Variáveis: <strong className="text-slate-300">{(p.variables || []).join(', ')}</strong></span>
@@ -550,7 +581,7 @@ export default function AdminConfigModal({
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-sm text-white">{m.name}</span>
                             {m.isDefault && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                              <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/40">
                                 Padrão ({m.modelType})
                               </span>
                             )}
@@ -558,7 +589,7 @@ export default function AdminConfigModal({
                           <span className="font-mono text-[11px] text-dark-muted">{m.modelId}</span>
                         </div>
 
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-dark-pill text-slate-300 border border-dark-border">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-dark-pill text-slate-300 border border-dark-border">
                           {m.provider}
                         </span>
                       </div>
@@ -567,7 +598,7 @@ export default function AdminConfigModal({
                     </div>
 
                     <div className="space-y-2 pt-2 border-t border-dark-border/50 text-xs">
-                      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-dark-muted">
+                      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-dark-muted tabular-nums">
                         <div>Janela: <strong className="text-slate-200">{m.contextWindowTokens.toLocaleString()} tokens</strong></div>
                         <div>Max Output: <strong className="text-slate-200">{m.maxOutputTokens.toLocaleString()}</strong></div>
                         <div>Multimodal: <strong className="text-slate-200">{m.supportsMultimodal ? 'Sim' : 'Não'}</strong></div>
@@ -578,7 +609,7 @@ export default function AdminConfigModal({
                         {!m.isDefault ? (
                           <button
                             onClick={() => handleSetDefaultModel(m.id, m.modelType)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-xs font-bold text-sky-300 transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-xs font-bold text-sky-300 transition-colors"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>Definir como Padrão</span>
@@ -591,7 +622,7 @@ export default function AdminConfigModal({
 
                         <button
                           onClick={() => setEditingModel(m)}
-                          className="px-3 py-1.5 rounded-xl bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-medium text-white transition"
+                          className="px-3 py-1.5 rounded-xl bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-medium text-white transition-colors"
                         >
                           Configurar Parâmetros
                         </button>
@@ -619,7 +650,7 @@ export default function AdminConfigModal({
                 {dashboards.map((d) => (
                   <div
                     key={d.id}
-                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition flex flex-col gap-3"
+                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col gap-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -628,17 +659,17 @@ export default function AdminConfigModal({
                             {d.code}
                           </span>
                           <span className="text-xs font-bold text-slate-200">{d.name}</span>
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                             Perfil: {d.targetRole}
                           </span>
-                          <span className="text-[10px] font-mono text-dark-muted">Layout: {d.layoutType}</span>
+                          <span className="text-[11px] font-mono text-dark-muted">Layout: {d.layoutType}</span>
                         </div>
                         <p className="text-xs text-dark-muted mt-1">{d.description}</p>
                       </div>
 
                       <button
                         onClick={() => setEditingDashboard(d)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-bold text-white transition"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-bold text-white transition-colors"
                       >
                         <Edit3 className="w-3 h-3 text-amber-400" />
                         <span>Editar Layout</span>
@@ -646,14 +677,14 @@ export default function AdminConfigModal({
                     </div>
 
                     <div className="p-3 rounded-lg bg-dark-bg/80 border border-dark-border/40 space-y-2">
-                      <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                      <span className="text-[11px] font-bold text-slate-300 block">
                         Widgets Configurados ({(d.widgets || []).length}):
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                         {(d.widgets || []).map((w: any, idx: number) => (
                           <div key={idx} className="p-2 rounded bg-dark-card border border-dark-border text-[11px]">
                             <p className="font-semibold text-white truncate">{w.title || w.id}</p>
-                            <div className="flex items-center justify-between text-dark-muted text-[10px] mt-1 font-mono">
+                            <div className="flex items-center justify-between text-dark-muted text-[11px] mt-1 font-mono tabular-nums">
                               <span>Tipo: {w.type}</span>
                               <span>Span: {w.colSpan || 4} col</span>
                             </div>
@@ -683,7 +714,7 @@ export default function AdminConfigModal({
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition flex flex-col gap-3"
+                    className="p-4 rounded-xl bg-dark-input/60 border border-dark-border hover:border-dark-muted/60 transition-colors flex flex-col gap-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -692,7 +723,7 @@ export default function AdminConfigModal({
                             {n.code}
                           </span>
                           <span className="text-xs font-bold text-slate-200">{n.name}</span>
-                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
+                          <span className={`text-[11px] uppercase font-bold px-2 py-0.5 rounded-full border ${
                             n.defaultPriority === 'CRITICAL'
                               ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                               : n.defaultPriority === 'HIGH'
@@ -701,7 +732,7 @@ export default function AdminConfigModal({
                           }`}>
                             {n.defaultPriority}
                           </span>
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-dark-pill text-dark-muted border border-dark-border">
+                          <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-dark-pill text-dark-muted border border-dark-border">
                             {n.category}
                           </span>
                         </div>
@@ -710,7 +741,7 @@ export default function AdminConfigModal({
 
                       <button
                         onClick={() => setEditingNotification(n)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-bold text-white transition"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-dark-pill hover:bg-dark-card border border-dark-border text-xs font-bold text-white transition-colors"
                       >
                         <Edit3 className="w-3 h-3 text-purple-400" />
                         <span>Editar Template</span>
@@ -722,7 +753,7 @@ export default function AdminConfigModal({
                         <span className="text-dark-muted text-[11px]">Canais Habilitados:</span>
                         <div className="flex gap-1.5">
                           {(n.supportedChannels || []).map((ch) => (
-                            <span key={ch} className="px-2 py-0.5 rounded bg-dark-pill text-[10px] font-mono text-slate-200 border border-dark-border">
+                            <span key={ch} className="px-2 py-0.5 rounded bg-dark-pill text-[11px] font-mono text-slate-200 border border-dark-border">
                               {ch}
                             </span>
                           ))}
@@ -752,7 +783,7 @@ export default function AdminConfigModal({
                       <Palette className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                      <h3 className="text-xs font-bold text-white">
                         Identidade Visual & Marca do Sistema (Whitelabel)
                       </h3>
                       <p className="text-[11px] text-dark-muted">
@@ -761,7 +792,7 @@ export default function AdminConfigModal({
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-dark-pill text-emerald-300 border border-emerald-500/30">
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-dark-pill text-emerald-300 border border-emerald-500/30">
                     system.name & system.logo_url
                   </span>
                 </div>
@@ -932,7 +963,7 @@ export default function AdminConfigModal({
                   {/* Live Preview Box & Actions */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-dark-card/90 border border-dark-border">
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-dark-muted uppercase tracking-wider block">
+                      <span className="text-[11px] font-bold text-dark-muted block">
                         Pré-visualização da Marca na Interface:
                       </span>
                       <div className="p-2.5 rounded-xl bg-dark-sidebar border border-dark-border inline-flex items-center">
@@ -988,7 +1019,7 @@ export default function AdminConfigModal({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold text-emerald-400">{s.key}</span>
-                        <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-dark-pill text-dark-muted border border-dark-border">
+                        <span className="text-[11px] uppercase font-bold px-1.5 py-0.5 rounded bg-dark-pill text-dark-muted border border-dark-border">
                           {s.category}
                         </span>
                       </div>
@@ -1001,6 +1032,7 @@ export default function AdminConfigModal({
                       <input
                         type="text"
                         defaultValue={s.value}
+                        aria-label={`Valor de ${s.key}`}
                         onBlur={(e) => {
                           if (e.target.value !== s.value) {
                             handleUpdateSetting(s.key, e.target.value);
@@ -1051,7 +1083,8 @@ export default function AdminConfigModal({
               </div>
               <button
                 onClick={() => setEditingPrompt(null)}
-                className="p-1 rounded-lg text-dark-muted hover:text-white"
+                aria-label="Fechar modal de edição de prompt"
+                className="p-1.5 rounded-lg text-dark-muted hover:text-white touch-target-expand"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1073,13 +1106,13 @@ export default function AdminConfigModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Modelo de IA Padrão</label>
                   <select
-                    value={editingPrompt.defaultModel || 'gemini-2.0-flash'}
+                    value={editingPrompt.defaultModel || 'gemini-4-argon'}
+                    aria-label="Modelo de IA Padrão"
                     onChange={(e) => setEditingPrompt({ ...editingPrompt, defaultModel: e.target.value })}
                     className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-crimson font-mono"
                   >
-                    <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+                    <option value="gemini-4-argon">gemini-4-argon — Gemini 4 Argon (Texto, Atas &amp; RAG)</option>
+                    <option value="gemini-3.8-flash">gemini-3.8-flash — Gemini 3.8 Flash (Vídeo &amp; Áudio)</option>
                   </select>
                 </div>
               </div>
@@ -1095,6 +1128,8 @@ export default function AdminConfigModal({
                     min="0.0"
                     max="0.8"
                     step="0.05"
+                    aria-label="Temperatura de inferência"
+                    aria-valuetext={String(editingPrompt.defaultTemperature || 0.2)}
                     value={editingPrompt.defaultTemperature || 0.2}
                     onChange={(e) => setEditingPrompt({ ...editingPrompt, defaultTemperature: parseFloat(e.target.value) })}
                     className="w-full accent-crimson cursor-pointer"
@@ -1129,10 +1164,10 @@ export default function AdminConfigModal({
                   Template de Prompt do Usuário (Utilize {'{{variavel}}'} para interpolação dinâmica)
                 </label>
                 <textarea
-                  rows={6}
+                  rows={14}
                   value={editingPrompt.userPromptTemplate}
                   onChange={(e) => setEditingPrompt({ ...editingPrompt, userPromptTemplate: e.target.value })}
-                  className="w-full bg-dark-bg border border-dark-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-crimson font-mono"
+                  className="w-full bg-dark-bg border border-dark-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-crimson font-mono leading-relaxed"
                   required
                 />
               </div>
@@ -1174,7 +1209,8 @@ export default function AdminConfigModal({
               </div>
               <button
                 onClick={() => setTestingPrompt(null)}
-                className="p-1 rounded-lg text-dark-muted hover:text-white"
+                aria-label="Fechar modal de teste de prompt"
+                className="p-1.5 rounded-lg text-dark-muted hover:text-white touch-target-expand"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1182,7 +1218,7 @@ export default function AdminConfigModal({
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">
+                <h4 className="text-xs font-bold text-slate-200 mb-2">
                   Variáveis de Teste
                 </h4>
                 <div className="space-y-2">
@@ -1191,6 +1227,7 @@ export default function AdminConfigModal({
                       <span className="font-mono text-xs text-crimson w-40 truncate">{`{{${v}}}`}</span>
                       <input
                         type="text"
+                        aria-label={`Variável ${v}`}
                         value={testVariables[v] || ''}
                         onChange={(e) => setTestVariables({ ...testVariables, [v]: e.target.value })}
                         className="flex-1 bg-dark-bg border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
@@ -1213,7 +1250,7 @@ export default function AdminConfigModal({
 
               {renderedPreview && (
                 <div className="space-y-3 pt-3 border-t border-dark-border animate-in fade-in">
-                  <h4 className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-emerald-300">
                     Resultado da Renderização Final
                   </h4>
 
@@ -1254,7 +1291,8 @@ export default function AdminConfigModal({
               </div>
               <button
                 onClick={() => setEditingModel(null)}
-                className="p-1 rounded-lg text-dark-muted hover:text-white"
+                aria-label="Fechar modal de configuração de modelo"
+                className="p-1.5 rounded-lg text-dark-muted hover:text-white touch-target-expand"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1341,7 +1379,8 @@ export default function AdminConfigModal({
               </div>
               <button
                 onClick={() => setEditingDashboard(null)}
-                className="p-1 rounded-lg text-dark-muted hover:text-white"
+                aria-label="Fechar modal de edição de dashboard"
+                className="p-1.5 rounded-lg text-dark-muted hover:text-white touch-target-expand"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1363,6 +1402,7 @@ export default function AdminConfigModal({
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Perfil de Destino (Role)</label>
                 <select
                   value={editingDashboard.targetRole}
+                  aria-label="Perfil de Destino (Role)"
                   onChange={(e) => setEditingDashboard({ ...editingDashboard, targetRole: e.target.value })}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
@@ -1377,6 +1417,7 @@ export default function AdminConfigModal({
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Layout Type</label>
                 <select
                   value={editingDashboard.layoutType}
+                  aria-label="Layout Type"
                   onChange={(e) => setEditingDashboard({ ...editingDashboard, layoutType: e.target.value })}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
@@ -1423,7 +1464,8 @@ export default function AdminConfigModal({
               </div>
               <button
                 onClick={() => setEditingNotification(null)}
-                className="p-1 rounded-lg text-dark-muted hover:text-white"
+                aria-label="Fechar modal de configuração de notificação"
+                className="p-1.5 rounded-lg text-dark-muted hover:text-white touch-target-expand"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1445,6 +1487,7 @@ export default function AdminConfigModal({
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Prioridade Padrão</label>
                 <select
                   value={editingNotification.defaultPriority}
+                  aria-label="Prioridade Padrão"
                   onChange={(e) => setEditingNotification({ ...editingNotification, defaultPriority: e.target.value as NotificationPriority })}
                   className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                 >

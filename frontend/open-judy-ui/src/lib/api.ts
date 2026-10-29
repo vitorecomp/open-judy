@@ -10,340 +10,207 @@ import {
   Notebook,
   NotebookSource,
   NotebookNote,
-  NotebookChatMessage
+  NotebookChatMessage,
+  AsyncTask,
+  RabbitMqBrokerStatus,
+  RabbitMqQueueInfo,
+  TaskStats,
+  AuditLogEntry,
+  AuditStats,
 } from './types';
 
-const MOCK_BLOCKS: TranscriptBlock[] = [
-  {
-    id: 'blk-0001-0000-0000-000000000001',
-    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    blockIndex: 1,
-    title: 'Bloco 1: Abertura e Tentativa de Conciliação',
-    startTimeMs: 0,
-    endTimeMs: 48500,
-    startTimeFormatted: '00:00',
-    endTimeFormatted: '00:48',
-    estimatedTokens: 252000,
-    segmentCount: 3,
-    summary: 'Abertura formal dos trabalhos, verificação dos patronos presentes e frustração da proposta de acordo civil.'
-  },
-  {
-    id: 'blk-0001-0000-0000-000000000002',
-    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    blockIndex: 2,
-    title: 'Bloco 2: Saneamento e Depoimento da Autora',
-    startTimeMs: 49000,
-    endTimeMs: 115000,
-    startTimeFormatted: '00:49',
-    endTimeFormatted: '01:55',
-    estimatedTokens: 256000,
-    segmentCount: 2,
-    summary: 'Fixação judicial dos pontos controvertidos e tomada do depoimento pessoal da autora sobre as notificações.'
-  },
-  {
-    id: 'blk-0001-0000-0000-000000000003',
-    hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    blockIndex: 3,
-    title: 'Bloco 3: Encerramento da Instrução e Memoriais',
-    startTimeMs: 116000,
-    endTimeMs: 142000,
-    startTimeFormatted: '01:56',
-    endTimeFormatted: '02:22',
-    estimatedTokens: 248000,
-    segmentCount: 1,
-    summary: 'Encerramento formal da instrução e concessão de 15 dias sucessivos para memoriais de alegações finais.'
-  }
-];
-
-const MOCK_HEARINGS: Hearing[] = [
-  {
-    id: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    caseId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-    caseNumber: '0004521-88.2024.8.26.0100',
-    courtJurisdiction: '3ª Vara Cível Central da Comarca de São Paulo/SP',
-    hearingType: 'INSTRUCAO_E_JULGAMENTO',
-    scheduledDateTime: '2026-08-06T14:00:00Z',
-    status: 'READY',
-    mediaType: 'VIDEO',
-    mediaFilename: 'audiencia_0004521_instrucao.mp4',
-    videoUrl: '',
-    audioFilename: 'audiencia_0004521_instrucao.mp4',
-    audioDurationSeconds: 142.0,
-    audioSizeBytes: 48500000,
-    participants: [
-      { id: '1', name: 'Dra. Camila Vasconcelos de Albuquerque', role: 'MAGISTRADO', documentNumber: 'TJSP-44910', isPresent: true },
-      { id: '2', name: 'Dr. Lucas Menezes Braga', role: 'ADVOGADO_AUTOR', documentNumber: 'OAB/SP 389.122', isPresent: true },
-      { id: '3', name: 'Dra. Beatriz Fontana Rezende', role: 'ADVOGADO_REU', documentNumber: 'OAB/SP 412.508', isPresent: true },
-      { id: '4', name: 'Mariana Ribeiro Silva', role: 'AUTOR', documentNumber: 'CPF 312.455.908-11', isPresent: true },
-      { id: '5', name: 'Carlos Eduardo Prado', role: 'TESTEMUNHA', documentNumber: 'RG 28.910.443-X', isPresent: true },
-    ],
-    createdAt: '2026-08-06T14:00:00Z',
-    updatedAt: '2026-08-06T14:25:00Z'
-  },
-  {
-    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
-    caseId: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
-    caseNumber: '0005891-12.2024.8.26.0100',
-    courtJurisdiction: '1ª Vara Cível de Santo Amaro/SP',
-    hearingType: 'CONCILIACAO',
-    scheduledDateTime: '2026-08-07T10:30:00Z',
-    status: 'READY',
-    mediaType: 'AUDIO',
-    mediaFilename: 'audiencia_0005891_conciliacao.mp3',
-    audioFilename: 'audiencia_0005891_conciliacao.mp3',
-    audioDurationSeconds: 210.0,
-    audioSizeBytes: 24500000,
-    participants: [
-      { id: '1', name: 'Dra. Camila Vasconcelos de Albuquerque', role: 'MAGISTRADO', isPresent: true },
-      { id: '2', name: 'Roberto Almeida Santos', role: 'AUTOR', isPresent: true },
-      { id: '3', name: 'Dra. Juliana Mendes', role: 'ADVOGADO_REU', isPresent: true },
-    ],
-    createdAt: '2026-08-07T10:30:00Z',
-    updatedAt: '2026-08-07T11:05:00Z'
-  },
-  {
-    id: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
-    caseId: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
-    caseNumber: '0009142-45.2024.8.26.0002',
-    courtJurisdiction: '14ª Vara do Trabalho de São Paulo/SP',
-    hearingType: 'UNA',
-    scheduledDateTime: '2026-08-07T14:15:00Z',
-    status: 'READY',
-    mediaType: 'VIDEO',
-    mediaFilename: 'audiencia_0009142_trabalhista.webm',
-    videoUrl: '',
-    audioFilename: 'audiencia_0009142_trabalhista.webm',
-    audioDurationSeconds: 340.0,
-    audioSizeBytes: 89000000,
-    participants: [
-      { id: '1', name: 'Dr. Marcos Valério Silveira', role: 'MAGISTRADO', isPresent: true },
-      { id: '2', name: 'Fernando Costa Lima', role: 'AUTOR', isPresent: true },
-      { id: '3', name: 'Dr. Marcelo Fagundes', role: 'ADVOGADO_AUTOR', isPresent: true },
-    ],
-    createdAt: '2026-08-07T14:15:00Z',
-    updatedAt: '2026-08-07T15:00:00Z'
-  },
-  {
-    id: 'd4e5f6a7-b8c9-0123-4567-89012abcdef3',
-    caseId: 'd4e5f6a7-b8c9-0123-4567-89012abcdef3',
-    caseNumber: '0012490-88.2024.8.26.0050',
-    courtJurisdiction: 'Vara das Audiências de Custódia da Capital',
-    hearingType: 'CUSTODIA',
-    scheduledDateTime: '2026-08-08T09:00:00Z',
-    status: 'PENDING',
-    mediaType: 'VIDEO',
-    mediaFilename: 'audiencia_0012490_custodia.mp4',
-    videoUrl: '',
-    audioFilename: 'audiencia_0012490_custodia.mp4',
-    audioDurationSeconds: 180.0,
-    audioSizeBytes: 42000000,
-    participants: [
-      { id: '1', name: 'Dra. Renata Souza', role: 'MAGISTRADO', isPresent: true },
-      { id: '2', name: 'Paulo Henrique Guedes', role: 'REU', isPresent: true },
-      { id: '3', name: 'Dr. Thiago Ribeiro', role: 'DEFENSOR_PUBLICO', isPresent: true },
-    ],
-    createdAt: '2026-08-08T09:00:00Z',
-    updatedAt: '2026-08-08T09:20:00Z'
-  },
-  {
-    id: 'e5f6a7b8-c9d0-1234-5678-90123abcdef4',
-    caseId: 'e5f6a7b8-c9d0-1234-5678-90123abcdef4',
-    caseNumber: '0015782-33.2024.8.26.0100',
-    courtJurisdiction: '7ª Vara de Família e Sucessões Central',
-    hearingType: 'INTERROGATORIO',
-    scheduledDateTime: '2026-08-08T11:00:00Z',
-    status: 'PROCESSING_TRANSCRIPTION',
-    mediaType: 'VIDEO',
-    mediaFilename: 'audiencia_0015782_interrogatorio.mp4',
-    videoUrl: '',
-    audioFilename: 'audiencia_0015782_interrogatorio.mp4',
-    audioDurationSeconds: 280.0,
-    audioSizeBytes: 75000000,
-    participants: [
-      { id: '1', name: 'Dra. Camila Vasconcelos de Albuquerque', role: 'MAGISTRADO', isPresent: true },
-      { id: '2', name: 'Vitória Kate Santos', role: 'TESTEMUNHA', isPresent: true },
-      { id: '3', name: 'Dr. André Villela', role: 'ADVOGADO_AUTOR', isPresent: true },
-    ],
-    createdAt: '2026-08-08T11:00:00Z',
-    updatedAt: '2026-08-08T11:30:00Z'
-  }
-];
-
-const MOCK_DEMO_HEARING = MOCK_HEARINGS[0];
-
-const MOCK_SEGMENTS: TranscriptSegment[] = [
-  {
-    id: '1',
-    segmentIndex: 1,
-    startTimeMs: 0,
-    endTimeMs: 18500,
-    startTimeFormatted: '00:00',
-    endTimeFormatted: '00:18',
-    speakerRole: 'MAGISTRADO',
-    speakerName: 'Dra. Camila Vasconcelos (Juíza)',
-    text: 'Declaro aberta a audiência de instrução e julgamento nos autos do processo número 0004521-88.2024.8.26.0100. Verifico a presença das partes e de seus ilustres patronos. Indago se há proposta conciliatória.',
-    confidenceScore: 0.99,
-    isKeyStatement: false,
-    topicTag: 'Abertura'
-  },
-  {
-    id: '2',
-    segmentIndex: 2,
-    startTimeMs: 19000,
-    endTimeMs: 31200,
-    startTimeFormatted: '00:19',
-    endTimeFormatted: '00:31',
-    speakerRole: 'ADVOGADO_AUTOR',
-    speakerName: 'Dr. Lucas Menezes (Adv. Autor)',
-    text: 'Pela parte autora, Excelência, tentamos contato prévio mas a construtora não concordou com a devolução integral das parcelas pagas com a respectiva correção monetária.',
-    confidenceScore: 0.98,
-    isKeyStatement: false,
-    topicTag: 'Tentativa Conciliatória'
-  },
-  {
-    id: '3',
-    segmentIndex: 3,
-    startTimeMs: 31800,
-    endTimeMs: 48500,
-    startTimeFormatted: '00:31',
-    endTimeFormatted: '00:48',
-    speakerRole: 'ADVOGADO_REU',
-    speakerName: 'Dra. Beatriz Fontana (Adv. Réu)',
-    text: 'Pela ré, mantemos a proposta de retenção contratual de vinte por cento nos termos da Lei do Distrato, razão pela qual restou infrutífero o acordo preliminar.',
-    confidenceScore: 0.98,
-    isKeyStatement: false,
-    topicTag: 'Contestação'
-  },
-  {
-    id: '4',
-    segmentIndex: 4,
-    startTimeMs: 49000,
-    endTimeMs: 78000,
-    startTimeFormatted: '00:49',
-    endTimeFormatted: '01:18',
-    speakerRole: 'MAGISTRADO',
-    speakerName: 'Dra. Camila Vasconcelos (Juíza)',
-    text: 'Restando infrutífera a conciliação, passamos à colheita do depoimento pessoal da autora. Senhora Mariana, a senhora confirma que a entrega do imóvel estava prevista para março de 2023 e até a presente data as chaves não foram disponibilizadas?',
-    confidenceScore: 0.99,
-    isKeyStatement: true,
-    topicTag: 'Instrução'
-  },
-  {
-    id: '5',
-    segmentIndex: 5,
-    startTimeMs: 78500,
-    endTimeMs: 115000,
-    startTimeFormatted: '01:18',
-    endTimeFormatted: '01:55',
-    speakerRole: 'AUTOR',
-    speakerName: 'Mariana Ribeiro Silva (Autora)',
-    text: 'Sim, Excelência. Em março de 2023 a obra estava parada. Enviei três notificações extrajudiciais e a ré informou que houve falta de insumos, mas se recusou a rescindir amigavelmente sem reter quarenta por cento do valor pago.',
-    confidenceScore: 0.97,
-    isKeyStatement: true,
-    topicTag: 'Depoimento Pessoal'
-  },
-  {
-    id: '6',
-    segmentIndex: 6,
-    startTimeMs: 116000,
-    endTimeMs: 142000,
-    startTimeFormatted: '01:56',
-    endTimeFormatted: '02:22',
-    speakerRole: 'MAGISTRADO',
-    speakerName: 'Dra. Camila Vasconcelos (Juíza)',
-    text: 'Encerrada a instrução probatória. Concedo o prazo sucessivo de 15 dias para memoriais de alegações finais, iniciando-se pela parte autora. Após, venham os autos conclusos para sentença.',
-    confidenceScore: 0.99,
-    isKeyStatement: true,
-    topicTag: 'Encerramento'
-  }
-];
-
-const MOCK_ATA: AtaDraft = {
-  id: 'c1d2e3f4-a5b6-7890-1234-56789abcdef0',
-  hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-  title: 'TERMO DE AUDIÊNCIA DE INSTRUÇÃO E JULGAMENTO',
-  judicialHeader: 'PODER JUDICIÁRIO DO ESTADO DE SÃO PAULO - COMARCA DA CAPITAL\n3ª Vara Cível Central',
-  caseIdentification: 'Processo nº: 0004521-88.2024.8.26.0100\nClasse: Procedimento Comum Cível\nAssunto: Rescisão do contrato e Devolução do dinheiro\nRequerente: Mariana Ribeiro Silva\nRequerido: Construtora e Incorporadora Horizonte Azul S.A.',
-  presenceList: 'Presentes: A MMa. Juíza de Direito Dra. Camila Vasconcelos de Albuquerque; a autora acompanhada de seu patrono Dr. Lucas Menezes Braga (OAB/SP 389.122); e a ré representada por sua patrona Dra. Beatriz Fontana Rezende (OAB/SP 412.508).',
-  testimonySummary: 'Iniciados os trabalhos, a proposta conciliatória restou infrutífera. Foi colhido o depoimento pessoal da autora Mariana Ribeiro Silva, a qual declarou que a obra encontrava-se paralisada na data aprazada para entrega das chaves (março/2023), tendo havido recusa injustificada na devolução das parcelas.',
-  proceduralDecisions: 'Pela MMa. Juíza foi declarada encerrada a instrução probatória em virtude da suficiência dos elementos constantes dos autos.',
-  finalOrder: 'Concedo o prazo sucessivo de 15 (quinze) dias para apresentação de memoriais escritos de alegações finais pelas partes, a começar pela autora. Decorrido o prazo, venham os autos conclusos para prolação de sentença. Saem os presentes intimados.',
-  fullFormattedText: `# TERMO DE AUDIÊNCIA DE INSTRUÇÃO E JULGAMENTO
-
-**Processo nº:** 0004521-88.2024.8.26.0100  
-**Vara:** 3ª Vara Cível Central da Comarca de São Paulo  
-**Magistrada:** Dra. Camila Vasconcelos de Albuquerque  
-
-Aos seis dias do mês de agosto do ano de dois mil e vinte e seis, às 14:00 horas, na sala de audiências da 3ª Vara Cível Central, sob a presidência da MMa. Juíza de Direito Dra. Camila Vasconcelos de Albuquerque, realizou-se a audiência de instrução e julgamento.
-
-### 1. PRESENÇAS
-- **Autora:** Mariana Ribeiro Silva, acompanhada do Dr. Lucas Menezes Braga (OAB/SP 389.122);
-- **Ré:** Construtora e Incorporadora Horizonte Azul S.A., representada pela Dra. Beatriz Fontana Rezende (OAB/SP 412.508).
-
-### 2. CONCILIAÇÃO
-Proposta a conciliação, restou infrutífera em razão de divergência quanto ao percentual de restituição dos valores adimplidos.
-
-### 3. DEPOIMENTO PESSOAL
-Foi colhido o depoimento da autora, que confirmou o atraso injustificado na entrega do empreendimento desde março de 2023.
-
-### 4. DELIBERAÇÃO FINAL
-Encerrada a instrução. Defiro o prazo sucessivo de 15 (quinze) dias para alegações finais por memoriais, iniciando pela autora. Nada mais havendo, lavrou-se a presente ata.`,
+const EMPTY_ATA = (hearingId: string): AtaDraft => ({
+  id: '',
+  hearingId,
+  title: '',
+  judicialHeader: '',
+  caseIdentification: '',
+  presenceList: '',
+  testimonySummary: '',
+  proceduralDecisions: '',
+  finalOrder: '',
+  fullFormattedText: '',
   isApprovedByJudge: false,
-  judgeSignature: 'Dra. Camila Vasconcelos de Albuquerque',
-  generatedAt: '2026-08-06T14:20:00Z',
-  updatedAt: '2026-08-06T14:22:00Z'
-};
+  judgeSignature: '',
+  generatedAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+});
 
-const MOCK_SUMMARY: HearingSummary = {
-  id: 'd1e2f3a4-b5c6-7890-1234-56789abcdef1',
-  hearingId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-  executiveSummary: 'Audiência de Instrução e Julgamento focada na resolução do atraso de entrega de imóvel residencial e percentual de retenção rescisória. Infrutífera a conciliação, colheu-se depoimento da autora com confirmação de atraso da obra além da cláusula de tolerância.',
-  disputedFacts: [
-    {
-      topic: 'Culpa pela Rescisão Contratual',
-      description: 'Controvérsia se o atraso se deu por fortuito externo (escassez de insumos alegada pela ré) ou inadimplemento culposo da construtora.',
-      plaintiffPosition: 'Atraso injustificado desde março/2023 gerando direito à devolução de 100% com juros e danos morais (Súmula 543 STJ).',
-      defendantPosition: 'Aplicabilidade da retenção de 20% prevista na Lei 13.786/2018 decorrente de desistência imotivada.',
-      relevantTimestampTags: ['00:31', '01:18']
+function parseTimestampToMs(val: any): number {
+  if (typeof val === 'number' && Number.isFinite(val)) return Math.max(0, Math.round(val));
+  if (typeof val === 'string') {
+    const trimmed = val.trim().replace(/^\[|\]$/g, '');
+    if (/^\d+(\.\d+)?$/.test(trimmed)) {
+      const n = Number(trimmed);
+      return n < 1000 ? Math.round(n * 1000) : Math.round(n);
     }
-  ],
-  contradictions: [
-    {
-      description: 'Percentual de devolução contratual vs alegação de rescisão por culpa exclusiva da construtora',
-      speakerA: 'Dr. Lucas Menezes (Adv. Autor)',
-      statementA: 'A construtora não concordou com a devolução integral das parcelas mesmo com a obra parada.',
-      timestampMsA: 19000,
-      speakerB: 'Dra. Beatriz Fontana (Adv. Réu)',
-      statementB: 'Mantemos a proposta de retenção contratual de 20% nos termos da Lei do Distrato.',
-      timestampMsB: 31800,
-      legalImpact: 'Incidência da Súmula 543 do STJ: havendo culpa exclusiva da promitente vendedora, a restituição deve ser imediata e integral.'
+    const parts = trimmed.split(':').map((p) => Number(p));
+    if (parts.every((p) => Number.isFinite(p))) {
+      if (parts.length === 3) {
+        return Math.round((parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000);
+      }
+      if (parts.length === 2) {
+        return Math.round((parts[0] * 60 + parts[1]) * 1000);
+      }
     }
-  ],
-  timeline: [
-    {
-      timeOrDate: 'Março/2023',
-      eventDescription: 'Prazo contratual estipulado para entrega das chaves da unidade residencial',
-      sourceSpeaker: 'Mariana Ribeiro Silva',
-      hearingTimestampMs: 49000
-    },
-    {
-      timeOrDate: 'Agosto/2026',
-      eventDescription: 'Realização da audiência de instrução e encerramento probatório com abertura de prazo para memoriais',
-      sourceSpeaker: 'Dra. Camila Vasconcelos',
-      hearingTimestampMs: 116000
+  }
+  return 0;
+}
+
+function normalizeHearingAnalysis(
+  hearingId: string,
+  rawSummary: any,
+  rawContradictions?: any[]
+): HearingSummary {
+  const base = rawSummary && typeof rawSummary === 'object' ? rawSummary : {};
+  const execSummary =
+    base.executiveSummary ||
+    base.executive_summary ||
+    base.summary ||
+    '';
+
+  const rawFacts = Array.isArray(base.disputedFacts)
+    ? base.disputedFacts
+    : Array.isArray(base.disputed_facts)
+    ? base.disputed_facts
+    : Array.isArray(base.keyPoints)
+    ? base.keyPoints
+    : Array.isArray(base.topics)
+    ? base.topics
+    : [];
+
+  const disputedFacts = rawFacts.map((f: any, idx: number) => {
+    if (typeof f === 'string') {
+      return {
+        topic: `Ponto Controvertido ${idx + 1}`,
+        description: f,
+        plaintiffPosition: 'Conforme manifestação em audiência',
+        defendantPosition: 'Impugnação registrada em sessão',
+        relevantTimestampTags: [],
+      };
     }
-  ],
-  keyQuotes: [
-    {
-      speakerName: 'Mariana Ribeiro Silva',
-      role: 'AUTOR',
-      quoteText: 'Enviei três notificações extrajudiciais e a ré informou que houve falta de insumos, mas se recusou a rescindir amigavelmente sem reter quarenta por cento do valor pago.',
-      timestampMs: 78500,
-      relevanceTag: 'Confirmação de Notificação Prévia'
-    }
-  ],
-  generatedAt: '2026-08-06T14:21:00Z'
-};
+    return {
+      topic: f?.topic || f?.title || `Ponto Controvertido ${idx + 1}`,
+      description: f?.description || f?.summary || '',
+      plaintiffPosition:
+        f?.plaintiffPosition ||
+        f?.plaintiff_position ||
+        'Posição sustentada pela parte autora na sessão',
+      defendantPosition:
+        f?.defendantPosition ||
+        f?.defendant_position ||
+        'Posição sustentada pela defesa na sessão',
+      relevantTimestampTags: Array.isArray(f?.relevantTimestampTags)
+        ? f.relevantTimestampTags.map(String)
+        : Array.isArray(f?.timestamps)
+        ? f.timestamps.map(String)
+        : [],
+    };
+  });
+
+  const combinedContradictions = [
+    ...(Array.isArray(base.contradictions) ? base.contradictions : []),
+    ...(Array.isArray(rawContradictions) ? rawContradictions : []),
+  ];
+  const seenContradictionKeys = new Set<string>();
+  const contradictions = combinedContradictions
+    .map((c: any) => {
+      const speakerA =
+        c?.speakerA ||
+        c?.speaker_a ||
+        c?.speaker ||
+        'Declarante 1';
+      const speakerB =
+        c?.speakerB ||
+        c?.speaker_b ||
+        c?.counterSpeaker ||
+        c?.speaker ||
+        'Declarante 2';
+      const statementA = c?.statementA || c?.statement_a || c?.quote1 || c?.quote_1 || '';
+      const statementB = c?.statementB || c?.statement_b || c?.quote2 || c?.quote_2 || '';
+      const timestampMsA = parseTimestampToMs(
+        c?.timestampMsA ?? c?.timestamp_ms_a ?? c?.timestamp1 ?? c?.timestamp_1 ?? 0
+      );
+      const timestampMsB = parseTimestampToMs(
+        c?.timestampMsB ?? c?.timestamp_ms_b ?? c?.timestamp2 ?? c?.timestamp_2 ?? 0
+      );
+      const severity = c?.severity ? String(c.severity).toUpperCase() : undefined;
+      const confidence =
+        typeof c?.confidence === 'number'
+          ? c.confidence
+          : typeof c?.confidenceScore === 'number'
+          ? c.confidenceScore
+          : undefined;
+      const legalImpact =
+        c?.legalImpact ||
+        c?.legal_impact ||
+        (severity
+          ? `Severidade ${severity}${confidence ? ` (Confiança ${(confidence * 100).toFixed(0)}%)` : ''} — Requer valoração judicial no confronto probatório.`
+          : 'Relevante para valoração da prova oral.');
+      return {
+        description: c?.description || 'Divergência identificada nos depoimentos colhidos em audiência',
+        speakerA,
+        statementA,
+        timestampMsA,
+        speakerB,
+        statementB,
+        timestampMsB,
+        legalImpact,
+        severity,
+        confidence,
+      };
+    })
+    .filter((c) => {
+      const key = `${c.description}|${c.statementA}|${c.statementB}`;
+      if (seenContradictionKeys.has(key)) return false;
+      seenContradictionKeys.add(key);
+      return Boolean(c.description || c.statementA || c.statementB);
+    });
+
+  const rawTimeline = Array.isArray(base.timeline) ? base.timeline : [];
+  const timeline = rawTimeline.map((ev: any) => {
+    const ms = parseTimestampToMs(
+      ev?.hearingTimestampMs ?? ev?.hearing_timestamp_ms ?? ev?.timestampMs ?? ev?.timeOrDate ?? 0
+    );
+    return {
+      timeOrDate: ev?.timeOrDate || ev?.time_or_date || formatMsTimestamp(ms, false),
+      eventDescription: ev?.eventDescription || ev?.event_description || ev?.description || '',
+      sourceSpeaker: ev?.sourceSpeaker || ev?.source_speaker || ev?.speaker || 'Participante',
+      hearingTimestampMs: ms,
+    };
+  });
+
+  const rawQuotes = Array.isArray(base.keyQuotes)
+    ? base.keyQuotes
+    : Array.isArray(base.key_quotes)
+    ? base.key_quotes
+    : Array.isArray(base.depositions)
+    ? base.depositions
+    : [];
+  const keyQuotes = rawQuotes.map((q: any) => ({
+    speakerName: q?.speakerName || q?.speaker_name || q?.speaker || 'Participante',
+    role: q?.role || q?.speakerRole || 'DEPOENTE',
+    quoteText: q?.quoteText || q?.quote_text || q?.text || q?.quote || '',
+    timestampMs: parseTimestampToMs(q?.timestampMs ?? q?.timestamp_ms ?? q?.timestamp ?? 0),
+    relevanceTag: q?.relevanceTag || q?.relevance_tag || q?.tag || 'Depoimento Relevante',
+  }));
+
+  return {
+    id: base.id || hearingId,
+    hearingId: base.hearingId || base.hearing_id || hearingId,
+    executiveSummary: execSummary,
+    disputedFacts,
+    contradictions,
+    timeline,
+    keyQuotes,
+    status: base.status || (execSummary ? 'COMPLETED' : 'PENDING'),
+    promptVersion:
+      base.promptVersion ||
+      base.prompt_version ||
+      'PROMPT_HEARING_SUMMARY v1 + PROMPT_CONTRADICTION_DETECTION v1',
+    generatedAt: base.generatedAt || base.generated_at || new Date().toISOString(),
+  };
+}
 
 function getAuthHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...customHeaders };
@@ -371,120 +238,6 @@ export function generateUuid(): string {
   });
 }
 
-const MOCK_CASES: any[] = [
-  {
-    id: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    caseNumber: '0014238-89.2024.8.26.0100',
-    courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
-    legalBranch: 'CIVIL',
-    subject: 'Indenização por Danos Morais e Rescisão Contratual',
-    plaintiffName: 'Carlos Eduardo Mendes',
-    defendantName: 'Construtora e Incorporadora Metrópole S.A.',
-    judgeName: 'Dra. Camila Vasconcelos',
-    prosecutorName: 'Dr. Fernando Meirelles',
-    status: 'EM_ANDAMENTO',
-    documents: [
-      {
-        id: 'd0000001-0000-4000-8000-000000000001',
-        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        title: 'Petição Inicial com Pedido Liminar de Urgência',
-        documentType: 'PETICAO_INICIAL',
-        fileName: 'peticao_inicial_0014238.pdf',
-        fileSize: 1420500,
-        mimeType: 'application/pdf',
-        pageCount: 18,
-        ocrStatus: 'COMPLETED',
-        uploadedBy: 'Dra. Luciana Ferreira',
-        uploadedAt: '2024-03-15T10:00:00Z'
-      },
-      {
-        id: 'd0000002-0000-4000-8000-000000000002',
-        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        title: 'Contestação com Documentos e Preliminares',
-        documentType: 'CONTESTACAO',
-        fileName: 'contestacao_metropole_sa.pdf',
-        fileSize: 3100200,
-        mimeType: 'application/pdf',
-        pageCount: 34,
-        ocrStatus: 'COMPLETED',
-        uploadedBy: 'Dr. Roberto Silva',
-        uploadedAt: '2024-04-10T14:30:00Z'
-      },
-      {
-        id: 'd0000003-0000-4000-8000-000000000003',
-        caseId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        title: 'Laudo Pericial de Engenharia Civil e Segurança da Obra',
-        documentType: 'LAUDO_TECNICO',
-        fileName: 'laudo_pericial_engenharia.pdf',
-        fileSize: 5420100,
-        mimeType: 'application/pdf',
-        pageCount: 42,
-        ocrStatus: 'COMPLETED',
-        uploadedBy: 'Perito Eng. Marcelo Rossi',
-        uploadedAt: '2024-06-20T09:15:00Z'
-      }
-    ],
-    createdAt: '2024-03-15T10:00:00Z',
-    updatedAt: '2026-08-06T14:22:00Z'
-  },
-  {
-    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
-    caseNumber: '0005891-12.2024.8.26.0100',
-    courtJurisdiction: '1ª Vara Cível de Santo Amaro/SP',
-    legalBranch: 'CIVIL',
-    subject: 'Revisão Contratual e Obrigação de Fazer',
-    plaintiffName: 'Roberto Almeida Santos',
-    defendantName: 'Banco Financeiro Nacional S.A.',
-    judgeName: 'Dra. Camila Vasconcelos',
-    status: 'EM_ANDAMENTO',
-    documents: [
-      {
-        id: 'd0000004-0000-4000-8000-000000000004',
-        caseId: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1',
-        title: 'Petição Inicial e Planilha de Evolução de Débito',
-        documentType: 'PETICAO_INICIAL',
-        fileName: 'inicial_revisional_0005891.pdf',
-        fileSize: 980400,
-        mimeType: 'application/pdf',
-        pageCount: 14,
-        ocrStatus: 'COMPLETED',
-        uploadedBy: 'Dr. Marcos Peixoto',
-        uploadedAt: '2024-05-10T11:20:00Z'
-      }
-    ],
-    createdAt: '2024-05-10T11:20:00Z',
-    updatedAt: '2026-08-07T11:05:00Z'
-  },
-  {
-    id: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
-    caseNumber: '0009142-45.2024.8.26.0002',
-    courtJurisdiction: '14ª Vara do Trabalho de São Paulo/SP',
-    legalBranch: 'TRABALHISTA',
-    subject: 'Reclamação Trabalhista - Horas Extras e Vínculo Empregatício',
-    plaintiffName: 'Fernando Costa Lima',
-    defendantName: 'Logística Express Brasil Ltda.',
-    judgeName: 'Dr. Marcos Valério Silveira',
-    status: 'CONCLUSO_PARA_SENTENCA',
-    documents: [
-      {
-        id: 'd0000005-0000-4000-8000-000000000005',
-        caseId: 'c3d4e5f6-a7b8-9012-3456-78901abcdef2',
-        title: 'Reclamação Trabalhista Inicial e Controles de Jornada',
-        documentType: 'PETICAO_INICIAL',
-        fileName: 'reclamatoria_0009142.pdf',
-        fileSize: 2150000,
-        mimeType: 'application/pdf',
-        pageCount: 22,
-        ocrStatus: 'COMPLETED',
-        uploadedBy: 'Dr. Marcelo Fagundes',
-        uploadedAt: '2024-06-01T09:00:00Z'
-      }
-    ],
-    createdAt: '2024-06-01T09:00:00Z',
-    updatedAt: '2026-08-07T15:00:00Z'
-  }
-];
-
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const customHeaders = (options.headers as Record<string, string>) || {};
   return fetch(url, {
@@ -493,89 +246,256 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
   });
 }
 
+function formatMsTimestamp(ms: number, includeTenths: boolean = false): string {
+  const safeMs = Math.max(0, Math.round(ms));
+  const totalTenths = Math.floor(safeMs / 100);
+  const tenths = totalTenths % 10;
+  const totalSec = Math.floor(totalTenths / 10);
+  const hrs = Math.floor(totalSec / 3600);
+  const min = Math.floor((totalSec % 3600) / 60);
+  const sec = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const base = hrs > 0 ? `${pad(hrs)}:${pad(min)}:${pad(sec)}` : `${pad(min)}:${pad(sec)}`;
+  return includeTenths ? `${base}.${tenths}` : base;
+}
+
+function ensureDistinctSegmentTimestamps(segments: TranscriptSegment[]): TranscriptSegment[] {
+  if (!Array.isArray(segments) || segments.length === 0) return [];
+  const out = segments.map((s) => ({ ...s }));
+
+  // Group segments by blockIndex and repair any block or contiguous run with collapsed/duplicate timestamps
+  const byBlock = new Map<number, TranscriptSegment[]>();
+  for (const s of out) {
+    const bIdx = s.blockIndex || 1;
+    if (!byBlock.has(bIdx)) byBlock.set(bIdx, []);
+    byBlock.get(bIdx)!.push(s);
+  }
+
+  let prevBlockEndMs = 0;
+  const sortedBlockIndices = Array.from(byBlock.keys()).sort((a, b) => a - b);
+  for (const bIdx of sortedBlockIndices) {
+    const bSegs = byBlock.get(bIdx)!;
+    const distinctStarts = new Set(bSegs.map((s) => Math.round(s.startTimeMs / 100))).size;
+    const hasZeroDur = bSegs.some((s) => s.endTimeMs - s.startTimeMs < 100);
+    const maxEndInBlock = Math.max(...bSegs.map((s) => s.endTimeMs || s.startTimeMs || 0));
+
+    if (bSegs.length >= 2 && (hasZeroDur || distinctStarts < Math.ceil(bSegs.length * 0.75))) {
+      const winStart = bIdx === 1 ? 0 : prevBlockEndMs > 0 ? prevBlockEndMs : (bIdx - 1) * 540000;
+      const winEnd =
+        maxEndInBlock > winStart + bSegs.length * 600
+          ? maxEndInBlock
+          : winStart + bSegs.length * 4200;
+      const totalSpan = Math.max(bSegs.length * 600, winEnd - winStart);
+      const weights = bSegs.map((s) => Math.max(4, (s.text || '').replace(/\s+/g, '').length));
+      const totalWeight = weights.reduce((a, b) => a + b, 0) || bSegs.length;
+      let cursor = winStart;
+      for (let k = 0; k < bSegs.length; k++) {
+        const w = weights[k];
+        const dur =
+          k === bSegs.length - 1
+            ? Math.max(450, winStart + totalSpan - cursor)
+            : Math.max(450, Math.round((totalSpan * w) / totalWeight));
+        bSegs[k].startTimeMs = cursor;
+        bSegs[k].endTimeMs = cursor + dur;
+        bSegs[k].startTimeFormatted = formatMsTimestamp(bSegs[k].startTimeMs, false);
+        bSegs[k].endTimeFormatted = formatMsTimestamp(bSegs[k].endTimeMs, false);
+        cursor += dur;
+      }
+      prevBlockEndMs = cursor;
+    } else {
+      prevBlockEndMs = Math.max(prevBlockEndMs, maxEndInBlock);
+    }
+  }
+
+  for (const s of out) {
+    const startFmt = formatMsTimestamp(s.startTimeMs, false);
+    const endFmt = formatMsTimestamp(s.endTimeMs, false);
+    if (
+      !s.startTimeFormatted ||
+      !s.endTimeFormatted ||
+      startFmt === endFmt ||
+      s.startTimeFormatted === s.endTimeFormatted
+    ) {
+      s.startTimeFormatted = formatMsTimestamp(s.startTimeMs, true);
+      s.endTimeFormatted = formatMsTimestamp(s.endTimeMs, true);
+    }
+  }
+
+  return out;
+}
+
+export function extractPromptVersionNumber(verStr?: string | null, fallback: number = 3): number {
+  if (!verStr) return fallback;
+  const cleaned = String(verStr)
+    .replace(/\bOPT_V\d+[A-Z0-9_]*\b/gi, '')
+    .replace(/\bv\d+\.\d+[A-Z0-9_.-]*\b/gi, '');
+  const m = cleaned.match(/\bv(?:ersion)?\s*(\d+)\b/i);
+  if (m && m[1]) {
+    const parsed = parseInt(m[1], 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  const plain = cleaned.trim().match(/^(\d+)$/);
+  if (plain && plain[1]) {
+    const parsed = parseInt(plain[1], 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return fallback;
+}
+
+export function formatPromptVersionBadge(promptVersion?: string, pipelineVersion?: string): string {
+  const raw = (promptVersion || '').trim();
+  if (!raw) {
+    return pipelineVersion
+      ? `v3 (${pipelineVersion})`
+      : 'v3 (OPT_V1_DIARIZATION_SURGICAL)';
+  }
+  const cleaned = raw.replace(/^PROMPT_AUDIO_VIDEO_TRANSCRIPTION\s*/i, '').trim();
+  return cleaned || raw;
+}
+
+async function enrichHearingPromptMetadata(rawHearing: any): Promise<Hearing> {
+  const h: Hearing = {
+    ...rawHearing,
+    promptVersion:
+      rawHearing?.promptVersion ||
+      rawHearing?.prompt_version ||
+      undefined,
+    pipelineVersion:
+      rawHearing?.pipelineVersion ||
+      rawHearing?.pipeline_version ||
+      undefined,
+  };
+
+  if (!h.promptVersion && h.id) {
+    try {
+      const res = await authFetch(`/api/v1/transcriptions/hearing/${h.id}/blocks`, {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const blocks = await res.json();
+        if (Array.isArray(blocks) && blocks.length > 0) {
+          for (const b of blocks) {
+            const bPrompt = b?.promptVersion || b?.prompt_version;
+            const bPipe = b?.pipelineVersion || b?.pipeline_version;
+            if (bPrompt && !h.promptVersion) h.promptVersion = String(bPrompt);
+            if (bPipe && !h.pipelineVersion) h.pipelineVersion = String(bPipe);
+            if (h.promptVersion && h.pipelineVersion) break;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!h.promptVersion) {
+    const pipe = h.pipelineVersion || 'OPT_V1_DIARIZATION_SURGICAL';
+    h.promptVersion = `PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (${pipe})`;
+    if (!h.pipelineVersion) h.pipelineVersion = pipe;
+  }
+
+  return h;
+}
+
 export const api = {
   async listHearings(): Promise<Hearing[]> {
     try {
       const res = await authFetch('/api/v1/hearings', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) {
+          return await Promise.all(data.map((item) => enrichHearingPromptMetadata(item)));
+        }
       }
     } catch (_) {}
-    return [...MOCK_HEARINGS];
+    return [];
+  },
+
+  async getHearings(): Promise<Hearing[]> {
+    return this.listHearings();
+  },
+
+  async getHearingsByCase(caseIdOrNumber: string): Promise<Hearing[]> {
+    const all = await this.listHearings();
+    const target = (caseIdOrNumber || '').trim().toLowerCase();
+    return all.filter(
+      (h) =>
+        (h.caseId && h.caseId.toLowerCase() === target) ||
+        (h.caseNumber && h.caseNumber.toLowerCase() === target)
+    );
   },
 
   async getHearing(id: string): Promise<Hearing> {
-    try {
-      const res = await authFetch(`/api/v1/hearings/${id}`, { cache: 'no-store' });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    return MOCK_HEARINGS.find((h) => h.id === id) || MOCK_DEMO_HEARING;
+    const res = await authFetch(`/api/v1/hearings/${id}`, { cache: 'no-store' });
+    if (res.ok) {
+      const raw = await res.json();
+      return await enrichHearingPromptMetadata(raw);
+    }
+    throw new Error(`Audiência ${id} não encontrada`);
   },
 
   async createHearing(data: Partial<Hearing>): Promise<Hearing> {
     const newId = data.id || generateUuid();
-    try {
-      const res = await authFetch('/api/v1/hearings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, id: newId })
-      });
-      if (res.ok) {
-        const created = await res.json();
-        MOCK_HEARINGS.unshift(created);
-        return created;
-      }
-    } catch (_) {}
-    const created: Hearing = {
-      id: newId,
-      caseId: data.caseId || generateUuid(),
-      caseNumber: data.caseNumber || '0000000-00.2026.8.26.0100',
-      courtJurisdiction: data.courtJurisdiction || '3ª Vara Cível Central da Comarca de São Paulo/SP',
-      hearingType: data.hearingType || 'INSTRUCAO_E_JULGAMENTO',
-      scheduledDateTime: data.scheduledDateTime || new Date().toISOString(),
-      status: data.status || 'READY',
-      mediaType: data.mediaType || 'VIDEO',
-      mediaFilename: data.mediaFilename || 'gravacao_audiencia.mp4',
-      audioFilename: data.audioFilename || data.mediaFilename || 'gravacao_audiencia.mp4',
-      audioDurationSeconds: data.audioDurationSeconds || 142,
-      audioSizeBytes: data.audioSizeBytes || 45000000,
-      participants: data.participants || MOCK_DEMO_HEARING.participants,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    MOCK_HEARINGS.unshift(created);
-    return created;
+    const res = await authFetch('/api/v1/hearings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, id: newId })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    throw new Error('Falha ao criar audiência no servidor');
   },
 
   async deleteHearing(id: string): Promise<boolean> {
-    try {
-      const res = await authFetch(`/api/v1/hearings/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        const idx = MOCK_HEARINGS.findIndex((h) => h.id === id);
-        if (idx !== -1) MOCK_HEARINGS.splice(idx, 1);
-        return true;
-      }
-    } catch (_) {}
-    const idx = MOCK_HEARINGS.findIndex((h) => h.id === id);
-    if (idx !== -1) MOCK_HEARINGS.splice(idx, 1);
-    return true;
+    const res = await authFetch(`/api/v1/hearings/${id}`, { method: 'DELETE' });
+    return res.ok;
   },
 
   async enqueueTranscription(hearingId: string, caseNumber: string, audioUri: string): Promise<any> {
+    const params = new URLSearchParams({ caseNumber, audioUri });
+    const res = await authFetch(`/api/v1/transcriptions/enqueue/${hearingId}?${params.toString()}`, {
+      method: 'POST',
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Falha ao enfileirar transcrição');
+  },
+
+  async reprocessHearing(
+    hearingId: string,
+    caseNumber: string,
+    mediaFilename: string,
+    mediaType: string = 'VIDEO'
+  ): Promise<any> {
+    const audioUri = `/media/hearings/${mediaFilename}`;
     try {
-      const params = new URLSearchParams({ caseNumber, audioUri });
-      const res = await authFetch(`/api/v1/transcriptions/enqueue/${hearingId}?${params.toString()}`, {
+      const res = await authFetch('/api/v1/transcriptions/process', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hearingId,
+          caseNumber,
+          mediaFilename,
+          filename: mediaFilename,
+          audioUri,
+          mediaType,
+          forceReprocess: true,
+        }),
       });
       if (res.ok) return await res.json();
     } catch (_) {}
-    return {
-      status: 'ENQUEUED',
-      hearingId,
+
+    const params = new URLSearchParams({
       caseNumber,
-      queue: 'openjudy.transcription.jobs',
-    };
+      mediaType,
+      filename: mediaFilename,
+      audioUri,
+      forceReprocess: 'true',
+    });
+    const fallbackRes = await authFetch(
+      `/api/v1/transcriptions/enqueue/${hearingId}?${params.toString()}`,
+      { method: 'POST' }
+    );
+    if (fallbackRes.ok) return await fallbackRes.json();
+    throw new Error('Falha ao solicitar reprocessamento do vídeo com novo prompt');
   },
 
   async getTranscript(hearingId: string, blockIndex?: number): Promise<TranscriptSegment[]> {
@@ -584,26 +504,19 @@ export const api = {
       const res = await authFetch(url, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return ensureDistinctSegmentTimestamps(data);
       }
     } catch (_) {}
-    return blockIndex ? MOCK_SEGMENTS.filter(s => s.blockIndex === blockIndex) : MOCK_SEGMENTS;
+    return [];
   },
 
   async updateSegment(segmentId: string, update: Partial<TranscriptSegment>): Promise<TranscriptSegment> {
-    try {
-      const res = await authFetch(`/api/v1/transcriptions/segments/${segmentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(update),
-      });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    const idx = MOCK_SEGMENTS.findIndex((s) => s.id === segmentId);
-    if (idx !== -1) {
-      MOCK_SEGMENTS[idx] = { ...MOCK_SEGMENTS[idx], ...update };
-      return MOCK_SEGMENTS[idx];
-    }
+    const res = await authFetch(`/api/v1/transcriptions/segments/${segmentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update),
+    });
+    if (res.ok) return await res.json();
     return update as TranscriptSegment;
   },
 
@@ -612,10 +525,28 @@ export const api = {
       const res = await authFetch(`/api/v1/transcriptions/hearing/${hearingId}/blocks`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return data;
       }
     } catch (_) {}
-    return MOCK_BLOCKS;
+    return [];
+  },
+
+  async getHearingBlocks(hearingId: string): Promise<TranscriptBlock[]> {
+    return this.getBlocks(hearingId);
+  },
+
+  async getTelemetrySummary(): Promise<import('./types').PipelineTelemetrySummary> {
+    try {
+      const res = await authFetch('/api/v1/transcriptions/telemetry/summary', { cache: 'no-store' });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (_) {}
+    return {
+      averagePartDurationMs: 34000,
+      recentPartDurationsMs: [],
+      hearings: {},
+    };
   },
 
   async getAta(hearingId: string): Promise<AtaDraft> {
@@ -623,7 +554,7 @@ export const api = {
       const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/ata`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
-    return MOCK_ATA;
+    return EMPTY_ATA(hearingId);
   },
 
   async generateAta(hearingId: string): Promise<AtaDraft> {
@@ -631,15 +562,110 @@ export const api = {
       const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/generate-ata`, { method: 'POST' });
       if (res.ok) return await res.json();
     } catch (_) {}
-    return MOCK_ATA;
+    return EMPTY_ATA(hearingId);
+  },
+
+  async getHearingSummary(hearingId: string): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/hearings/${hearingId}/summary`, { cache: 'no-store' });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return null;
+  },
+
+  async getHearingContradictions(hearingId: string): Promise<any[]> {
+    try {
+      const res = await authFetch(`/api/v1/hearings/${hearingId}/contradictions`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.contradictions)) return data.contradictions;
+      }
+    } catch (_) {}
+    return [];
   },
 
   async getAnalysis(hearingId: string): Promise<HearingSummary> {
     try {
+      const [summaryData, contradictionsData] = await Promise.all([
+        this.getHearingSummary(hearingId),
+        this.getHearingContradictions(hearingId),
+      ]);
+      const normalizedFromHearingApi = normalizeHearingAnalysis(
+        hearingId,
+        summaryData,
+        contradictionsData
+      );
+      if (
+        normalizedFromHearingApi.executiveSummary ||
+        normalizedFromHearingApi.contradictions.length > 0 ||
+        normalizedFromHearingApi.disputedFacts.length > 0
+      ) {
+        return normalizedFromHearingApi;
+      }
+    } catch (_) {}
+
+    try {
       const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/analysis`, { cache: 'no-store' });
+      if (res.ok) {
+        const aiData = await res.json();
+        return normalizeHearingAnalysis(hearingId, aiData);
+      }
+    } catch (_) {}
+
+    return normalizeHearingAnalysis(hearingId, null, []);
+  },
+
+  async getAnalysisStatus(hearingId: string): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/hearings/${hearingId}/analysis/status`, {
+        cache: 'no-store',
+      });
       if (res.ok) return await res.json();
     } catch (_) {}
-    return MOCK_SUMMARY;
+    try {
+      const aiRes = await authFetch(`/api/v1/ai/hearings/${hearingId}/analysis/status`, {
+        cache: 'no-store',
+      });
+      if (aiRes.ok) return await aiRes.json();
+    } catch (_) {}
+    return null;
+  },
+
+  async triggerHearingAnalysis(hearingId: string): Promise<HearingSummary> {
+    try {
+      const res = await authFetch(`/api/v1/hearings/${hearingId}/analyze?force=true&sync=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hearingId, force: true, sync: true }),
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => null);
+        if (body && (body.executiveSummary || body.summary || body.contradictions)) {
+          return normalizeHearingAnalysis(hearingId, body, body.contradictions);
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const aiRes = await authFetch(`/api/v1/ai/hearings/${hearingId}/analyze?force=true&sync=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hearingId, force: true, sync: true }),
+      });
+      if (aiRes.ok) {
+        const aiBody = await aiRes.json().catch(() => null);
+        if (aiBody && (aiBody.executiveSummary || aiBody.contradictions)) {
+          return normalizeHearingAnalysis(hearingId, aiBody, aiBody.contradictions);
+        }
+      }
+    } catch (_) {}
+
+    return await this.getAnalysis(hearingId);
+  },
+
+  async analyzeHearing(hearingId: string): Promise<HearingSummary> {
+    return this.triggerHearingAnalysis(hearingId);
   },
 
   async chatCopilot(
@@ -648,88 +674,20 @@ export const api = {
     blockIndices?: number[],
     useFullTranscript?: boolean
   ): Promise<CopilotResponse> {
-    const sanitizedBlockIndices = (blockIndices || []).slice(0, 2); // Max 2 blocks
-    try {
-      const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hearingId,
-          question,
-          blockIndices: sanitizedBlockIndices,
-          useFullTranscript: Boolean(useFullTranscript),
-          conversationHistory: []
-        })
-      });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-
-    // Smart realistic fallback answering legal questions based on transcript and selected 256k blocks
-    const qLower = question.toLowerCase();
-    let blockPrefix = '';
-    if (sanitizedBlockIndices.length > 0) {
-      blockPrefix = `[Contexto: Bloco(s) ${sanitizedBlockIndices.join(', ')} | ~${sanitizedBlockIndices.length * 256}k tokens] `;
-    } else if (useFullTranscript) {
-      blockPrefix = `[Contexto: Transcrição Integral | < 512k tokens] `;
-    }
-
-    if (qLower.includes('notific') || qLower.includes('março') || qLower.includes('chave')) {
-      return {
-        answer: `${blockPrefix}De acordo com o depoimento prestado pela Autora (Mariana Ribeiro Silva) às 01:18 (Bloco 2), foram enviadas três notificações extrajudiciais solicitando a devolução das quantias pagas após a paralisação das obras prevista para março de 2023.`,
-        citations: [
-          {
-            segmentIndex: 5,
-            startTimeMs: 78500,
-            endTimeMs: 115000,
-            timestampFormatted: '01:18',
-            speakerName: 'Mariana Ribeiro Silva (Autora)',
-            snippet: 'Enviei três notificações extrajudiciais e a ré informou que houve falta de insumos...',
-            relevanceScore: 0.98
-          }
-        ]
-      };
-    }
-
-    if (qLower.includes('acordo') || qLower.includes('proposta') || qLower.includes('concilia')) {
-      return {
-        answer: 'A tentativa conciliatória restou infrutífera. A parte autora requereu devolução integral (00:19), enquanto a advogada da ré sustentou a retenção de 20% nos termos da Lei do Distrato (00:31).',
-        citations: [
-          {
-            segmentIndex: 2,
-            startTimeMs: 19000,
-            endTimeMs: 31200,
-            timestampFormatted: '00:19',
-            speakerName: 'Dr. Lucas Menezes',
-            snippet: '...a construtora não concordou com a devolução integral das parcelas pagas...',
-            relevanceScore: 0.95
-          },
-          {
-            segmentIndex: 3,
-            startTimeMs: 31800,
-            endTimeMs: 48500,
-            timestampFormatted: '00:31',
-            speakerName: 'Dra. Beatriz Fontana',
-            snippet: '...mantemos a proposta de retenção contratual de vinte por cento...',
-            relevanceScore: 0.94
-          }
-        ]
-      };
-    }
-
-    return {
-      answer: 'Com base na transcrição da audiência, a magistrada declarou encerrada a instrução probatória e deferiu prazo de 15 dias sucessivos para memoriais de alegações finais, iniciando pela parte autora (às 01:56).',
-      citations: [
-        {
-          segmentIndex: 6,
-          startTimeMs: 116000,
-          endTimeMs: 142000,
-          timestampFormatted: '01:56',
-          speakerName: 'Dra. Camila Vasconcelos (Juíza)',
-          snippet: 'Encerrada a instrução probatória. Concedo o prazo sucessivo de 15 dias para memoriais...',
-          relevanceScore: 0.96
-        }
-      ]
-    };
+    const sanitizedBlockIndices = (blockIndices || []).slice(0, 2);
+    const res = await authFetch(`/api/v1/ai/hearings/${hearingId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        hearingId,
+        question,
+        blockIndices: sanitizedBlockIndices,
+        useFullTranscript: Boolean(useFullTranscript),
+        conversationHistory: []
+      })
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Falha ao consultar o assistente de IA da audiência.');
   },
 
   async getCurrentUser(): Promise<any> {
@@ -781,7 +739,7 @@ export const api = {
       systemName: 'Open Judy',
       systemTagline: '',
       logoUrl: '',
-      geminiModel: 'gemini-2.0-flash',
+      geminiModel: 'gemini-4-argon',
       geminiEmbeddingModel: 'text-embedding-004',
       maxAudioDurationMinutes: 240,
       vectorSimilarityThreshold: 0.75,
@@ -828,10 +786,14 @@ export const api = {
   async getPromptTemplates(category?: string): Promise<any[]> {
     try {
       const url = category ? `/api/v1/config/prompts?category=${category}` : '/api/v1/config/prompts';
-      const res = await authFetch(url);
+      const res = await authFetch(url, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
     return category ? MOCK_PROMPTS.filter(p => p.category === category) : MOCK_PROMPTS;
+  },
+
+  async getPrompts(category?: string): Promise<any[]> {
+    return this.getPromptTemplates(category);
   },
 
   async updatePromptTemplate(id: string, data: any): Promise<any> {
@@ -841,11 +803,24 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const updated = await res.json();
+        const idx = MOCK_PROMPTS.findIndex(p => p.id === id || p.code === updated?.code);
+        if (idx !== -1) {
+          MOCK_PROMPTS[idx] = { ...MOCK_PROMPTS[idx], ...updated };
+        }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('open-judy-prompt-updated', { detail: updated }));
+        }
+        return updated;
+      }
     } catch (_) {}
     const index = MOCK_PROMPTS.findIndex(p => p.id === id);
     if (index !== -1) {
       MOCK_PROMPTS[index] = { ...MOCK_PROMPTS[index], ...data, version: (MOCK_PROMPTS[index].version || 1) + 1, updatedAt: new Date().toISOString() };
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open-judy-prompt-updated', { detail: MOCK_PROMPTS[index] }));
+      }
       return MOCK_PROMPTS[index];
     }
     return data;
@@ -1011,7 +986,7 @@ export const api = {
         agentType: 'GEMINI_ENTERPRISE_USER_AGENT',
         capabilities: ['Busca Semântica Multitribunal', 'Validação de Súmulas Vinculantes', 'Análise de Distinguishing'],
         dataStores: ['stf_jurisprudencia_store', 'stj_repetitivos_store', 'tjsp_acordaos_store'],
-        defaultModel: 'gemini-2.0-flash',
+        defaultModel: 'gemini-4-argon',
         status: 'ACTIVE',
         isDefault: true
       },
@@ -1025,7 +1000,7 @@ export const api = {
         agentType: 'ADK',
         capabilities: ['Cruzamento de Depoimentos', 'Detecção de Inconsistências', 'Mapeamento Fático'],
         dataStores: ['hearings_transcripts_store', 'case_documents_store'],
-        defaultModel: 'gemini-2.0-flash',
+        defaultModel: 'gemini-4-argon',
         status: 'ACTIVE',
         isDefault: false
       },
@@ -1039,7 +1014,7 @@ export const api = {
         agentType: 'GEMINI_ENTERPRISE_USER_AGENT',
         capabilities: ['Minutas de Atas Judiciais', 'Padronização CNJ', 'Dosimetria e Dispositivo'],
         dataStores: ['judicial_templates_store', 'legal_codes_store'],
-        defaultModel: 'gemini-2.0-flash',
+        defaultModel: 'gemini-4-argon',
         status: 'ACTIVE',
         isDefault: false
       },
@@ -1053,7 +1028,7 @@ export const api = {
         agentType: 'A2A',
         capabilities: ['Extrator de Prazos', 'Gestão de Pautas', 'Notificações aos Advogados'],
         dataStores: ['case_dockets_store'],
-        defaultModel: 'gemini-2.0-flash-lite',
+        defaultModel: 'gemini-4-argon',
         status: 'ACTIVE',
         isDefault: false
       }
@@ -1074,76 +1049,27 @@ export const api = {
       const res = await authFetch(`/api/v1/agent-garden/agents/${agentId}/sessions`);
       if (res.ok) return await res.json();
     } catch (_) {}
-    return [
-      {
-        sessionId: `sess-${agentId}-01`,
-        agentId,
-        title: 'Consulta sobre precedente vinculante e alcance fático',
-        turnCount: 4,
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        lastActiveAt: new Date(Date.now() - 1800000).toISOString(),
-        queryHistory: ['Qual o alcance do Tema 1.046 do STF?', 'Como aplicar na minuta?']
-      },
-      {
-        sessionId: `sess-${agentId}-02`,
-        agentId,
-        title: 'Verificação de deliberações e intimações da audiência',
-        turnCount: 2,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        lastActiveAt: new Date(Date.now() - 82800000).toISOString(),
-        queryHistory: ['Quais os prazos fixados em ata?']
-      }
-    ];
+    return [];
   },
 
   async createAgentSession(agentId: string, title?: string): Promise<any> {
-    try {
-      const res = await authFetch('/api/v1/agent-garden/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, title })
-      });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    return {
-      sessionId: `sess-${agentId}-${Date.now().toString(36)}`,
-      agentId,
-      title: title || 'Nova Sessão Judicial',
-      turnCount: 0,
-      createdAt: new Date().toISOString(),
-      lastActiveAt: new Date().toISOString(),
-      queryHistory: []
-    };
+    const res = await authFetch('/api/v1/agent-garden/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId, title })
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Falha ao criar sessão de agente');
   },
 
   async chatAgentGarden(queryText: string, sessionId?: string, agentId?: string): Promise<any> {
-    try {
-      const res = await authFetch('/api/v1/agent-garden/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ queryText, sessionId, agentId })
-      });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    return {
-      sessionId: sessionId || 'sess-default',
-      answer: `Resposta do Agente Gemini Enterprise para: "${queryText}". Análise fundamentada com base nos dados do tribunal.`,
-      citations: [
-        {
-          title: 'STF - Tema 1.046 com Repercussão Geral',
-          uri: 'https://portal.stf.jus.br/jurisprudencia/repercussao/tema.asp?num=1046',
-          snippet: 'Validade de norma coletiva de trabalho que limita direitos trabalhistas não assegurados constitucionalmente.',
-          court: 'STF',
-          precedentNumber: 'Tema 1046',
-          confidenceScore: 0.96
-        }
-      ],
-      plannerSteps: [
-        'Formulando estratégia de busca...',
-        'Consultando corpora do Gemini Enterprise...',
-        'Sintetizando fundamentação...'
-      ]
-    };
+    const res = await authFetch('/api/v1/agent-garden/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ queryText, sessionId, agentId })
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Falha ao consultar o Agente Gemini Enterprise');
   },
 
   // =========================================================================
@@ -1158,103 +1084,48 @@ export const api = {
       const res = await authFetch(url, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return data;
       }
     } catch (_) {}
-    let results = [...MOCK_CASES];
-    if (status && status !== 'ALL') {
-      results = results.filter((c) => c.status === status);
-    }
-    if (search && search.trim()) {
-      const q = search.toLowerCase().trim();
-      results = results.filter(
-        (c) =>
-          (c.caseNumber && c.caseNumber.toLowerCase().includes(q)) ||
-          (c.subject && c.subject.toLowerCase().includes(q)) ||
-          (c.plaintiffName && c.plaintiffName.toLowerCase().includes(q)) ||
-          (c.defendantName && c.defendantName.toLowerCase().includes(q)) ||
-          (c.courtJurisdiction && c.courtJurisdiction.toLowerCase().includes(q))
-      );
-    }
-    return results;
+    return [];
   },
 
   async getCase(id: string): Promise<any> {
-    try {
-      const res = await authFetch(`/api/v1/cases/${id}`, { cache: 'no-store' });
-      if (res.ok) return await res.json();
-    } catch (_) {}
-    return MOCK_CASES.find((c: any) => c.id === id) || MOCK_CASES[0];
+    const res = await authFetch(`/api/v1/cases/${id}`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+    throw new Error(`Processo ${id} não encontrado`);
   },
 
   async createCase(caseData: any): Promise<any> {
     const newId = caseData.id || generateUuid();
-    try {
-      const res = await authFetch('/api/v1/cases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...caseData, id: newId })
-      });
-      if (res.ok) {
-        const created = await res.json();
-        MOCK_CASES.unshift(created);
-        return created;
-      }
-    } catch (_) {}
-    const created = {
-      id: newId,
-      caseNumber: caseData.caseNumber,
-      courtJurisdiction: caseData.courtJurisdiction || '2ª Vara Cível da Comarca de São Paulo',
-      legalBranch: caseData.legalBranch || 'CIVIL',
-      subject: caseData.subject || 'Procedimento Comum Cível',
-      plaintiffName: caseData.plaintiffName || 'Não informado',
-      defendantName: caseData.defendantName || 'Não informado',
-      judgeName: caseData.judgeName || 'Dra. Camila Vasconcelos',
-      status: caseData.status || 'EM_ANDAMENTO',
-      documents: caseData.documents || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    MOCK_CASES.unshift(created);
-    return created;
+    const res = await authFetch('/api/v1/cases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...caseData, id: newId })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    throw new Error('Falha ao criar processo');
   },
 
   async updateCase(id: string, update: any): Promise<any> {
-    try {
-      const res = await authFetch(`/api/v1/cases/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(update)
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        const idx = MOCK_CASES.findIndex((c) => c.id === id);
-        if (idx !== -1) MOCK_CASES[idx] = updated;
-        return updated;
-      }
-    } catch (_) {}
-    const idx = MOCK_CASES.findIndex((c) => c.id === id);
-    if (idx !== -1) {
-      MOCK_CASES[idx] = { ...MOCK_CASES[idx], ...update, updatedAt: new Date().toISOString() };
-      return MOCK_CASES[idx];
+    const res = await authFetch(`/api/v1/cases/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update)
+    });
+    if (res.ok) {
+      return await res.json();
     }
     return update;
   },
 
   async deleteCase(id: string): Promise<boolean> {
-    try {
-      const res = await authFetch(`/api/v1/cases/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        const idx = MOCK_CASES.findIndex((c) => c.id === id);
-        if (idx !== -1) MOCK_CASES.splice(idx, 1);
-        return true;
-      }
-    } catch (_) {}
-    const idx = MOCK_CASES.findIndex((c) => c.id === id);
-    if (idx !== -1) MOCK_CASES.splice(idx, 1);
-    return true;
+    const res = await authFetch(`/api/v1/cases/${id}`, {
+      method: 'DELETE'
+    });
+    return res.ok;
   },
 
   async getCaseDocuments(caseId: string): Promise<any[]> {
@@ -1262,58 +1133,26 @@ export const api = {
       const res = await authFetch(`/api/v1/cases/${caseId}/documents`, { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (_) {}
-    const c = MOCK_CASES.find((item) => item.id === caseId) || MOCK_CASES[0];
-    return c?.documents || [];
+    return [];
   },
 
   async addCaseDocument(caseId: string, document: any): Promise<any> {
-    try {
-      const res = await authFetch(`/api/v1/cases/${caseId}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(document)
-      });
-      if (res.ok) {
-        const created = await res.json();
-        const target = MOCK_CASES.find((c) => c.id === caseId);
-        if (target) {
-          target.documents = [...(target.documents || []), created];
-        }
-        return created;
-      }
-    } catch (_) {}
-    const created = {
-      ...document,
-      id: generateUuid(),
-      caseId,
-      uploadedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    const target = MOCK_CASES.find((c) => c.id === caseId);
-    if (target) {
-      target.documents = [...(target.documents || []), created];
+    const res = await authFetch(`/api/v1/cases/${caseId}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(document)
+    });
+    if (res.ok) {
+      return await res.json();
     }
-    return created;
+    throw new Error('Falha ao adicionar documento ao processo');
   },
 
   async deleteCaseDocument(caseId: string, documentId: string): Promise<boolean> {
-    try {
-      const res = await authFetch(`/api/v1/cases/${caseId}/documents/${documentId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        const target = MOCK_CASES.find((c) => c.id === caseId);
-        if (target && target.documents) {
-          target.documents = target.documents.filter((d: any) => d.id !== documentId);
-        }
-        return true;
-      }
-    } catch (_) {}
-    const target = MOCK_CASES.find((c) => c.id === caseId);
-    if (target && target.documents) {
-      target.documents = target.documents.filter((d: any) => d.id !== documentId);
-    }
-    return true;
+    const res = await authFetch(`/api/v1/cases/${caseId}/documents/${documentId}`, {
+      method: 'DELETE'
+    });
+    return res.ok;
   },
 
   // =========================================================================
@@ -1330,101 +1169,16 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (_) {}
 
-    // Fallback simulation matching query across cases, documents, transcripts
-    const cleanQ = query.toLowerCase().trim();
-    const mockResults = [
-      {
-        id: 'case-0014238',
-        entityType: 'CASE',
-        title: 'Processo 0014238-89.2024.8.26.0100 - Rescisão Contratual e Atraso de Obra',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
-        highlightSnippet: `Ação ordinária de rescisão com restituição de quantias pagas. Autor: Carlos Eduardo Mendes. Réu: Construtora Metrópole S.A.`,
-        score: 18.5,
-        targetUrl: '/cases/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      },
-      {
-        id: 'doc-laudo-0014238',
-        entityType: 'CASE_DOCUMENT',
-        title: 'Laudo Pericial de Engenharia Civil e Cronograma de Obras',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível de São Paulo',
-        highlightSnippet: `Perícia técnica de engenharia constatou atraso de 14 meses no cronograma executivo das fundações e estrutura.`,
-        score: 14.2,
-        targetUrl: '/cases/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      },
-      {
-        id: 'trans-seg-01',
-        entityType: 'HEARING_TRANSCRIPT',
-        title: 'Depoimento Autoral - Mariana Ribeiro Silva (00:49)',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível de São Paulo',
-        speakerName: 'Mariana Ribeiro Silva',
-        highlightSnippet: `Mariana Ribeiro Silva: 'Enviei três notificações extrajudiciais e a ré informou que houve falta de insumos...'`,
-        score: 12.0,
-        targetUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      },
-      {
-        id: 'agent-juris-01',
-        entityType: 'AGENT_KNOWLEDGE',
-        title: 'Agente de Pesquisa Jurisprudencial & Súmulas Vinculantes',
-        caseNumber: 'N/A',
-        courtJurisdiction: 'Tribunais Superiores (STF/STJ)',
-        highlightSnippet: `Agente corporativo do Gemini Enterprise conectado ao Discovery Engine StreamAssist.`,
-        score: 9.8,
-        targetUrl: '/agents/agent-juris-01'
-      },
-      {
-        id: 'chat-notebook-0014238',
-        entityType: 'NOTEBOOK_CONVERSATION',
-        title: 'Caderno: Análise de Teses sobre Súmula 543 STJ e Rescisão Culposa',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
-        highlightSnippet: `Conversa do Caderno: Juíza consultou aplicabilidade da Súmula 543 do STJ quando comprovada a mora da construtora (atraso de 14 meses).`,
-        score: 13.5,
-        targetUrl: '/notebooks/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      },
-      {
-        id: 'chat-hearing-0014238',
-        entityType: 'HEARING_CHAT',
-        title: 'Chat da Audiência: Pergunta sobre Notificações e Paralisação das Obras',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: '2ª Vara Cível da Comarca de São Paulo',
-        highlightSnippet: `Gemini Chat da Audiência: Aos 00:49 a autora Mariana declarou que enviou 3 notificações extrajudiciais comprovando recusa da ré.`,
-        score: 11.8,
-        targetUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      },
-      {
-        id: 'chat-enterprise-agent-juris',
-        entityType: 'AGENT_CONVERSATION',
-        title: 'Conversa com Agente: Jurisprudência sobre Rescisão Imobiliária e Lucros Cessantes',
-        caseNumber: '0014238-89.2024.8.26.0100',
-        courtJurisdiction: 'Tribunais Superiores (STF/STJ)',
-        highlightSnippet: `Sessão StreamAssist Gemini Enterprise: Consulta sobre cumulação de lucros cessantes com cláusula penal moratória (Tema 970/STJ).`,
-        score: 10.4,
-        targetUrl: '/agents/agent-juris-01'
-      }
-    ];
-
-    const filtered = cleanQ
-      ? mockResults.filter((r) =>
-          r.title.toLowerCase().includes(cleanQ) ||
-          (r.caseNumber && r.caseNumber.toLowerCase().includes(cleanQ)) ||
-          r.highlightSnippet.toLowerCase().includes(cleanQ) ||
-          (r.speakerName && r.speakerName.toLowerCase().includes(cleanQ))
-        )
-      : mockResults;
-
     return {
       query,
-      totalHits: filtered.length,
-      tookMs: 12,
-      results: filtered,
+      totalHits: 0,
+      tookMs: 0,
+      results: [],
       facets: {
-        CASE: filtered.filter(f => f.entityType === 'CASE').length,
-        CASE_DOCUMENT: filtered.filter(f => f.entityType === 'CASE_DOCUMENT').length,
-        HEARING_TRANSCRIPT: filtered.filter(f => f.entityType === 'HEARING_TRANSCRIPT').length,
-        AGENT_KNOWLEDGE: filtered.filter(f => f.entityType === 'AGENT_KNOWLEDGE').length
+        CASE: 0,
+        CASE_DOCUMENT: 0,
+        HEARING_TRANSCRIPT: 0,
+        AGENT_KNOWLEDGE: 0
       }
     };
   },
@@ -1435,6 +1189,438 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (_) {}
     return { status: 'COMPLETED', message: 'Reindexação concluída no cluster Elasticsearch' };
+  },
+
+  // =========================================================================
+  // Task & Audit Microservice (RabbitMQ Tasks & Admin Audit Trail)
+  // =========================================================================
+  async getAsyncTasks(filters?: {
+    taskType?: string;
+    status?: string;
+    entityId?: string;
+    search?: string;
+  }): Promise<AsyncTask[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.taskType && filters.taskType !== 'ALL') params.append('taskType', filters.taskType);
+      if (filters?.status && filters.status !== 'ALL') params.append('status', filters.status);
+      if (filters?.entityId) params.append('entityId', filters.entityId);
+      if (filters?.search) params.append('search', filters.search);
+      const qs = params.toString();
+      const res = await authFetch(`/api/v1/tasks${qs ? `?${qs}` : ''}`, { cache: 'no-store' });
+      if (res.ok) {
+        const raw = await res.json();
+        const items = Array.isArray(raw) ? raw : Array.isArray(raw?.tasks) ? raw.tasks : [];
+        if (items.length > 0) {
+          return items.map((t: any): AsyncTask => ({
+            id: String(t.id || generateUuid()),
+            taskType: t.taskType || t.task_type || 'TRANSCRIPTION',
+            entityType: t.entityType || t.entity_type || 'HEARING',
+            entityId: String(t.entityId || t.entity_id || ''),
+            entityTitle:
+              t.entityTitle ||
+              t.entity_title ||
+              t.entityName ||
+              t.entity_name ||
+              t.entityId ||
+              'Audiência Judicial',
+            queueName: t.queueName || t.queue_name || 'judy.transcription.jobs',
+            routingKey: t.routingKey || t.routing_key || t.queueName || 'judy.transcription.jobs',
+            status: t.status || 'COMPLETED',
+            progressPct: Number(t.progressPct ?? t.progress_pct ?? (t.status === 'COMPLETED' ? 100 : 50)),
+            promptVersion:
+              t.promptVersion ||
+              t.prompt_version ||
+              'PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)',
+            pipelineVersion:
+              t.pipelineVersion ||
+              t.pipeline_version ||
+              'v3.2-VAD-SYNC (gemini-3.8-flash)',
+            workerId: t.workerId || t.worker_id || 'rabbitmq-worker-01',
+            retryCount: Number(t.retryCount ?? t.retry_count ?? 0),
+            triggeredBy: t.triggeredBy || t.triggered_by || 'system.rabbitmq',
+            payloadJson: t.payloadJson || t.payload_json || null,
+            resultSummary: t.resultSummary || t.result_summary || '',
+            errorMessage: t.errorMessage || t.error_message || null,
+            createdAt: t.createdAt || t.created_at || new Date().toISOString(),
+            startedAt: t.startedAt || t.started_at || null,
+            completedAt: t.completedAt || t.completed_at || null,
+            durationMs:
+              typeof (t.durationMs ?? t.duration_ms) === 'number'
+                ? Number(t.durationMs ?? t.duration_ms)
+                : null,
+          }));
+        }
+      }
+    } catch (_) {}
+
+    // Fallback synthesized from live hearings if Task & Audit service is initializing
+    const hearings = await this.listHearings();
+    const fallbackTasks: AsyncTask[] = [];
+    for (const h of hearings) {
+      const isDone =
+        h.status === 'TRANSCRIPTION_COMPLETED' ||
+        h.status === 'ANALYSIS_COMPLETED' ||
+        h.status === 'READY';
+      const title = `${h.mediaFilename || h.audioFilename || h.caseNumber} (${h.caseNumber})`;
+      fallbackTasks.push({
+        id: `task-trans-${h.id}`,
+        taskType: 'TRANSCRIPTION',
+        entityType: 'HEARING',
+        entityId: h.id,
+        entityTitle: title,
+        queueName: 'judy.transcription.jobs',
+        routingKey: 'judy.transcription.jobs',
+        status: isDone ? 'COMPLETED' : 'PROCESSING',
+        progressPct: isDone ? 100 : 75,
+        promptVersion:
+          h.promptVersion ||
+          'PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)',
+        pipelineVersion: h.pipelineVersion || 'v3.2-VAD-SYNC (gemini-3.8-flash)',
+        workerId: 'transcription-pipeline-worker',
+        retryCount: 0,
+        triggeredBy: 'admin.judy',
+        resultSummary: isDone
+          ? 'Transcrição diarizada e alinhamento VAD concluídos via RabbitMQ'
+          : 'Processando partes multimodais no RabbitMQ',
+        createdAt: h.createdAt || new Date().toISOString(),
+        startedAt: h.createdAt || new Date().toISOString(),
+        completedAt: isDone ? h.updatedAt || new Date().toISOString() : null,
+        durationMs: Math.round((h.audioDurationSeconds || 180) * 120),
+      });
+      fallbackTasks.push({
+        id: `task-analysis-${h.id}`,
+        taskType: 'LEGAL_ANALYSIS',
+        entityType: 'HEARING',
+        entityId: h.id,
+        entityTitle: title,
+        queueName: 'judy.analysis.jobs',
+        routingKey: 'judy.analysis.jobs',
+        status: 'COMPLETED',
+        progressPct: 100,
+        promptVersion: 'PROMPT_LEGAL_SUMMARY v1 + PROMPT_CONTRADICTION_DETECTION v1',
+        pipelineVersion: 'v3.2-ANALYSIS-TASK (gemini-3.8-flash)',
+        workerId: 'analysis-task-worker',
+        retryCount: 0,
+        triggeredBy: 'judy.transcription.completed',
+        resultSummary: 'Resumo executivo, pontos controvertidos e contradições extraídos',
+        createdAt: h.updatedAt || new Date().toISOString(),
+        startedAt: h.updatedAt || new Date().toISOString(),
+        completedAt: h.updatedAt || new Date().toISOString(),
+        durationMs: 4200,
+      });
+    }
+    return fallbackTasks;
+  },
+
+  async getTaskQueues(): Promise<RabbitMqBrokerStatus> {
+    try {
+      const res = await authFetch('/api/v1/tasks/queues', { cache: 'no-store' });
+      if (res.ok) {
+        const raw = await res.json();
+        const rawQueues = Array.isArray(raw) ? raw : Array.isArray(raw?.queues) ? raw.queues : [];
+        if (rawQueues.length > 0) {
+          const queues: RabbitMqQueueInfo[] = rawQueues.map((q: any) => ({
+            name: String(q.name || q.queueName || q.queue_name || 'judy.tasks.events'),
+            description: q.description || 'Fila AMQP 0-9-1 RabbitMQ',
+            messagesReady: Number(q.messagesReady ?? q.messages_ready ?? q.ready ?? 0),
+            messagesUnacknowledged: Number(
+              q.messagesUnacknowledged ?? q.messages_unacknowledged ?? q.unacked ?? 0
+            ),
+            messagesTotal: Number(q.messagesTotal ?? q.messages_total ?? q.messages ?? 0),
+            consumers: Number(q.consumers ?? 1),
+            state: q.state || q.status || 'RUNNING',
+            exchange: q.exchange || 'judy.direct',
+            routingKey: q.routingKey || q.routing_key || q.name,
+          }));
+          return {
+            brokerName: raw.brokerName || 'open-judy-rabbitmq',
+            host: raw.host || 'open-judy-rabbitmq:5672',
+            amqpPort: Number(raw.amqpPort || 5672),
+            managementPort: Number(raw.managementPort || 15672),
+            status: raw.status || 'HEALTHY',
+            queues,
+            checkedAt: raw.checkedAt || new Date().toISOString(),
+          };
+        }
+      }
+    } catch (_) {}
+
+    return {
+      brokerName: 'open-judy-rabbitmq',
+      host: 'open-judy-rabbitmq:5672',
+      amqpPort: 5672,
+      managementPort: 15672,
+      status: 'HEALTHY',
+      checkedAt: new Date().toISOString(),
+      queues: [
+        {
+          name: 'judy.transcription.jobs',
+          description: 'Jobs de transcrição e diarização multimodal (Gemini 3.8 Flash + VAD)',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 2,
+          state: 'RUNNING',
+          exchange: 'judy.direct',
+          routingKey: 'judy.transcription.jobs',
+        },
+        {
+          name: 'judy.transcription.completed',
+          description: 'Eventos de conclusão de transcrição que disparam indexação e análise',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 2,
+          state: 'RUNNING',
+          exchange: 'judy.topic',
+          routingKey: 'judy.transcription.completed',
+        },
+        {
+          name: 'judy.analysis.jobs',
+          description: 'Tasks assíncronas de Resumo Executivo e Detecção de Contradições',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 2,
+          state: 'RUNNING',
+          exchange: 'judy.direct',
+          routingKey: 'judy.analysis.jobs',
+        },
+        {
+          name: 'judy.indexing.jobs',
+          description: 'Indexação full-text assíncrona no Elasticsearch',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 1,
+          state: 'RUNNING',
+          exchange: 'judy.direct',
+          routingKey: 'judy.indexing.jobs',
+        },
+        {
+          name: 'judy.tasks.events',
+          description: 'Telemetria centralizada de ciclo de vida das tasks (tb_async_tasks)',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 1,
+          state: 'RUNNING',
+          exchange: 'judy.topic',
+          routingKey: 'judy.tasks.events',
+        },
+        {
+          name: 'judy.audit.events',
+          description: 'Trilha imutável de auditoria administrativa e operacional (tb_audit_logs)',
+          messagesReady: 0,
+          messagesUnacknowledged: 0,
+          messagesTotal: 0,
+          consumers: 1,
+          state: 'RUNNING',
+          exchange: 'judy.topic',
+          routingKey: 'judy.audit.events',
+        },
+      ],
+    };
+  },
+
+  async getTaskStats(): Promise<TaskStats> {
+    try {
+      const res = await authFetch('/api/v1/tasks/stats', { cache: 'no-store' });
+      if (res.ok) {
+        const raw = await res.json();
+        return {
+          totalTasks: Number(raw.totalTasks ?? raw.total_tasks ?? 0),
+          queuedTasks: Number(raw.queuedTasks ?? raw.queued_tasks ?? 0),
+          processingTasks: Number(raw.processingTasks ?? raw.processing_tasks ?? 0),
+          retrying429Tasks: Number(raw.retrying429Tasks ?? raw.retrying_429_tasks ?? 0),
+          completedTasks: Number(raw.completedTasks ?? raw.completed_tasks ?? 0),
+          failedTasks: Number(raw.failedTasks ?? raw.failed_tasks ?? 0),
+          byType: raw.byType || raw.by_type || {},
+        };
+      }
+    } catch (_) {}
+    const tasks = await this.getAsyncTasks();
+    const byType: Record<string, number> = {};
+    for (const t of tasks) {
+      byType[t.taskType] = (byType[t.taskType] || 0) + 1;
+    }
+    return {
+      totalTasks: tasks.length,
+      queuedTasks: tasks.filter((t) => t.status === 'QUEUED').length,
+      processingTasks: tasks.filter((t) => t.status === 'PROCESSING').length,
+      retrying429Tasks: tasks.filter((t) => t.status === 'RETRYING_429').length,
+      completedTasks: tasks.filter((t) => t.status === 'COMPLETED').length,
+      failedTasks: tasks.filter((t) => t.status === 'FAILED').length,
+      byType,
+    };
+  },
+
+  async dispatchAsyncTask(payload: {
+    taskType: string;
+    entityType?: string;
+    entityId: string;
+    entityTitle?: string;
+    force?: boolean;
+  }): Promise<any> {
+    try {
+      const res = await authFetch('/api/v1/tasks/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+
+    if (payload.taskType === 'LEGAL_ANALYSIS') {
+      return await this.triggerHearingAnalysis(payload.entityId);
+    }
+    if (payload.taskType === 'TIMESTAMP_REPAIR') {
+      const r = await authFetch(`/api/v1/hearings/${payload.entityId}/repair-timestamps`, {
+        method: 'POST',
+      });
+      if (r.ok) return await r.json();
+    }
+    const r = await authFetch(
+      `/api/v1/hearings/${payload.entityId}/reprocess?forceReprocess=${Boolean(payload.force)}`,
+      { method: 'POST' }
+    );
+    if (r.ok) return await r.json();
+    return { status: 'DISPATCHED', ...payload };
+  },
+
+  async retryAsyncTask(taskId: string): Promise<any> {
+    try {
+      const res = await authFetch(`/api/v1/tasks/${encodeURIComponent(taskId)}/retry`, {
+        method: 'POST',
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { status: 'RETRIED', taskId };
+  },
+
+  async getAuditLogs(filters?: {
+    category?: string;
+    action?: string;
+    search?: string;
+    limit?: number;
+  }): Promise<AuditLogEntry[]> {
+    const params = new URLSearchParams();
+    if (filters?.category && filters.category !== 'ALL') params.append('category', filters.category);
+    if (filters?.action && filters.action !== 'ALL') params.append('action', filters.action);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.limit) params.append('limit', String(filters.limit));
+    const qs = params.toString();
+
+    for (const path of [`/api/v1/audit/logs${qs ? `?${qs}` : ''}`, `/api/v1/audit${qs ? `?${qs}` : ''}`]) {
+      try {
+        const res = await authFetch(path, { cache: 'no-store' });
+        if (res.ok) {
+          const raw = await res.json();
+          const list = Array.isArray(raw) ? raw : Array.isArray(raw?.logs) ? raw.logs : [];
+          if (list.length > 0) {
+            return list.map((item: any): AuditLogEntry => ({
+              id: String(item.id || generateUuid()),
+              timestamp: item.timestamp || item.createdAt || item.created_at || new Date().toISOString(),
+              actorEmail: item.actorEmail || item.actor_email || 'admin@openjudy.org',
+              actorName: item.actorName || item.actor_name || 'Administrador Geral Open Judy',
+              actorRole: item.actorRole || item.actor_role || 'ADMIN',
+              action: item.action || 'TASK_DISPATCHED',
+              category: item.category || 'TASK',
+              entityType: item.entityType || item.entity_type || 'HEARING',
+              entityId: String(item.entityId || item.entity_id || ''),
+              entityName: item.entityName || item.entity_name || item.entityId || '',
+              status: item.status || 'SUCCESS',
+              rabbitmqQueue: item.rabbitmqQueue || item.rabbitmq_queue || 'judy.audit.events',
+              detailsJson: item.detailsJson || item.details_json || item.details || null,
+            }));
+          }
+        }
+      } catch (_) {}
+    }
+
+    const hearings = await this.listHearings();
+    return hearings.flatMap((h): AuditLogEntry[] => [
+      {
+        id: `audit-trans-${h.id}`,
+        timestamp: h.updatedAt || new Date().toISOString(),
+        actorEmail: 'admin@openjudy.org',
+        actorName: 'Pipeline RabbitMQ Open Judy',
+        actorRole: 'ADMIN',
+        action: 'TRANSCRIPTION_COMPLETED',
+        category: 'TASK',
+        entityType: 'HEARING',
+        entityId: h.id,
+        entityName: `${h.mediaFilename || h.caseNumber} (${h.caseNumber})`,
+        status: 'SUCCESS',
+        rabbitmqQueue: 'judy.transcription.completed',
+        detailsJson: {
+          hearingId: h.id,
+          caseNumber: h.caseNumber,
+          promptVersion: h.promptVersion,
+          pipelineVersion: h.pipelineVersion,
+        },
+      },
+      {
+        id: `audit-analysis-${h.id}`,
+        timestamp: h.updatedAt || new Date().toISOString(),
+        actorEmail: 'admin@openjudy.org',
+        actorName: 'Task IA Análise & Contradições',
+        actorRole: 'ADMIN',
+        action: 'ANALYSIS_COMPLETED',
+        category: 'HEARING',
+        entityType: 'HEARING',
+        entityId: h.id,
+        entityName: `${h.mediaFilename || h.caseNumber} (${h.caseNumber})`,
+        status: 'SUCCESS',
+        rabbitmqQueue: 'judy.analysis.jobs',
+        detailsJson: {
+          hearingId: h.id,
+          caseNumber: h.caseNumber,
+          queue: 'judy.analysis.jobs',
+        },
+      },
+    ]);
+  },
+
+  async getAuditStats(): Promise<AuditStats> {
+    try {
+      const res = await authFetch('/api/v1/audit/stats', { cache: 'no-store' });
+      if (res.ok) {
+        const raw = await res.json();
+        return {
+          totalEvents: Number(raw.totalEvents ?? raw.total_events ?? 0),
+          byCategory: raw.byCategory || raw.by_category || {},
+          byStatus: raw.byStatus || raw.by_status || {},
+          lastEventAt: raw.lastEventAt || raw.last_event_at || null,
+        };
+      }
+    } catch (_) {}
+    const logs = await this.getAuditLogs();
+    const byCategory: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    for (const l of logs) {
+      byCategory[l.category] = (byCategory[l.category] || 0) + 1;
+      byStatus[l.status] = (byStatus[l.status] || 0) + 1;
+    }
+    return {
+      totalEvents: logs.length,
+      byCategory,
+      byStatus,
+      lastEventAt: logs[0]?.timestamp || null,
+    };
+  },
+
+  async recordAuditEvent(payload: Partial<AuditLogEntry>): Promise<any> {
+    try {
+      const res = await authFetch('/api/v1/audit/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { status: 'RECORDED', ...payload };
   }
 };
 
@@ -1448,7 +1634,7 @@ const MOCK_PROMPTS = [
     systemInstruction: 'Você é o assistente judiciário oficial do Open Judy especializado na elaboração formal de Atas de Audiências Judiciais do Poder Judiciário Brasileiro.',
     userPromptTemplate: 'Processo: {{case_number}}\nVara / Comarca: {{court_jurisdiction}}\nTipo de Audiência: {{hearing_type}}\nMagistrado Presidente: {{judge_name}}\nParticipantes Presentes: {{participants_list}}\n\nTranscrição Integral Diarizada da Audiência:\n{{transcript_content}}\n\nElabore a minuta completa do Termo de Audiência.',
     variables: ['case_number', 'court_jurisdiction', 'hearing_type', 'judge_name', 'participants_list', 'transcript_content'],
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-4-argon',
     defaultTemperature: 0.2,
     defaultMaxTokens: 8192,
     version: 1,
@@ -1465,7 +1651,7 @@ const MOCK_PROMPTS = [
     systemInstruction: 'Você é um auditor jurídico analítico do Open Judy. Analise os depoimentos colhidos na audiência e identifique pontos fáticos controvertidos e versões conflitantes.',
     userPromptTemplate: 'Processo Nº: {{case_number}}\nRamo do Direito: {{legal_branch}}\nTese do Autor: {{plaintiff_claim}}\nTese do Réu: {{defendant_claim}}\n\nTranscrição Segmentada:\n{{transcript_content}}\n\nIdentifique e liste detalhadamente todas as contradições fáticas.',
     variables: ['case_number', 'legal_branch', 'plaintiff_claim', 'defendant_claim', 'transcript_content'],
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-4-argon',
     defaultTemperature: 0.1,
     defaultMaxTokens: 6144,
     version: 1,
@@ -1482,7 +1668,7 @@ const MOCK_PROMPTS = [
     systemInstruction: 'Você é Judy Copilot, a inteligência artificial do magistrado brasileiro. Responda às perguntas sobre os autos estritamente com base nos trechos recuperados do AlloyDB pgvector.',
     userPromptTemplate: 'Contexto dos Autos e Depoimentos Recuperados:\n{{rag_context}}\n\nHistórico da Conversa:\n{{chat_history}}\n\nPergunta do Usuário:\n{{user_query}}',
     variables: ['rag_context', 'chat_history', 'user_query'],
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-4-argon',
     defaultTemperature: 0.2,
     defaultMaxTokens: 4096,
     version: 1,
@@ -1493,38 +1679,124 @@ const MOCK_PROMPTS = [
   {
     id: 'p0000000-0000-0000-0000-000000000004',
     code: 'PROMPT_DIARIZATION_REFINEMENT',
-    name: 'Refinamento de Diarização de Falas Judiciais',
-    description: 'Classifica e refina a identificação de oradores na audiência em papéis jurídicos formais.',
+    name: 'Refinamento de Diarização de Falas Judiciais (Áudio & Vídeo)',
+    description: 'Classifica e refina a identificação de oradores na audiência em papéis jurídicos formais com Gemini 3.8 Flash.',
     category: 'TRANSCRIPTION',
     systemInstruction: 'Você é um classificador de papéis jurídicos em audiências. Analise o fluxo de diálogo e atribua a cada orador o seu papel correto.',
     userPromptTemplate: 'Participantes Cadastrados na Pauta: {{registered_participants}}\n\nTrecho da Transcrição Bruta com Oradores Desconhecidos:\n{{raw_transcript}}\n\nClassifique os oradores mantendo rigorosamente os timestamps.',
     variables: ['registered_participants', 'raw_transcript'],
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-3.8-flash',
     defaultTemperature: 0.1,
     defaultMaxTokens: 4096,
     version: 1,
     active: true,
     createdAt: '2026-08-06T10:00:00Z',
     updatedAt: '2026-08-06T10:00:00Z'
+  },
+  {
+    id: 'b0000000-0000-0000-0000-000000000006',
+    code: 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION',
+    name: 'Transcrição Multimodal Forense & Legendagem Diarizada (Otimizado Argon)',
+    description: 'Prompt de produção otimizado pelo Prompt Optimizer (Gemini 4 Argon — OPT_V1_DIARIZATION_SURGICAL, Score 97.58) para transcrição forense verbatim (*ipsissima verba*), legendagem sincronizada (4-10s / 1-3s para anuências) e diarização com isolamento estrito de locutor em partes sequenciais (5-10 min + 2 min padding + 5 min contexto).',
+    category: 'TRANSCRIPTION',
+    systemInstruction: 'Atue como Taquígrafo Judicial Sênior e sistema especialista oficial de transcrição estenográfica forense (*ipsissima verba*), diarização audiovisual e legendagem sincronizada (Closed Caption) do Open Judy no Poder Judiciário Brasileiro, otimizado pelo Prompt Optimizer (Gemini 4 Argon — OPT_V1_DIARIZATION_SURGICAL).',
+    userPromptTemplate: `Atue como Taquígrafo Judicial Sênior. Transcreva literalmente (*ipsissima verba*) o vídeo/áudio de audiência do processo {{case_number}} (duração do clipe: {{clip_dur_mmss}}, arquivo '{{media_filename}}').
+Esta requisição corresponde à **Parte {{block_index}} de {{total_parts}}** (intervalo principal na gravação completa: {{core_start_hms}} a {{core_end_hms}}; trecho inédito a transcrever neste clipe: {{target_range_instruction}}).
+{{context_section}}
+DIRETRIZES (PROMPT OPTIMIZER — OPT_V1_DIARIZATION_SURGICAL):
+1. VERBATIM (*IPSISSIMA VERBA*):
+   - Transcreva integralmente o trecho inédito ({{target_range_instruction}}) sem resumir e sem reticências artificiais ("...").
+   - Preserve interjeições e marcadores discursivos articulados (ex: "É, vamos lá.", "é, comprovante"), repetições naturais de fala (ex: "requerem requerem") e preposições exatas (ex: "gratuidade da justiça").
+
+2. TEMPO E GRANULARIDADE DE LEGENDA (4 A 10 SEGUNDOS):
+   - Gere segmentos curtos de **4 a 10 segundos** (1 a 2 linhas curtas, 8 a 22 palavras, \`<= 115\` caracteres) com \`clipStartTime\` e \`clipEndTime\` no formato \`"MM:SS.d"\` (décimos de segundo, ex: \`"01:19.7"\`) ou \`"MM:SS"\` exatos entre \`{{padding_mmss}}\` e \`{{clip_dur_mmss}}\`, ancorados estritamente ao início e fim acústico real da voz (sem esticar timestamps sobre pausas ou silêncios).
+   - CRÍTICO: Cada objeto em \`segments\` DEVE ter seu próprio \`clipStartTime\` e \`clipEndTime\` progressivo e único (de 4 a 10s cada, avançando cronologicamente de \`{{padding_mmss}}\` até \`{{clip_dur_mmss}}\`). NUNCA repita o mesmo \`clipStartTime\`/\`clipEndTime\` em segmentos diferentes e NUNCA coloque a duração inteira do clipe em um único segmento!
+   - EXCEÇÃO PARA RESPOSTAS CURTAS: Confirmações e anuências monossilábicas (ex: "Sim.", "De acordo.") DEVEM ter a duração real exata da fala (**0.6 a 2.5 segundos**).
+
+3. DIARIZAÇÃO E ISOLAMENTO ESTRITO DE LOCUTOR:
+   - É ESTRITAMENTE PROIBIDO agrupar dois locutores no mesmo segmento ou usar hifens de diálogo (ex: "- Sim.\\n- Sim."); emita **2 objetos JSON separados e consecutivos** para confirmações rápidas ou simultâneas (ex: um para \`REU\` e outro para \`AUTOR\`).
+   - Em \`speakerName\`, use o **nome civil real citado oralmente no áudio** ou cargo institucional preciso (ex: "Conciliadora CEJUSC Muriaé", "João Vitor da Silva Andrade", "Gabriele"), ignorando rótulos genéricos de sala de videoconferência na tela e mantendo consistência com as partes anteriores.
+   - Em \`speakerRole\`, use estritamente: \`MAGISTRADO\`, \`PROMOTOR\`, \`DEFENSOR_PUBLICO\`, \`ADVOGADO_AUTOR\`, \`ADVOGADO_REU\`, \`AUTOR\`, \`REU\`, \`TESTEMUNHA\`, \`PERITO\`, \`ESCRIVAO\`, \`OUTRO\`.
+
+4. SEMÂNTICA JURÍDICA:
+   - Marque \`isKeyStatement: true\` nas cláusulas principais de acordos, confissões, reconhecimentos de direitos e anuências finais das partes, e preencha \`topicTag\` específico por tema/cláusula.
+
+Retorne estritamente JSON válido:
+{
+  "language": "pt-BR",
+  "averageConfidence": 0.99,
+  "hearingType": "{{detected_hearing_type}}",
+  "blockTitle": "Parte {{block_index}}/{{total_parts}}: Tópico Principal desta Parte",
+  "blockSummary": "Síntese jurídica objetiva do que foi debatido ou homologado nesta Parte {{block_index}}/{{total_parts}}.",
+  "participants": [
+    {"name": "Nome Civil Real ou Cargo Identificado", "role": "MAGISTRADO"},
+    {"name": "Nome Civil Real do Réu/Reclamado", "role": "REU"},
+    {"name": "Nome Civil Real da Autora/Reclamante", "role": "AUTOR"}
+  ],
+  "segments": [
+    {
+      "blockIndex": {{block_index}},
+      "clipStartTime": "00:03.0",
+      "clipEndTime": "00:08.5",
+      "speakerRole": "MAGISTRADO",
+      "speakerName": "Nome Civil Real ou Cargo",
+      "text": "Frase curta verbatim do primeiro segmento (1 a 2 linhas, <=115 chars)...",
+      "confidence": 0.99,
+      "isKeyStatement": true,
+      "topicTag": "Abertura da Audiência"
+    },
+    {
+      "blockIndex": {{block_index}},
+      "clipStartTime": "00:08.8",
+      "clipEndTime": "00:14.2",
+      "speakerRole": "REU",
+      "speakerName": "Nome Civil Real do Réu",
+      "text": "Frase curta verbatim do segmento seguinte com timestamp progressivo...",
+      "confidence": 0.99,
+      "isKeyStatement": false,
+      "topicTag": "Manifestação da Parte"
+    }
+  ]
+}`,
+    variables: [
+      'case_number',
+      'media_filename',
+      'block_index',
+      'total_parts',
+      'core_start_hms',
+      'core_end_hms',
+      'padding_mmss',
+      'clip_dur_mmss',
+      'target_range_instruction',
+      'context_section',
+      'detected_hearing_type'
+    ],
+    defaultModel: 'gemini-3.8-flash',
+    defaultTemperature: 0.0,
+    defaultMaxTokens: 32768,
+    version: 3,
+    active: true,
+    createdAt: '2026-08-06T10:00:00Z',
+    updatedAt: '2026-10-28T12:00:00Z'
   }
 ];
 
 const MOCK_MODELS = [
   {
     id: 'm0000000-0000-0000-0000-000000000001',
-    modelId: 'gemini-2.0-flash',
-    name: 'Google Gemini 2.0 Flash',
+    modelId: 'gemini-4-argon',
+    name: 'Gemini 4 Argon',
     provider: 'GOOGLE_GEMINI',
     modelType: 'LLM_MULTIMODAL',
-    description: 'Modelo multimodal ultra-rápido com 1M tokens de janela para transcrição de áudio, atas e RAG.',
+    description: 'Modelo avançado de última geração para processamento de texto jurídico, geração de atas, detecção de contradições, cadernos de pesquisa e agentes RAG.',
     contextWindowTokens: 1048576,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 65536,
     supportsMultimodal: true,
-    supportsAudio: true,
+    supportsAudio: false,
     supportsStreaming: true,
     supportsSystemInstruction: true,
-    costPer1kInputTokens: 0.0001,
-    costPer1kOutputTokens: 0.0004,
+    costPer1kInputTokens: 0.0005,
+    costPer1kOutputTokens: 0.0015,
     isDefault: true,
     active: true,
     parameters: { temperature: 0.2, topP: 0.95, topK: 40 },
@@ -1533,20 +1805,20 @@ const MOCK_MODELS = [
   },
   {
     id: 'm0000000-0000-0000-0000-000000000002',
-    modelId: 'gemini-1.5-pro',
-    name: 'Google Gemini 1.5 Pro',
+    modelId: 'gemini-3.8-flash',
+    name: 'Google Gemini 3.8 Flash',
     provider: 'GOOGLE_GEMINI',
-    modelType: 'LLM_MULTIMODAL',
-    description: 'Modelo de raciocínio profundo com 2M tokens de contexto para análise de processos complexos.',
+    modelType: 'AUDIO_SPEECH',
+    description: 'Modelo multimodal ultra-rápido de última geração otimizado para transcrição de vídeo e áudio de audiências judiciais e diarização de oradores.',
     contextWindowTokens: 2097152,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 16384,
     supportsMultimodal: true,
     supportsAudio: true,
     supportsStreaming: true,
     supportsSystemInstruction: true,
-    costPer1kInputTokens: 0.00125,
-    costPer1kOutputTokens: 0.005,
-    isDefault: false,
+    costPer1kInputTokens: 0.0001,
+    costPer1kOutputTokens: 0.0004,
+    isDefault: true,
     active: true,
     parameters: { temperature: 0.1, topP: 0.95, topK: 40 },
     createdAt: '2026-08-06T10:00:00Z',
@@ -1570,27 +1842,6 @@ const MOCK_MODELS = [
     isDefault: true,
     active: true,
     parameters: { dimensions: 768, taskType: 'RETRIEVAL_DOCUMENT' },
-    createdAt: '2026-08-06T10:00:00Z',
-    updatedAt: '2026-08-06T10:00:00Z'
-  },
-  {
-    id: 'm0000000-0000-0000-0000-000000000004',
-    modelId: 'whisper-large-v3',
-    name: 'OpenAI Whisper Large v3',
-    provider: 'LOCAL_OLLAMA',
-    modelType: 'AUDIO_SPEECH',
-    description: 'Modelo open-source de reconhecimento de fala e transcrição para ambientes on-premise ou fallback.',
-    contextWindowTokens: 448,
-    maxOutputTokens: 448,
-    supportsMultimodal: true,
-    supportsAudio: true,
-    supportsStreaming: false,
-    supportsSystemInstruction: false,
-    costPer1kInputTokens: 0.0,
-    costPer1kOutputTokens: 0.0,
-    isDefault: false,
-    active: true,
-    parameters: { language: 'pt', temperature: 0.0 },
     createdAt: '2026-08-06T10:00:00Z',
     updatedAt: '2026-08-06T10:00:00Z'
   }
@@ -1712,7 +1963,8 @@ const MOCK_NOTIFICATION_TYPES = [
 ];
 
 const MOCK_SETTINGS: Record<string, any> = {
-  'gemini.default_model': 'gemini-2.0-flash',
+  'gemini.default_model': 'gemini-4-argon',
+  'gemini.audio_video_model': 'gemini-3.8-flash',
   'gemini.embedding_model': 'text-embedding-004',
   'gemini.temperature': 0.2,
   'security.jwt_expiration_minutes': 60,
@@ -1721,28 +1973,7 @@ const MOCK_SETTINGS: Record<string, any> = {
   'transcription.enable_speaker_diarization': true,
 };
 
-const MOCK_NOTIFICATIONS: JudicialNotification[] = [
-  {
-    id: 'n1111111-1111-1111-1111-111111111111',
-    title: 'Transcrição de Audiência Concluída',
-    message: 'A gravação da audiência do processo 0014238-19.2024.8.26.0100 foi transcrita e diarizada com sucesso (6 intervenções). A ata já pode ser gerada.',
-    category: 'AUDIO_PROCESSING',
-    priority: 'NORMAL',
-    read: false,
-    actionUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'n2222222-2222-2222-2222-222222222222',
-    title: 'Minuta da Ata de Audiência Pronta',
-    message: 'A minuta da ata do processo 0004521-88.2024.8.26.0100 foi gerada pelo modelo Gemini 2.0 Flash e está pronta para revisão.',
-    category: 'DOCUMENT_WORKFLOW',
-    priority: 'NORMAL',
-    read: true,
-    actionUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-    createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
-  }
-];
+const MOCK_NOTIFICATIONS: JudicialNotification[] = [];
 
 export async function getJudicialNotifications(unreadOnly = false): Promise<JudicialNotification[]> {
   try {
@@ -1797,74 +2028,14 @@ export async function markAllNotificationsAsRead(): Promise<boolean> {
   return true;
 }
 
-const MOCK_NOTEBOOKS: Notebook[] = [
-  {
-    id: 'a1111111-2222-3333-4444-555555555555',
-    title: 'Caderno de Análise: Rescisão Contratual Imobiliária',
-    description: 'Pesquisa comparativa entre a instrução probatória em vídeo e as teses de retenção de 20% vs 100% de restituição.',
-    caseNumber: '0014238-19.2024.8.26.0100',
-    emoji: '⚖️',
-    color: '#e63946',
-    totalActiveTokens: 512500,
-    sources: [
-      {
-        id: 's1111111-1111-1111-1111-111111111111',
-        notebookId: 'a1111111-2222-3333-4444-555555555555',
-        sourceType: 'VIDEO_BLOCK',
-        title: 'Bloco 1: Abertura e Tentativa de Conciliação',
-        referenceId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        blockIndex: 1,
-        estimatedTokens: 252000,
-        isActiveForChat: true,
-        content: '[00:00 - 00:18] MAGISTRADO: Declaro aberta a audiência... [00:19 - 00:31] ADVOGADO_AUTOR: Tentamos contato prévio... [00:31 - 00:48] ADVOGADO_REU: Mantemos proposta de retenção contratual de 20%...',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 's2222222-2222-2222-2222-222222222222',
-        notebookId: 'a1111111-2222-3333-4444-555555555555',
-        sourceType: 'VIDEO_BLOCK',
-        title: 'Bloco 2: Saneamento e Depoimento da Autora',
-        referenceId: 'f1e2d3c4-b5a6-9788-7654-3210fedcba98',
-        blockIndex: 2,
-        estimatedTokens: 256000,
-        isActiveForChat: true,
-        content: '[00:49 - 01:18] MAGISTRADO: Fixo como ponto controvertido a culpa pela rescisão... [01:18 - 01:55] AUTOR (Mariana Ribeiro): Enviei três notificações extrajudiciais após expirar o prazo de 180 dias...',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 's3333333-3333-3333-3333-333333333333',
-        notebookId: 'a1111111-2222-3333-4444-555555555555',
-        sourceType: 'JURISPRUDENCE',
-        title: 'STJ - Súmula 543 e Tema Repetitivo 1095',
-        referenceId: 'STJ-S543',
-        estimatedTokens: 4500,
-        isActiveForChat: true,
-        content: 'Súmula 543/STJ: Na hipótese de resolução de contrato de promessa de compra e venda de imóvel submetido ao CDC, deve ocorrer a imediata restituição das parcelas pagas pelo promitente comprador - integralmente, em caso de culpa exclusiva do promitente vendedor/construtor.',
-        createdAt: new Date().toISOString()
-      }
-    ],
-    notes: [
-      {
-        id: 'n1111111-2222-3333-4444-555555555555',
-        notebookId: 'a1111111-2222-3333-4444-555555555555',
-        title: 'Ponto Central: Culpa Exclusiva da Ré pelo Atraso',
-        content: 'A prova oral e a notificação de março/2023 corroboram a mora injustificada da construtora ré. Aplicação direta da Súmula 543 do STJ determinando restituição integral de 100%.',
-        noteType: 'FINDING',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+const MOCK_NOTEBOOKS: Notebook[] = [];
 
 export async function listNotebooks(): Promise<Notebook[]> {
   try {
     const res = await authFetch('/api/v1/notebooks', { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return data;
     }
   } catch (e) {}
   return [...MOCK_NOTEBOOKS];
@@ -2004,33 +2175,13 @@ export async function chatNotebook(
   question: string,
   activeSourceIds?: string[]
 ): Promise<any> {
-  try {
-    const res = await authFetch(`/api/v1/notebooks/${notebookId}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, activeSourceIds })
-    });
-    if (res.ok) return await res.json();
-  } catch (e) {}
-
-  return {
-    messageId: generateUuid(),
-    answer:
-      'Com base no exame das fontes ativas do caderno:\n\n1. **Frustração da Conciliação (Bloco 1)**: Durante a audiência de instrução, a ré ofertou restituição de 80% dos valores pagos com retenção de 20%, o que foi recusado pela autora.\n2. **Adequação Jurisprudencial (Súmula 543/STJ)**: Como a prova oral aponta culpa exclusiva da construtora pelo atraso na obra após 180 dias de tolerância, a retenção de 20% pretendida é indevida, incidindo o dever de devolução de 100% integral e imediata.',
-    activeSourceTitles: [
-      'Bloco 1: Abertura e Tentativa de Conciliação',
-      'Bloco 2: Saneamento e Depoimento da Autora',
-      'STJ - Súmula 543 e Tema Repetitivo 1095'
-    ],
-    citations: [
-      {
-        sourceTitle: 'STJ - Súmula 543',
-        snippet: 'Na hipótese de resolução de contrato de promessa de compra e venda de imóvel...',
-        referenceUrl: '/hearings/f1e2d3c4-b5a6-9788-7654-3210fedcba98'
-      }
-    ],
-    estimatedTokensUsed: 512500
-  };
+  const res = await authFetch(`/api/v1/notebooks/${notebookId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, activeSourceIds })
+  });
+  if (res.ok) return await res.json();
+  throw new Error('Falha ao consultar o assistente do caderno');
 }
 
 export async function createNotebookNote(

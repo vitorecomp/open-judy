@@ -22,36 +22,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Apache Kafka with KRaft (no ZooKeeper required)
-  kafka:
-    image: docker.io/confluentinc/cp-kafka:7.6.0
-    container_name: open-judy-kafka
-    ports:
-      - "9092:9092"
-      - "9093:9093"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-    volumes:
-      - kafka_data:/tmp/kraft-combined-logs
-    healthcheck:
-      test: "kafka-broker-api-versions --bootstrap-server localhost:9092"
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
   # MinIO (S3-compatible Object Storage for Court Audio/Video)
   minio:
     image: docker.io/alpine/minio:RELEASE.2025-10-15T17-29-55Z
@@ -154,6 +124,12 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
+      TASK_AUDIT_SERVICE_URL: http://task-audit-service:8091
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -164,6 +140,7 @@ services:
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
+      - rabbitmq
     healthcheck:
       test: "curl -f http://localhost:8081/q/health/ready"
       interval: 15s
@@ -186,7 +163,6 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -196,15 +172,18 @@ services:
       RABBITMQ_PASSWORD: judy_password
       RABBITMQ_VHOST: /
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-3.8-flash
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       QUARKUS_HTTP_HOST: "0.0.0.0"
       QUARKUS_HTTP_PORT: "8083"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
-      - kafka
       - rabbitmq
       - keycloak
     healthcheck:
@@ -229,7 +208,11 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -240,7 +223,7 @@ services:
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
-      - kafka
+      - rabbitmq
       - keycloak
     healthcheck:
       test: "curl -f http://localhost:8085/q/health/ready"
@@ -264,7 +247,11 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -275,7 +262,7 @@ services:
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
-      - kafka
+      - rabbitmq
       - keycloak
     healthcheck:
       test: "curl -f http://localhost:8086/q/health/ready"
@@ -299,7 +286,6 @@ services:
       DB_NAME: open_judy_db
       DB_USER: judy_user
       DB_PASSWORD: judy_password
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
       RABBITMQ_USER: judy_user
@@ -315,7 +301,6 @@ services:
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
-      - kafka
       - rabbitmq
     healthcheck:
       test: "curl -f http://localhost:8087/q/health/ready"
@@ -343,7 +328,10 @@ services:
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-4-argon
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: open-judy
       KEYCLOAK_CLIENT_ID: open-judy-backend
@@ -351,6 +339,7 @@ services:
       QUARKUS_HTTP_PORT: "8090"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
@@ -373,16 +362,18 @@ services:
       - "5014:5005"
     environment:
       SERVICE_NAME: agent-garden
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-open-judy-cloud}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
       GCP_LOCATION: ${GCP_LOCATION:-global}
       GCP_ENDPOINT_LOCATION: ${GCP_ENDPOINT_LOCATION:-global}
       GCP_APP_ID: ${GCP_APP_ID:-judy-legal-agents}
       GCP_ASSISTANT_ID: ${GCP_ASSISTANT_ID:-default_assistant}
       GCP_API_KEY: ${GCP_API_KEY:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       QUARKUS_HTTP_HOST: "0.0.0.0"
       QUARKUS_HTTP_PORT: "8088"
     volumes:
       - ./services:/workspace/services:z
+      - ./keys:/keys:ro,z
       - maven_cache:/root/.m2
     depends_on:
       - alloydb-local
@@ -422,6 +413,45 @@ services:
       timeout: 5s
       retries: 5
 
+  # Dedicated RabbitMQ Async Task Registry & Administrative Audit Microservice
+  task-audit-service:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.dev
+    container_name: open-judy-task-audit-service
+    ports:
+      - "8091:8091"
+      - "5017:5005"
+    environment:
+      SERVICE_NAME: task-audit-service
+      DB_HOST: alloydb-local
+      DB_PORT: "5432"
+      DB_NAME: open_judy_db
+      DB_USER: judy_user
+      DB_PASSWORD: judy_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_MANAGEMENT_PORT: "15672"
+      RABBITMQ_USER: judy_user
+      RABBITMQ_PASSWORD: judy_password
+      RABBITMQ_VHOST: /
+      CASE_SERVICE_URL: http://case-service:8081
+      TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
+      INDEXER_SERVICE_URL: http://indexer-service:8089
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8091"
+    volumes:
+      - ./services:/workspace/services:z
+      - maven_cache:/root/.m2
+    depends_on:
+      - alloydb-local
+      - rabbitmq
+    healthcheck:
+      test: "curl -f http://localhost:8091/q/health/ready"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   # =================================================================
   # 3. ASYNC PIPELINES & WORKERS (PYTHON RESILIENT CONSUMERS)
   # =================================================================
@@ -448,11 +478,15 @@ services:
       DB_USER: judy_user
       DB_PASSWORD: judy_password
       GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_or_set_real_gemini_key}
-      GEMINI_MODEL: gemini-2.0-flash
+      GEMINI_MODEL: gemini-3.8-flash
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-study-deploys}
+      GCP_LOCATION: ${GCP_LOCATION:-global}
+      GOOGLE_APPLICATION_CREDENTIALS: /keys/service-account.json
       MAX_RETRIES: "3"
       RETRY_BACKOFF_SECONDS: "5"
     volumes:
       - ./pipelines/transcription-pipeline:/app:z
+      - ./keys:/keys:ro,z
     depends_on:
       - rabbitmq
       - alloydb-local
@@ -471,12 +505,14 @@ services:
     environment:
       CASE_SERVICE_URL: http://case-service:8081
       TRANSCRIPTION_SERVICE_URL: http://transcription-service:8083
+      AI_SERVICE_URL: http://transcription-service:8083
       USER_SERVICE_URL: http://user-service:8085
       CONFIG_SERVICE_URL: http://config-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       AGENT_GARDEN_SERVICE_URL: http://agent-garden:8088
       INDEXER_SERVICE_URL: http://indexer-service:8089
       NOTEBOOK_SERVICE_URL: http://notebook-service:8090
+      TASK_AUDIT_SERVICE_URL: http://task-audit-service:8091
       NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:${KEYCLOAK_PORT:-8080}
       NEXT_PUBLIC_KEYCLOAK_REALM: open-judy
       NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: open-judy-ui
@@ -487,6 +523,7 @@ services:
       - ./frontend/open-judy-ui:/app:z
     depends_on:
       - case-service
+      - task-audit-service
       - transcription-service
       - user-service
       - config-service
@@ -502,7 +539,6 @@ networks:
 
 volumes:
   alloydb_data:
-  kafka_data:
   minio_data:
   rabbitmq_data:
   elasticsearch_data:

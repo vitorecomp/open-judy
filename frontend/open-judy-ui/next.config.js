@@ -4,9 +4,10 @@ const nextConfig = {
   devIndicators: false,
   async rewrites() {
     const caseService = process.env.CASE_SERVICE_URL || 'http://localhost:8081';
+    const taskAuditService = process.env.TASK_AUDIT_SERVICE_URL || caseService;
     const mediaService = process.env.MEDIA_SERVICE_URL || 'http://localhost:8082';
     const transcriptionService = process.env.TRANSCRIPTION_SERVICE_URL || 'http://localhost:8083';
-    const aiService = process.env.AI_SERVICE_URL || 'http://localhost:8084';
+    const aiService = process.env.AI_SERVICE_URL || transcriptionService;
     const userService = process.env.USER_SERVICE_URL || 'http://localhost:8085';
     const configService = process.env.CONFIG_SERVICE_URL || 'http://localhost:8086';
     const notificationService = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8087';
@@ -23,6 +24,22 @@ const nextConfig = {
       {
         source: '/api/v1/hearings/:path*',
         destination: `${caseService}/api/v1/hearings/:path*`,
+      },
+      {
+        source: '/api/v1/tasks',
+        destination: `${taskAuditService}/api/v1/tasks`,
+      },
+      {
+        source: '/api/v1/tasks/:path*',
+        destination: `${taskAuditService}/api/v1/tasks/:path*`,
+      },
+      {
+        source: '/api/v1/audit',
+        destination: `${taskAuditService}/api/v1/audit`,
+      },
+      {
+        source: '/api/v1/audit/:path*',
+        destination: `${taskAuditService}/api/v1/audit/:path*`,
       },
       {
         source: '/api/v1/media/:path*',

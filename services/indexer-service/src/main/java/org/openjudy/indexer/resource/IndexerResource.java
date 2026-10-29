@@ -49,6 +49,14 @@ public class IndexerResource {
         return Response.status(Response.Status.NOT_FOUND).build();
     }
 
+    @DELETE
+    @Path("/all")
+    @Operation(summary = "Clear all indexed documents")
+    public Response clearAll() {
+        indexerService.clearAll();
+        return Response.noContent().build();
+    }
+
     @POST
     @Path("/reindex")
     @Operation(summary = "Trigger full system reindex")

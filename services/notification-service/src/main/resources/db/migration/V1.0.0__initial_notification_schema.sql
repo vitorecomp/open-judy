@@ -25,17 +25,3 @@ CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON tb_notifications(is_read
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON tb_notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_hearing_id ON tb_notifications(hearing_id);
 
--- Seed initial welcome notification
-INSERT INTO tb_notifications (id, title, message, category, priority, is_read, action_url, created_at)
-VALUES
-(
-    'e1111111-1111-1111-1111-111111111111',
-    'Bem-vindo ao Open Judy',
-    'O ecossistema de inteligência artificial judiciária está pronto para processar audiências e auxiliar seu gabinete.',
-    'SYSTEM',
-    'NORMAL',
-    FALSE,
-    '/hearings',
-    NOW() - INTERVAL '1 hour'
-)
-ON CONFLICT DO NOTHING;

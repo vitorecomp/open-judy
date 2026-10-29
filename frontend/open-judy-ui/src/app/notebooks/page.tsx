@@ -156,7 +156,7 @@ export default function NotebooksHubPage() {
                   </div>
 
                   {/* Sources Preview Pills */}
-                  <div className="pt-2 border-t border-dark-border/60 flex items-center gap-1.5 flex-wrap">
+                  <div className="pt-2 border-t border-dark-border/60 flex items-center gap-1.5 flex-wrap tabular-nums">
                     <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
                       <Layers className="w-3 h-3 text-crimson" />
                       <span>{nb.sources.length} fontes</span>
@@ -168,12 +168,12 @@ export default function NotebooksHubPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-dark-border/40 flex items-center justify-between text-xs text-dark-muted">
+                <div className="mt-4 pt-3 border-t border-dark-border/40 flex items-center justify-between text-xs text-dark-muted tabular-nums">
                   <span className="flex items-center gap-1">
                     <Bookmark className="w-3.5 h-3.5" />
                     <span>{nb.notes.length} anotações</span>
                   </span>
-                  <span className="flex items-center gap-1 text-crimson font-medium group-hover:translate-x-1 transition">
+                  <span className="flex items-center gap-1 text-crimson font-medium group-hover:translate-x-1 transition-transform">
                     <span>Abrir Caderno</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
@@ -194,7 +194,8 @@ export default function NotebooksHubPage() {
               </h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-dark-muted hover:text-white text-sm"
+                className="p-2 rounded-lg text-dark-muted hover:text-white hover:bg-dark-input text-sm transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+                aria-label="Fechar modal de novo caderno"
               >
                 ✕
               </button>

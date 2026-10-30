@@ -82,39 +82,39 @@ export default function AgentGardenHubPage() {
       {/* ========================================================================= */}
       {/* Top Banner / Hero Header */}
       {/* ========================================================================= */}
-      <div className="bg-dark-card border border-dark-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-dark-card border border-dark-border rounded-lg p-5 shadow-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
+          <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2 text-xs text-dark-muted">
-              <Link href="/" className="hover:text-white transition">Dashboard</Link>
+              <Link href="/" className="hover:text-white transition-colors">Gabinete &amp; Expediente</Link>
               <span>/</span>
-              <span className="text-white font-medium">Gemini Enterprise</span>
+              <span className="text-white font-medium">Assessoria Jurisdicional (Res. CNJ nº 332/2020)</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <Bot className="w-8 h-8 text-crimson" />
-              <span>Agent Garden</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5 font-serif">
+              <Scale className="w-6 h-6 text-crimson" />
+              <span>Módulos de Assessoria Jurisdicional (Res. CNJ nº 332/2020)</span>
             </h1>
 
-            <p className="text-xs sm:text-sm text-dark-muted leading-relaxed">
-              Catálogo de Agentes Especialistas de Inteligência Artificial do Poder Judiciário. Cada agente atua com data stores próprios, raciocínio em múltiplos passos e sessões interativas via Google Discovery Engine <code className="text-crimson font-mono font-semibold">StreamAssist API</code>.
+            <p className="text-xs text-dark-muted leading-relaxed">
+              Módulos especializados de apoio à pesquisa de precedentes qualificados, exame de contraditório probatório e elaboração de minutas sob supervisão humana do Magistrado.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <div className="px-4 py-3 rounded-xl bg-dark-input border border-dark-border flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="px-3.5 py-2.5 rounded-lg bg-dark-input border border-dark-border flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
               <div>
-                <div className="text-[11px] text-dark-muted font-medium">StreamAssist Gateway</div>
-                <div className="text-xs font-bold text-white">Google Cloud Enterprise</div>
+                <div className="text-[11px] text-dark-muted font-medium">Governança Ética de IA</div>
+                <div className="text-xs font-bold text-white">Resolução CNJ nº 332/2020</div>
               </div>
             </div>
 
-            <div className="px-4 py-3 rounded-xl bg-dark-input border border-dark-border flex items-center gap-3">
+            <div className="px-3.5 py-2.5 rounded-lg bg-dark-input border border-dark-border flex items-center gap-3">
               <Database className="w-4 h-4 text-sky-400" />
               <div>
-                <div className="text-[11px] text-dark-muted font-medium">Data Stores</div>
-                <div className="text-xs font-bold text-white">STF, STJ & Tribunais</div>
+                <div className="text-[11px] text-dark-muted font-medium">Acervo Jurisprudencial</div>
+                <div className="text-xs font-bold text-white">STF, STJ &amp; Tribunais</div>
               </div>
             </div>
           </div>

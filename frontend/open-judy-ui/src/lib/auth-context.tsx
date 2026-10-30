@@ -36,8 +36,8 @@ export const PROFILE_PRESETS: ProfilePreset[] = [
     email: 'camila.vasconcelos@tjsp.jus.br',
     jurisdiction: '3ª Vara Cível Central da Comarca de São Paulo/SP',
     description: 'Condução de audiências, análise jurídica integral, aprovação e assinatura digital de atas',
-    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    avatarUrl: 'https://ui-avatars.com/api/?name=Camila+Vasconcelos&background=e63946&color=fff',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    avatarUrl: 'https://ui-avatars.com/api/?name=Camila+Vasconcelos&background=1d4ed8&color=fff',
   },
   {
     role: 'ASSESSOR',
@@ -75,9 +75,12 @@ export const PROFILE_PRESETS: ProfilePreset[] = [
 ];
 
 export const ACCENT_PRESETS = [
-  { id: 'teal', name: 'Teal', color: '#0d9488', dark: '#0f766e', light: '#2dd4bf', glow: 'rgba(13, 148, 136, 0.25)' },
-  { id: 'red', name: 'Red', color: '#e63946', dark: '#be123c', light: '#fb7185', glow: 'rgba(230, 57, 70, 0.25)' },
-  { id: 'orange', name: 'Orange', color: '#ea580c', dark: '#c2410c', light: '#fb923c', glow: 'rgba(234, 88, 12, 0.25)' },
+  { id: 'blue', name: 'Azul Judiciário (CNJ)', color: '#2563eb', dark: '#1d4ed8', light: '#60a5fa', glow: 'rgba(37, 99, 235, 0.25)' },
+  { id: 'teal', name: 'Verde Esmeralda', color: '#0d9488', dark: '#0f766e', light: '#2dd4bf', glow: 'rgba(13, 148, 136, 0.25)' },
+  { id: 'red', name: 'Carmim Clássico', color: '#e63946', dark: '#be123c', light: '#fb7185', glow: 'rgba(230, 57, 70, 0.25)' },
+  { id: 'purple', name: 'Violeta Regimental', color: '#7c3aed', dark: '#6d28d9', light: '#a78bfa', glow: 'rgba(124, 58, 237, 0.25)' },
+  { id: 'amber', name: 'Âmbar / Ouro Soberano', color: '#d97706', dark: '#b45309', light: '#fbbf24', glow: 'rgba(217, 119, 6, 0.25)' },
+  { id: 'orange', name: 'Bronze Institucional', color: '#ea580c', dark: '#c2410c', light: '#fb923c', glow: 'rgba(234, 88, 12, 0.25)' },
 ];
 
 export function hexToRgba(hex: string, alpha: number = 0.25): string {
@@ -88,6 +91,16 @@ export function hexToRgba(hex: string, alpha: number = 0.25): string {
   const g = (num >> 8) & 255;
   const b = num & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function hexToRgbTriplet(hex: string): string {
+  let clean = hex.replace('#', '');
+  if (clean.length === 3) clean = clean.split('').map((c) => c + c).join('');
+  const num = parseInt(clean, 16) || 0;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `${r} ${g} ${b}`;
 }
 
 export function adjustHexBrightness(hex: string, percent: number): string {
@@ -105,43 +118,53 @@ export function adjustHexBrightness(hex: string, percent: number): string {
 
 export function applyAccentColorToDOM(colorOrPreset: string) {
   if (typeof document === 'undefined') return;
+  const raw = (colorOrPreset || '').trim();
+  const normalized = !raw ? '#2563eb' : raw.toLowerCase() === 'crimson' ? '#e63946' : raw;
   const preset = ACCENT_PRESETS.find(
     (p) =>
-      p.id === colorOrPreset?.toLowerCase() ||
-      p.color.toLowerCase() === colorOrPreset?.toLowerCase()
+      p.id === normalized.toLowerCase() ||
+      p.color.toLowerCase() === normalized.toLowerCase()
   );
 
-  let primary = colorOrPreset || '#e63946';
-  let dark = '#be123c';
-  let light = '#fb7185';
-  let glow = 'rgba(230, 57, 70, 0.25)';
+  let primary = '#2563eb';
+  let dark = '#1d4ed8';
+  let light = '#60a5fa';
+  let glow = 'rgba(37, 99, 235, 0.25)';
 
   if (preset) {
     primary = preset.color;
     dark = preset.dark;
     light = preset.light;
     glow = preset.glow;
-  } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorOrPreset)) {
-    primary = colorOrPreset;
-    dark = adjustHexBrightness(colorOrPreset, -20);
-    light = adjustHexBrightness(colorOrPreset, 25);
-    glow = hexToRgba(colorOrPreset, 0.25);
+  } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(normalized)) {
+    primary = normalized;
+    dark = adjustHexBrightness(normalized, -20);
+    light = adjustHexBrightness(normalized, 25);
+    glow = hexToRgba(normalized, 0.25);
   }
 
-  document.documentElement.style.setProperty('--accent-color', primary);
-  document.documentElement.style.setProperty('--accent-color-dark', dark);
-  document.documentElement.style.setProperty('--accent-color-light', light);
-  document.documentElement.style.setProperty('--accent-color-glow', glow);
-  document.documentElement.setAttribute('data-accent', colorOrPreset || 'red');
+  const rgbTriplet = hexToRgbTriplet(primary);
+  const root = document.documentElement;
+  root.style.setProperty('--accent-color', primary);
+  root.style.setProperty('--accent-color-dark', dark);
+  root.style.setProperty('--accent-hover', dark);
+  root.style.setProperty('--accent-color-light', light);
+  root.style.setProperty('--accent-color-glow', glow);
+  root.style.setProperty('--color-accent', primary);
+  root.style.setProperty('--color-accent-dark', dark);
+  root.style.setProperty('--color-accent-light', light);
+  root.style.setProperty('--accent-rgb', rgbTriplet);
+  root.setAttribute('data-accent', preset ? preset.id : primary);
   try {
-    document.cookie = `open_judy_accent=${encodeURIComponent(colorOrPreset || '#e63946')}; path=/; max-age=31536000; SameSite=Lax`;
+    localStorage.setItem('openjudy_accent_color', primary);
+    document.cookie = `open_judy_accent=${encodeURIComponent(primary)}; path=/; max-age=31536000; SameSite=Lax`;
   } catch (_) {}
 }
 
 const DEFAULT_CONFIG: UserConfiguration = {
   userId: 'a0000000-0000-0000-0000-000000000001',
   theme: 'DARK',
-  accentColor: '#e63946',
+  accentColor: '#2563eb',
   language: 'pt-BR',
   fontSize: 'MEDIUM',
   highContrast: false,
@@ -171,9 +194,9 @@ const DEFAULT_CONFIG: UserConfiguration = {
 
 const DEFAULT_SYSTEM_CONFIG: SystemConfiguration = {
   systemName: 'Open Judy',
-  systemTagline: 'IA Judiciária Zero-Trust (Keycloak IAM)',
+  systemTagline: 'Poder Judiciário • Instrução e Degravação (Res. CNJ 105/2010)',
   logoUrl: '',
-  accentColor: '#e63946',
+  accentColor: '#2563eb',
   geminiModel: 'gemini-4-argon',
   geminiEmbeddingModel: 'text-embedding-004',
   maxAudioDurationMinutes: 240,
@@ -465,13 +488,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
-    // 3. Load system configurations
-    api.getSystemConfig().then((sysData) => {
-      if (sysData) {
-        setSystemConfig((prev) => ({ ...prev, ...sysData }));
-        if (sysData.accentColor && !savedAccent) {
-          applyAccentColorToDOM(sysData.accentColor);
+    // 3. Load system configurations & config-service global settings (system.accent_color, system.theme, etc.)
+    Promise.all([
+      api.getSystemConfig().catch(() => null),
+      api.getSystemSettings().catch(() => []),
+    ]).then(([sysData, sysSettings]) => {
+      const settingsMap: Record<string, string> = {};
+      if (Array.isArray(sysSettings)) {
+        for (const item of sysSettings) {
+          if (item && item.key && typeof item.value === 'string') {
+            settingsMap[item.key] = item.value;
+          }
         }
+      }
+      const resolvedAccent =
+        savedAccent ||
+        settingsMap['system.accent_color'] ||
+        sysData?.accentColor ||
+        '#2563eb';
+      const resolvedName =
+        settingsMap['system.name'] || sysData?.systemName || 'Open Judy';
+      const resolvedTagline =
+        settingsMap['system.tagline'] ||
+        sysData?.systemTagline ||
+        'PODER JUDICIÁRIO • CNJ';
+      const resolvedLogo =
+        settingsMap['system.logo_url'] ?? sysData?.logoUrl ?? '';
+
+      setSystemConfig((prev) => ({
+        ...prev,
+        ...(sysData || {}),
+        systemName: resolvedName,
+        systemTagline: resolvedTagline,
+        logoUrl: resolvedLogo,
+        accentColor: resolvedAccent,
+      }));
+
+      if (resolvedAccent) {
+        applyAccentColorToDOM(resolvedAccent);
+      }
+      if (!savedTheme && settingsMap['system.theme']) {
+        applyThemeToDOM(settingsMap['system.theme']);
       }
     });
   }, [applyPreset]);
@@ -560,21 +617,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setAccentColor = async (color: string) => {
     applyAccentColorToDOM(color);
-    localStorage.setItem('openjudy_accent_color', color);
+    try {
+      localStorage.setItem('openjudy_accent_color', color);
+    } catch (_) {}
+    setSystemConfig((prev) => ({ ...prev, accentColor: color }));
     await updateConfig({ accentColor: color });
-    if (user.role === 'ADMIN') {
-      await updateSystemConfig({ accentColor: color });
-      try {
-        await api.updateSystemSetting('system.accent_color', { value: color });
-      } catch (_) {}
-    }
+    try {
+      await api.updateSystemSetting('system.accent_color', { value: color });
+    } catch (_) {}
+    try {
+      await api.updateSystemConfig({ ...systemConfig, accentColor: color });
+    } catch (_) {}
   };
 
   const resetConfig = async () => {
     setConfig(DEFAULT_CONFIG);
     localStorage.setItem('openjudy_user_config', JSON.stringify(DEFAULT_CONFIG));
     applyThemeToDOM(DEFAULT_CONFIG.theme);
-    applyAccentColorToDOM(DEFAULT_CONFIG.accentColor || '#e63946');
+    applyAccentColorToDOM(DEFAULT_CONFIG.accentColor || '#2563eb');
     try {
       await api.updateUserConfig(user.id, DEFAULT_CONFIG);
     } catch (e) {}
@@ -585,7 +645,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSystemConfig(updated);
     if (updated.accentColor) {
       applyAccentColorToDOM(updated.accentColor);
-      localStorage.setItem('openjudy_accent_color', updated.accentColor);
+      try {
+        localStorage.setItem('openjudy_accent_color', updated.accentColor);
+      } catch (_) {}
+      setConfig((prev) => {
+        const next = { ...prev, accentColor: updated.accentColor };
+        try {
+          localStorage.setItem('openjudy_user_config', JSON.stringify(next));
+        } catch (_) {}
+        return next;
+      });
+      try {
+        await api.updateSystemSetting('system.accent_color', { value: updated.accentColor });
+      } catch (_) {}
     }
     try {
       await api.updateSystemConfig(updated);
@@ -633,9 +705,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         systemConfig,
         updateSystemConfig,
         systemName: systemConfig.systemName || 'Open Judy',
-        systemTagline: systemConfig.systemTagline || 'IA Judiciária Zero-Trust (Keycloak IAM)',
+        systemTagline: systemConfig.systemTagline || 'Poder Judiciário • Instrução e Degravação (Res. CNJ 105/2010)',
         logoUrl: systemConfig.logoUrl || '',
-        accentColor: config.accentColor || systemConfig.accentColor || '#e63946',
+        accentColor: config.accentColor || systemConfig.accentColor || '#2563eb',
         setAccentColor,
         isPreferencesOpen,
         setIsPreferencesOpen,

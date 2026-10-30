@@ -56,20 +56,19 @@ public class ConfigEventProducer {
                 ch.exchangeDeclare(exchange, "direct", true);
                 ch.queueDeclare("judy.audit.events", true, false, false, null);
                 ch.queueBind("judy.audit.events", exchange, "audit.event");
-                Map<String, Object> auditEvent = Map.of(
-                        "id", UUID.randomUUID().toString(),
-                        "timestamp", Instant.now().toString(),
-                        "actorEmail", "admin@tjsp.jus.br",
-                        "actorName", "Administrador do Sistema",
-                        "actorRole", "ADMIN",
-                        "action", "PROMPT".equalsIgnoreCase(configType) ? "PROMPT_" + action : "CONFIG_" + action,
-                        "category", "ADMIN_CONFIG",
-                        "entityType", configType,
-                        "entityId", entityCode,
-                        "entityName", entityCode,
-                        "status", "SUCCESS",
-                        "rabbitmqQueue", "judy.audit.events"
-                );
+                java.util.Map<String, Object> auditEvent = new java.util.LinkedHashMap<>();
+                auditEvent.put("id", UUID.randomUUID().toString());
+                auditEvent.put("timestamp", Instant.now().toString());
+                auditEvent.put("actorEmail", "admin@tjsp.jus.br");
+                auditEvent.put("actorName", "Administrador do Sistema");
+                auditEvent.put("actorRole", "ADMIN");
+                auditEvent.put("action", "PROMPT".equalsIgnoreCase(configType) ? "PROMPT_" + action : "CONFIG_" + action);
+                auditEvent.put("category", "ADMIN_CONFIG");
+                auditEvent.put("entityType", configType);
+                auditEvent.put("entityId", entityCode);
+                auditEvent.put("entityName", entityCode);
+                auditEvent.put("status", "SUCCESS");
+                auditEvent.put("rabbitmqQueue", "judy.audit.events");
                 ch.basicPublish(exchange, "audit.event", MessageProperties.PERSISTENT_TEXT_PLAIN, objectMapper.writeValueAsBytes(auditEvent));
             }
             LOG.infof("Published ConfigUpdatedEvent to RabbitMQ judy.audit.events: type=%s, code=%s, action=%s", configType, entityCode, action);

@@ -371,81 +371,105 @@ export default function HearingWorkspacePage() {
     hearing.audioFilename.endsWith('.mp4') || hearing.audioFilename.endsWith('.webm') || hearing.audioFilename.endsWith('.mkv')
   ));
 
+  const dossierParticipants =
+    hearing.participants && hearing.participants.length > 0
+      ? hearing.participants
+      : Array.from(
+          new Map(
+            segments
+              .filter((s) => Boolean(s.speakerName))
+              .map((s) => [
+                s.speakerName,
+                {
+                  id: s.id,
+                  name: s.speakerName,
+                  role: s.speakerRole,
+                  documentNumber: undefined,
+                },
+              ])
+          ).values()
+        );
+
   return (
     <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start w-full">
       {/* ========================================================================= */}
-      {/* COLUNA ESQUERDA (5/12): Cabeçalho do Dossiê & Player de Vídeo Sincronizado */}
+      {/* COLUNA ESQUERDA (5/12): Termo de Audiência, Qualificação das Partes & Player */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-4 bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl flex flex-col">
-        {/* Dossier Header */}
-        <div className="flex flex-col gap-3 p-4 border-b border-dark-border/80">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href="/hearings"
-                aria-label="Voltar para a Lista de Audiências"
-                className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center touch-target-expand"
-                title="Voltar para a Lista de Audiências"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
-              <span className="font-mono text-sm font-bold text-white tracking-tight">
-                {hearing.caseNumber}
-              </span>
-              <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-dark-input text-slate-200 border border-dark-border">
-                {hearing.hearingType.replace(/_/g, ' ')}
-              </span>
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${
-                isVideo
-                  ? 'bg-crimson/15 text-red-300 border-crimson/30'
-                  : 'bg-indigo-600/15 text-indigo-300 border-indigo-500/30'
-              }`}>
-                {isVideo ? <Video className="w-3.5 h-3.5 text-crimson" /> : <Music className="w-3.5 h-3.5 text-indigo-400" />}
-                <span>{isVideo ? 'Vídeo da Sessão' : 'Gravação em Áudio'}</span>
-              </span>
-            </div>
+      <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-4 bg-dark-card border border-dark-border rounded-lg overflow-hidden shadow-lg flex flex-col">
+        {/* Official Judicial Dossier Header */}
+        <div className="flex flex-col gap-3 p-4 border-b border-dark-border/80 bg-dark-bg/40">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href="/hearings"
+                  aria-label="Retornar à Pauta de Audiências"
+                  className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center touch-target-expand"
+                  title="Retornar à Pauta de Audiências"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Link>
+                <div>
+                  <span className="block text-[11px] font-bold tracking-widest uppercase text-amber-400/90">
+                    AUTOS Nº (PADRÃO CNJ) • TERMO DE AUDIÊNCIA RES. CNJ Nº 105/2010
+                  </span>
+                  <span className="font-mono text-sm sm:text-base font-bold text-white tracking-tight">
+                    {hearing.caseNumber}
+                  </span>
+                </div>
+              </div>
 
-            {hearing.courtJurisdiction && hearing.courtJurisdiction.trim().length > 0 && (
-              <p className="text-xs text-dark-muted pl-10 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-dark-muted" />
-                <span>{hearing.courtJurisdiction}</span>
-              </p>
-            )}
+              <div className="pl-11 flex items-center gap-2 flex-wrap pt-0.5">
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-dark-input text-slate-200 border border-dark-border">
+                  ATO: {hearing.hearingType.replace(/_/g, ' ')}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${
+                  isVideo
+                    ? 'bg-crimson/15 text-sky-200 border-crimson/40'
+                    : 'bg-indigo-600/15 text-indigo-300 border-indigo-500/30'
+                }`}>
+                  {isVideo ? <Video className="w-3.5 h-3.5 text-crimson" /> : <Music className="w-3.5 h-3.5 text-indigo-400" />}
+                  <span>{isVideo ? 'Registro Audiovisual' : 'Registro Fonográfico'}</span>
+                </span>
+                {hearing.courtJurisdiction && hearing.courtJurisdiction.trim().length > 0 && (
+                  <span className="text-xs text-slate-300 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{hearing.courtJurisdiction}</span>
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Badges & Meta info */}
+          {/* Situação da Degravação & Parâmetros Forenses */}
           <div className="flex items-center gap-2 flex-wrap">
             {hearing.status === 'PROCESSING_TRANSCRIPTION' || hearing.status === 'PENDING_UPLOAD' ? (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-xl status-badge-warning border text-xs font-semibold">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg status-badge-warning border text-xs font-semibold">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 <span>
-                  Transcrevendo ({completedBlocks.length}/{expectedBlocks} partes)
+                  Degravação em Curso ({completedBlocks.length}/{expectedBlocks} blocos)
                 </span>
                 <span className="text-amber-200/90 font-mono text-xs border-l border-amber-700/60 pl-2">
                   ~{formatEtaDuration(estimatedRemainingMs)} restantes
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl status-badge-success border text-xs font-semibold">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg status-badge-success border text-xs font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span>
-                  Concluído ({completedBlocks.length}/{expectedBlocks} partes • {formatEtaDuration(totalProcessingMs)})
+                  Degravação Homologada ({completedBlocks.length}/{expectedBlocks} blocos • {formatEtaDuration(totalProcessingMs)})
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-dark-input border border-dark-border text-xs text-slate-200">
-              <Users className="w-3.5 h-3.5 text-dark-muted" />
-              <span>{hearing.participants?.length || 0} Pessoas</span>
-            </div>
             <Link
               href={`/config?tab=prompts&prompt=${encodeURIComponent(activePromptCode || 'PROMPT_AUDIO_VIDEO_TRANSCRIPTION')}`}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-800/40 text-xs font-mono font-semibold text-indigo-300 hover:text-indigo-200 transition-colors"
-              title={`Vídeo processado na v${videoProcessedVersion} • Prompt atual no sistema: ${activePromptCode} v${activePromptVersion}. Clique para abrir nas Configurações do Sistema.`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-800/40 text-xs font-mono font-semibold text-indigo-300 hover:text-indigo-200 transition-colors"
+              title={`Mídia degravada na v${videoProcessedVersion} • Diretriz ativa no Tribunal: ${activePromptCode} v${activePromptVersion}. Clique para inspecionar em Parâmetros do Tribunal.`}
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               <span>
-                Prompt: v{videoProcessedVersion}
-                {hasNewerPromptVersion ? ` (v${activePromptVersion} disp.)` : ' (atual)'}
+                Diretriz: v{videoProcessedVersion}
+                {hasNewerPromptVersion ? ` (v${activePromptVersion} disp.)` : ' (vigente)'}
               </span>
             </Link>
             <button
@@ -453,15 +477,15 @@ export default function HearingWorkspacePage() {
               onClick={hasNewerPromptVersion && !isReprocessing ? handleReprocessHearing : undefined}
               disabled={!hasNewerPromptVersion || isReprocessing}
               aria-disabled={!hasNewerPromptVersion || isReprocessing}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors min-h-[34px] touch-target-expand ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors min-h-[34px] touch-target-expand ${
                 hasNewerPromptVersion && !isReprocessing
-                  ? 'bg-crimson/20 hover:bg-crimson text-red-200 hover:text-white border-crimson/40 cursor-pointer'
+                  ? 'bg-crimson/20 hover:bg-crimson text-sky-200 hover:text-white border-crimson/40 cursor-pointer'
                   : 'bg-dark-input/80 text-dark-muted border-dark-border opacity-60 cursor-not-allowed select-none'
               }`}
               title={
                 hasNewerPromptVersion
-                  ? `Nova versão v${activePromptVersion} disponível (vídeo processado na v${videoProcessedVersion}). Clique para reprocessar o vídeo.`
-                  : `Desabilitado: o vídeo já foi processado na versão atual do prompt (v${videoProcessedVersion}). Só é habilitado quando houver uma versão de prompt mais nova.`
+                  ? `Nova diretriz v${activePromptVersion} disponível (mídia processada na v${videoProcessedVersion}). Clique para reprocessar.`
+                  : `Desabilitado: o registro já foi processado na versão vigente da diretriz (v${videoProcessedVersion}).`
               }
             >
               {hasNewerPromptVersion ? (
@@ -473,11 +497,41 @@ export default function HearingWorkspacePage() {
                 {isReprocessing
                   ? 'Reprocessando...'
                   : hasNewerPromptVersion
-                  ? `Reprocessar Vídeo (v${videoProcessedVersion} → v${activePromptVersion})`
-                  : `Reprocessar Vídeo (v${videoProcessedVersion} Atual)`}
+                  ? `Reprocessar Mídia (v${videoProcessedVersion} → v${activePromptVersion})`
+                  : `Mídia Homologada (v${videoProcessedVersion})`}
               </span>
             </button>
           </div>
+
+          {/* Qualificação das Partes Presentes no Ato */}
+          {dossierParticipants.length > 0 && (
+            <div className="pt-2 border-t border-dark-border/60">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Qualificação das Partes e Declarantes ({dossierParticipants.length})</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {dossierParticipants.slice(0, 6).map((p) => (
+                  <span
+                    key={p.id || `${p.name}-${p.role}`}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-dark-input border border-dark-border text-xs text-slate-200"
+                  >
+                    <span className="font-bold text-amber-300 text-[11px]">
+                      {p.role.replace(/_/g, ' ')}:
+                    </span>
+                    <span className="font-medium text-white">{p.name}</span>
+                    {p.documentNumber && (
+                      <span className="font-mono text-[11px] text-dark-muted">
+                        ({p.documentNumber})
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Synchronized Media Player (Audio & Video) */}
@@ -498,23 +552,23 @@ export default function HearingWorkspacePage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* COLUNA DIREITA (7/12): Abas de Trabalho (Transcrição, Partes, Minuta, Análise, Gemini Chat) */}
+      {/* COLUNA DIREITA (7/12): Peças e Instrumentos do Ato Processual */}
       {/* ========================================================================= */}
-      <div className="lg:col-span-7 xl:col-span-7 flex flex-col bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl lg:h-[calc(100vh-5.5rem)] lg:min-h-[640px]">
+      <div className="lg:col-span-7 xl:col-span-7 flex flex-col bg-dark-card border border-dark-border rounded-lg overflow-hidden shadow-lg lg:h-[calc(100vh-5.5rem)] lg:min-h-[640px]">
         {/* Top Tab Navigation Bar */}
         <div className="p-2.5 bg-dark-bg/60 border-b border-dark-border flex items-center gap-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('transcription')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-h-[38px] ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px] ${
               activeTab === 'transcription'
                 ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5 text-red-400" />
-            <span>Transcrição Diarizada</span>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-dark-input text-slate-200 font-mono">
+            <MessageSquare className="w-3.5 h-3.5 text-sky-400" />
+            <span>Degravação Oficial</span>
+            <span className="text-xs px-1.5 py-0.5 rounded bg-dark-input text-slate-200 font-mono">
               {segments.length}
             </span>
           </button>
@@ -522,15 +576,15 @@ export default function HearingWorkspacePage() {
           <button
             type="button"
             onClick={() => setActiveTab('parts')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-h-[38px] ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px] ${
               activeTab === 'parts'
                 ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
             }`}
           >
             <Layers className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Partes</span>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-dark-input text-slate-200 font-mono">
+            <span>Blocos de Mídia &amp; Versionamento</span>
+            <span className="text-xs px-1.5 py-0.5 rounded bg-dark-input text-slate-200 font-mono">
               {completedBlocks.length}/{expectedBlocks}
             </span>
           </button>
@@ -538,29 +592,29 @@ export default function HearingWorkspacePage() {
           <button
             type="button"
             onClick={() => setActiveTab('ata')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-h-[38px] ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px] ${
               activeTab === 'ata'
                 ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
             }`}
           >
-            <FileText className="w-3.5 h-3.5 text-crimson" />
-            <span>Minuta da Ata</span>
+            <FileText className="w-3.5 h-3.5 text-amber-400" />
+            <span>Termo de Audiência (Ata)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('analysis')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-h-[38px] ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px] ${
               activeTab === 'analysis'
                 ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Análise &amp; Contradições</span>
+            <span>Síntese Probatória &amp; Contraditório</span>
             {summary?.contradictions && summary.contradictions.length > 0 && (
-              <span className="text-xs px-1.5 py-0.5 rounded-md status-badge-warning font-mono border">
+              <span className="text-xs px-1.5 py-0.5 rounded status-badge-warning font-mono border">
                 {summary.contradictions.length}
               </span>
             )}
@@ -569,14 +623,14 @@ export default function HearingWorkspacePage() {
           <button
             type="button"
             onClick={() => setActiveTab('copilot')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-h-[38px] ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap min-h-[38px] ${
               activeTab === 'copilot'
                 ? 'bg-dark-pill text-white shadow-sm border border-dark-border/80'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-pill/50'
             }`}
           >
             <Bot className="w-3.5 h-3.5 text-sky-400" />
-            <span>Gemini Chat</span>
+            <span>Assessoria de Instrução</span>
           </button>
         </div>
 

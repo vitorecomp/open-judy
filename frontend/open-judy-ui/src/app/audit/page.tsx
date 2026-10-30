@@ -269,41 +269,41 @@ export default function AuditAndTasksPage() {
   return (
     <div className="w-full flex-1 flex flex-col space-y-6 animate-in fade-in">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-dark-card border border-dark-border rounded-lg p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-dark-muted mb-1">
             <Link href="/" className="hover:text-white transition-colors">
-              Dashboard
+              Gabinete &amp; Expediente
             </Link>
             <span>/</span>
-            <span className="text-emerald-400 font-semibold">
-              Administração • Auditoria &amp; Tasks RabbitMQ
+            <span className="text-white font-semibold">
+              Corregedoria Permanente &amp; Auditoria (Res. CNJ nº 332/2020)
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5 font-serif">
             <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <span>Central de Tasks Assíncronas (RabbitMQ) &amp; Trilha de Auditoria</span>
+            <span>Corregedoria Permanente — Trilha de Auditoria e Filas de Processamento</span>
           </h1>
           <p className="text-xs text-dark-muted mt-0.5">
-            Orquestração 100% via RabbitMQ AMQP (`open-judy-rabbitmq:5672`) com telemetria de tasks (`tb_async_tasks`) e auditoria administrativa (`tb_audit_logs`)
+            Rastreabilidade integral de atos automatizados, filas assíncronas RabbitMQ AMQP e registro imutável de auditoria conforme Resolução CNJ nº 332/2020.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl status-badge-success border text-xs font-mono font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>RabbitMQ AMQP :5672 Ativo (100% AMQP)</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg status-badge-success border text-xs font-mono font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Mensageria RabbitMQ AMQP Ativa</span>
           </span>
           <Link
             href="/config?tab=prompts"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-800/50 text-xs font-bold text-indigo-300 hover:text-indigo-200 transition-colors min-h-[36px]"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-semibold text-slate-200 hover:text-white transition-colors min-h-[36px]"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Configurações de Prompts &amp; IA</span>
+            <Sparkles className="w-3.5 h-3.5 text-crimson" />
+            <span>Governança de Prompts &amp; Modelos</span>
           </Link>
           <button
             onClick={loadAllData}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-dark-card hover:bg-dark-pill border border-dark-border text-xs font-bold text-white transition-colors cursor-pointer min-h-[36px]"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-semibold text-white transition-colors cursor-pointer min-h-[36px]"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Atualizar</span>

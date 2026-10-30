@@ -1,41 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import KeycloakLoginModal from '@/components/KeycloakLoginModal';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
 
 function AppShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const {
-    isKeycloakModalOpen,
-    setIsKeycloakModalOpen
-  } = useAuth();
-  const pathname = usePathname();
+  const { isKeycloakModalOpen, setIsKeycloakModalOpen } = useAuth();
   const router = useRouter();
-
-  // Dynamic header title based on route
-  const getHeaderTitle = () => {
-    if (pathname === '/') return 'Dashboard';
-    if (pathname.startsWith('/hearings/')) return 'Audiência / Sala de Sessão';
-    if (pathname.startsWith('/hearings')) return 'Audiências & Pautas';
-    if (pathname.startsWith('/cases/')) return 'Autos do Processo Judicial';
-    if (pathname.startsWith('/cases')) return 'Processos Judiciais';
-    if (pathname.startsWith('/notebooks/')) return 'Workspace do Caderno Jurídico (NotebookLM)';
-    if (pathname.startsWith('/notebooks')) return 'Cadernos de Pesquisa Jurídica (NotebookLM)';
-    if (pathname.startsWith('/agents/')) return 'Workspace do Agente Jurídico (Agent Garden)';
-    if (pathname.startsWith('/agents')) return 'Agent Garden — Catálogo de Agentes';
-    if (pathname.startsWith('/audit')) return 'Auditoria & Tasks RabbitMQ';
-    if (pathname.startsWith('/config')) return 'Configurações do Sistema (Admin)';
-    if (pathname.startsWith('/settings')) return 'Preferências do Usuário & Perfil';
-    return 'Dashboard';
-  };
 
   const handleUploadSuccess = (hearingId: string) => {
     setUploadOpen(false);
@@ -44,7 +22,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-dark-bg text-[var(--foreground)] flex">
-      {/* Navigation Sidebar (Collapsible on Desktop, Drawer on Mobile) */}
+      {/* Navigation Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -52,14 +30,13 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
         onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
       />
 
-      {/* Main Content Area (Dynamic offset for collapsed w-20 = 5rem or expanded w-64 = 16rem) */}
+      {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-[padding] duration-300 ease-in-out ${
           isCollapsed ? 'lg:pl-20' : 'lg:pl-64'
         }`}
       >
         <Header
-          title={getHeaderTitle()}
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}

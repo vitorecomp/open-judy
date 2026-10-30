@@ -3,24 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --accent-color: #e63946;
-  --accent-color-dark: #be123c;
-  --accent-color-light: #fb7185;
-  --accent-color-glow: rgba(230, 57, 70, 0.25);
-  --color-bg: #0d0e12;
-  --color-sidebar: #111216;
-  --color-header: #111216;
-  --color-card: #17181d;
-  --color-card-hover: #1e2027;
-  --color-border: #23252d;
-  --color-border-subtle: #1a1b21;
-  --color-input: #1e2026;
-  --color-pill: #25272e;
-  --color-pill-hover: #2f323c;
-  --color-muted: #9098a8;
-  --foreground: #f3f4f6;
-  --scrollbar-track: #111216;
-  --scrollbar-thumb: #23252d;
+  --accent-color: #2563eb;
+  --accent-color-dark: #1d4ed8;
+  --accent-color-light: #60a5fa;
+  --accent-color-glow: rgba(37, 99, 235, 0.25);
+  --color-accent: #2563eb;
+  --color-accent-dark: #1d4ed8;
+  --color-accent-light: #60a5fa;
+  --color-bg: #0b0f17;
+  --color-sidebar: #0f1522;
+  --color-header: #0f1522;
+  --color-card: #111827;
+  --color-card-hover: #1a2333;
+  --color-border: #1e293b;
+  --color-border-subtle: #161f2e;
+  --color-input: #161f2e;
+  --color-pill: #1e293b;
+  --color-pill-hover: #283548;
+  --color-muted: #94a3b8;
+  --foreground: #f8fafc;
+  --scrollbar-track: #0f1522;
+  --scrollbar-thumb: #1e293b;
   --status-success-bg: rgba(16, 48, 36, 0.85);
   --status-success-text: #6ee7b7;
   --status-success-border: rgba(16, 185, 129, 0.35);
@@ -30,27 +33,27 @@
   --status-danger-bg: rgba(56, 28, 34, 0.85);
   --status-danger-text: #fda4af;
   --status-danger-border: rgba(244, 63, 94, 0.4);
-  --status-info-bg: rgba(28, 40, 56, 0.85);
-  --status-info-text: #7dd3fc;
-  --status-info-border: rgba(14, 165, 233, 0.4);
-  --surface-popover: #17181d;
+  --status-info-bg: rgba(23, 37, 84, 0.85);
+  --status-info-text: #93c5fd;
+  --status-info-border: rgba(59, 130, 246, 0.4);
+  --surface-popover: #111827;
 }
 
 [data-theme="dark"], .theme-dark {
-  --color-bg: #0d0e12;
-  --color-sidebar: #111216;
-  --color-header: #111216;
-  --color-card: #17181d;
-  --color-card-hover: #1e2027;
-  --color-border: #23252d;
-  --color-border-subtle: #1a1b21;
-  --color-input: #1e2026;
-  --color-pill: #25272e;
-  --color-pill-hover: #2f323c;
-  --color-muted: #9098a8;
-  --foreground: #f3f4f6;
-  --scrollbar-track: #111216;
-  --scrollbar-thumb: #23252d;
+  --color-bg: #0b0f17;
+  --color-sidebar: #0f1522;
+  --color-header: #0f1522;
+  --color-card: #111827;
+  --color-card-hover: #1a2333;
+  --color-border: #1e293b;
+  --color-border-subtle: #161f2e;
+  --color-input: #161f2e;
+  --color-pill: #1e293b;
+  --color-pill-hover: #283548;
+  --color-muted: #94a3b8;
+  --foreground: #f8fafc;
+  --scrollbar-track: #0f1522;
+  --scrollbar-thumb: #1e293b;
   --status-success-bg: rgba(16, 48, 36, 0.85);
   --status-success-text: #6ee7b7;
   --status-success-border: rgba(16, 185, 129, 0.35);
@@ -60,10 +63,10 @@
   --status-danger-bg: rgba(56, 28, 34, 0.85);
   --status-danger-text: #fda4af;
   --status-danger-border: rgba(244, 63, 94, 0.4);
-  --status-info-bg: rgba(28, 40, 56, 0.85);
-  --status-info-text: #7dd3fc;
-  --status-info-border: rgba(14, 165, 233, 0.4);
-  --surface-popover: #17181d;
+  --status-info-bg: rgba(23, 37, 84, 0.85);
+  --status-info-text: #93c5fd;
+  --status-info-border: rgba(59, 130, 246, 0.4);
+  --surface-popover: #111827;
 }
 
 [data-theme="light"], .theme-light {
@@ -235,7 +238,7 @@
 /* Preserve white text on solid accent/dark buttons, badges & video overlays */
 [data-theme="light"] .bg-crimson.text-white,
 [data-theme="light"] .bg-crimson\/80.text-white {
-  background-color: var(--accent-color-dark, #be123c);
+  background-color: var(--accent-color-dark, #1d4ed8);
   color: #ffffff;
 }
 
@@ -356,7 +359,7 @@
 [data-theme="light"] .text-crimson,
 [data-theme="light"] .text-crimson-light,
 [data-theme="light"] .hover\:text-crimson-light:hover {
-  color: var(--accent-color-dark, #be123c);
+  color: var(--accent-color-dark, #1d4ed8);
 }
 
 /* Dark-mode tinted badge/alert backgrounds & borders -> soft light tinted surfaces */
@@ -492,13 +495,18 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.font-judicial-serif {
+  font-family: var(--font-serif, "Source Serif 4", Georgia, "Times New Roman", serif);
+  letter-spacing: -0.015em;
+}
+
 ::selection {
-  background-color: var(--accent-color-glow, rgba(230, 57, 70, 0.25));
+  background-color: var(--accent-color-glow, rgba(37, 99, 235, 0.25));
   color: var(--foreground);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-color, #e63946);
+  outline: 2px solid var(--accent-color, #2563eb);
   outline-offset: 2px;
 }
 

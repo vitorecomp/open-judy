@@ -17,18 +17,18 @@ interface TranscriptViewerProps {
   onSelectBlockIndex?: (blockIndex: number | null) => void;
 }
 
-const ROLE_COLORS: Record<ParticipantRole, { bg: string; text: string; border: string }> = {
-  MAGISTRADO: { bg: 'status-badge-danger', text: 'text-red-300', border: 'border-red-900/40' },
-  PROMOTOR: { bg: 'bg-rose-950/40', text: 'text-rose-300', border: 'border-rose-800/40' },
-  DEFENSOR_PUBLICO: { bg: 'bg-purple-950/40', text: 'text-purple-300', border: 'border-purple-800/40' },
-  ADVOGADO_AUTOR: { bg: 'bg-sky-950/40', text: 'text-sky-300', border: 'border-sky-800/40' },
-  ADVOGADO_REU: { bg: 'bg-indigo-950/40', text: 'text-indigo-300', border: 'border-indigo-800/40' },
-  AUTOR: { bg: 'status-badge-success', text: 'text-emerald-300', border: 'border-emerald-800/40' },
-  REU: { bg: 'bg-amber-950/40', text: 'text-amber-300', border: 'border-amber-800/40' },
-  TESTEMUNHA: { bg: 'bg-teal-950/40', text: 'text-teal-300', border: 'border-teal-800/40' },
-  PERITO: { bg: 'bg-cyan-950/40', text: 'text-cyan-300', border: 'border-cyan-800/40' },
-  ESCRIVAO: { bg: 'bg-dark-pill', text: 'text-slate-300', border: 'border-dark-border' },
-  OUTRO: { bg: 'bg-dark-pill', text: 'text-slate-300', border: 'border-dark-border' },
+const ROLE_COLORS: Record<ParticipantRole, { bg: string; text: string; border: string; label: string }> = {
+  MAGISTRADO: { bg: 'bg-amber-950/60', text: 'text-amber-300', border: 'border-amber-600/50', label: 'MAGISTRADO' },
+  PROMOTOR: { bg: 'bg-rose-950/50', text: 'text-rose-200', border: 'border-rose-700/50', label: 'MINISTÉRIO PÚBLICO' },
+  DEFENSOR_PUBLICO: { bg: 'bg-purple-950/50', text: 'text-purple-200', border: 'border-purple-700/50', label: 'DEFENSORIA PÚBLICA' },
+  ADVOGADO_AUTOR: { bg: 'bg-sky-950/50', text: 'text-sky-200', border: 'border-sky-700/50', label: 'ADVOGADO DO AUTOR' },
+  ADVOGADO_REU: { bg: 'bg-indigo-950/50', text: 'text-indigo-200', border: 'border-indigo-700/50', label: 'ADVOGADO DO RÉU' },
+  AUTOR: { bg: 'status-badge-success', text: 'text-emerald-200', border: 'border-emerald-700/50', label: 'PARTE AUTORA' },
+  REU: { bg: 'bg-amber-950/40', text: 'text-amber-200', border: 'border-amber-800/50', label: 'PARTE RÉ' },
+  TESTEMUNHA: { bg: 'bg-teal-950/50', text: 'text-teal-200', border: 'border-teal-700/50', label: 'TESTEMUNHA' },
+  PERITO: { bg: 'bg-cyan-950/50', text: 'text-cyan-200', border: 'border-cyan-700/50', label: 'PERITO JUDICIAL' },
+  ESCRIVAO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border', label: 'SECRETARIA / ESCRIVÃO' },
+  OUTRO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border', label: 'DECLARANTE' },
 };
 
 const VIRTUAL_THRESHOLD = 100;
@@ -37,6 +37,7 @@ const OVERSCAN_ROWS = 20;
 
 interface TranscriptCueRowProps {
   segment: TranscriptSegment;
+  rowNumber: number;
   isActive: boolean;
   isPrimaryActive: boolean;
   isEditing: boolean;
@@ -50,6 +51,7 @@ interface TranscriptCueRowProps {
 
 const TranscriptCueRow = React.memo(function TranscriptCueRow({
   segment,
+  rowNumber,
   isActive,
   isPrimaryActive,
   isEditing,
@@ -61,18 +63,26 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
   onSpeakerChange,
 }: TranscriptCueRowProps) {
   const roleStyle = ROLE_COLORS[segment.speakerRole] || ROLE_COLORS.OUTRO;
+  const paragraphCode = `§ ${String(rowNumber).padStart(4, '0')}`;
 
   return (
     <div
       ref={isPrimaryActive ? activeCueRef : null}
-      className={`px-3.5 py-2.5 rounded-xl border transition-colors duration-150 flex flex-col sm:flex-row sm:items-baseline gap-2.5 ${
+      className={`px-3.5 py-2.5 rounded-lg border transition-colors duration-150 flex flex-col sm:flex-row sm:items-baseline gap-2.5 ${
         isActive
-          ? 'bg-crimson/15 border-crimson/60 shadow-md'
-          : 'bg-dark-input/50 border-dark-border/70 hover:border-dark-muted/40'
+          ? 'bg-crimson/15 border-crimson/70 shadow-sm'
+          : 'bg-dark-input/40 border-dark-border/80 hover:border-dark-muted/50'
       }`}
     >
-      {/* Left Column: Clickable Subtitle Cue Timestamp + Speaker Pill */}
+      {/* Left Column: Official Paragraph Record Number + Clickable Timestamp + Judicial Party Badge */}
       <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <span
+          className="text-[11px] font-mono font-bold text-dark-muted px-1.5 py-0.5 rounded bg-dark-bg border border-dark-border/80 select-none"
+          title={`Registro taquigráfico nº ${rowNumber} da degravação oficial`}
+        >
+          {paragraphCode}
+        </span>
+
         <button
           type="button"
           onClick={() => onSeekToSegment(segment.startTimeMs)}
@@ -81,7 +91,7 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
               ? 'bg-crimson text-white border-crimson'
               : 'bg-dark-bg hover:bg-dark-pill text-slate-200 hover:text-white border-dark-border'
           }`}
-          title="Ir para este momento no vídeo"
+          title="Ir para este instante no registro audiovisual"
         >
           <Clock className="w-3 h-3" />
           <span>
@@ -90,16 +100,16 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
         </button>
 
         <span
-          className={`text-[11px] font-bold px-2 py-0.5 rounded border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}
+          className={`text-[11px] font-bold px-2 py-0.5 rounded border tracking-wide ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}
         >
-          {segment.speakerRole.replace(/_/g, ' ')}
+          {roleStyle.label}
         </span>
 
         {isEditing ? (
           <div className="flex items-center gap-1">
             <input
               type="text"
-              aria-label="Editar nome do orador"
+              aria-label="Editar qualificação do declarante"
               value={currentSpeakerName}
               onChange={(e) => onSpeakerChange(segment.id, e.target.value)}
               className="px-2 py-1 text-xs bg-dark-bg border border-crimson rounded text-white focus:outline-none"
@@ -108,7 +118,7 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
             <button
               type="button"
               onClick={onFinishEdit}
-              aria-label="Confirmar nome do orador"
+              aria-label="Confirmar qualificação do declarante"
               className="text-emerald-400 hover:text-emerald-300 p-1 touch-target-expand"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -116,15 +126,15 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
           </div>
         ) : (
           <div className="flex items-center gap-1 group/name">
-            <span className="text-xs font-bold text-slate-200">
+            <span className="text-xs font-bold text-slate-100">
               {currentSpeakerName}:
             </span>
             <button
               type="button"
               onClick={() => onStartEdit(segment.id)}
-              aria-label={`Editar nome do orador ${currentSpeakerName}`}
+              aria-label={`Retificar identificação do declarante ${currentSpeakerName}`}
               className="opacity-0 group-hover/name:opacity-100 focus:opacity-100 text-dark-muted hover:text-white transition-opacity p-1 touch-target-expand"
-              title="Editar nome do orador"
+              title="Retificar identificação do declarante"
             >
               <Edit2 className="w-3.5 h-3.5" />
             </button>
@@ -132,11 +142,11 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
         )}
       </div>
 
-      {/* Right Column: Short Subtitle Cue Text */}
+      {/* Right Column: Official Verbatim Utterance Text */}
       <div className="flex-1 flex items-baseline justify-between gap-2 min-w-0">
         <p
           onClick={() => onSeekToSegment(segment.startTimeMs)}
-          className={`text-xs sm:text-sm leading-snug cursor-pointer max-w-[70ch] ${
+          className={`text-xs sm:text-sm leading-relaxed cursor-pointer max-w-[70ch] ${
             isActive ? 'text-white font-semibold' : 'text-slate-200 hover:text-white'
           }`}
         >
@@ -144,8 +154,8 @@ const TranscriptCueRow = React.memo(function TranscriptCueRow({
         </p>
 
         {segment.isKeyStatement && (
-          <span className="flex items-center gap-1 text-[11px] status-badge-warning px-2 py-0.5 rounded-full border font-semibold shrink-0">
-            <Bookmark className="w-3 h-3" /> Destaque
+          <span className="flex items-center gap-1 text-[11px] status-badge-warning px-2 py-0.5 rounded border font-semibold shrink-0">
+            <Bookmark className="w-3 h-3" /> Ponto Relevante
           </span>
         )}
       </div>
@@ -353,28 +363,28 @@ export default function TranscriptViewer({
           <div>
             <h2 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
               <Subtitles className="w-4 h-4 text-crimson" />
-              <span>Legendas &amp; Transcrição Diarizada</span>
+              <span>Termo de Degravação Oficial &amp; Registro Taquigráfico</span>
               {isTranscribing ? (
-                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full status-badge-warning border font-mono">
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded status-badge-warning border font-mono">
                   <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
                   <span>
-                    Parte {completedBlocks.length}/{totalExpectedBlocks} pronta
+                    Bloco {completedBlocks.length}/{totalExpectedBlocks} concluído
                     {completedBlocks.length !== 1 ? 's' : ''} ({progressPct}%)
                   </span>
                 </span>
               ) : (
                 completedBlocks.length > 0 && (
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-dark-input text-slate-200 border border-dark-border font-mono">
-                    {completedBlocks.length}/{totalExpectedBlocks} partes concluídas
+                  <span className="text-xs px-2.5 py-0.5 rounded bg-dark-input text-slate-200 border border-dark-border font-mono">
+                    {completedBlocks.length}/{totalExpectedBlocks} blocos homologados
                   </span>
                 )
               )}
             </h2>
             <p className="text-xs text-dark-muted">
-              {segments.length} legendas sincronizadas (4–10s)
+              {segments.length} registros taquigráficos sincronizados (Res. CNJ nº 105/2010)
               {isTranscribing
-                ? ` • Atualizando em tempo real a cada parte concluída pelo Gemini 3.8 Flash`
-                : ` • Clique em qualquer legenda para ir ao instante exato no vídeo`}
+                ? ` • Atualização contínua a cada bloco processado pelo motor forense`
+                : ` • Selecione qualquer parágrafo (§) para posicionar o registro audiovisual`}
             </p>
           </div>
 
@@ -385,26 +395,26 @@ export default function TranscriptViewer({
                 userScrollLockUntilRef.current = 0;
                 setAutoScroll(!autoScroll);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors shrink-0 min-h-[36px] touch-target-expand ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors shrink-0 min-h-[36px] touch-target-expand ${
                 autoScroll
-                  ? 'bg-crimson/15 text-red-300 border-crimson/40'
+                  ? 'bg-crimson/15 text-slate-100 border-crimson/50'
                   : 'bg-dark-input text-dark-muted hover:text-white border-dark-border'
               }`}
-              title="Rolar automaticamente a lista acompanhando o vídeo"
+              title="Acompanhar automaticamente o registro audiovisual durante a reprodução"
             >
               <Play className="w-3 h-3" />
-              <span>Auto-Scroll</span>
+              <span>Acompanhar Áudio</span>
             </button>
 
-            <div className="relative flex-1 sm:w-56">
+            <div className="relative flex-1 sm:w-60">
               <Search className="w-3.5 h-3.5 text-dark-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                aria-label="Filtrar legendas ou orador"
-                placeholder="Filtrar legendas, orador..."
+                aria-label="Pesquisar no termo de degravação ou por declarante"
+                placeholder="Pesquisar termo ou declarante..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors min-h-[36px]"
+                className="w-full pl-9 pr-3 py-1.5 bg-dark-input border border-dark-border rounded-lg text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors min-h-[36px]"
               />
             </div>
           </div>
@@ -412,20 +422,20 @@ export default function TranscriptViewer({
 
         {/* Live Progressive Transcription Banner */}
         {isTranscribing && (
-          <div className="rounded-xl status-badge-warning border px-3.5 py-2.5 flex flex-col gap-1.5">
+          <div className="rounded-lg status-badge-warning border px-3.5 py-2.5 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-amber-200 font-medium">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
                 <span>
                   {processingBlock
-                    ? `Transcrevendo Parte ${processingBlock.blockIndex}/${totalExpectedBlocks} (${processingBlock.startTimeFormatted} – ${processingBlock.endTimeFormatted}) com padding de ${processingBlock.paddingSeconds || 0}s e ${processingBlock.contextSegmentsCount || 0} legendas de contexto...`
+                    ? `Degravando Bloco ${processingBlock.blockIndex}/${totalExpectedBlocks} (${processingBlock.startTimeFormatted} – ${processingBlock.endTimeFormatted}) com margem de segurança de ${processingBlock.paddingSeconds || 0}s e ${processingBlock.contextSegmentsCount || 0} registros precedentes...`
                     : completedBlocks.length > 0
-                    ? `Transcrevendo Parte ${Math.min(completedBlocks.length + 1, totalExpectedBlocks)} de ${totalExpectedBlocks}... As partes 1 a ${completedBlocks.length} já estão disponíveis.`
-                    : `Iniciando transcrição da Parte 1 de ${totalExpectedBlocks} no Vertex AI (Gemini 3.8 Flash)...`}
+                    ? `Degravando Bloco ${Math.min(completedBlocks.length + 1, totalExpectedBlocks)} de ${totalExpectedBlocks}... Os blocos 1 a ${completedBlocks.length} já constam nos autos.`
+                    : `Iniciando degravação do Bloco 1 de ${totalExpectedBlocks} no motor forense...`}
                 </span>
               </div>
               <span className="text-xs font-mono text-amber-300 font-bold shrink-0">
-                {completedBlocks.length} / {totalExpectedBlocks} partes ({progressPct}%)
+                {completedBlocks.length} / {totalExpectedBlocks} blocos ({progressPct}%)
               </span>
             </div>
             <div className="w-full h-1.5 bg-dark-input rounded-full overflow-hidden">
@@ -449,7 +459,7 @@ export default function TranscriptViewer({
                   : 'bg-dark-input text-dark-muted hover:text-white border border-dark-border'
               }`}
             >
-              Todas as Legendas ({segments.length})
+              Degravação Integral ({segments.length})
             </button>
             {blocks.map((blk) => {
               const blkStatus = blk.status || 'COMPLETED';
@@ -481,7 +491,7 @@ export default function TranscriptViewer({
                   ) : isProc ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
                   ) : null}
-                  <span>Parte {blk.blockIndex}</span>
+                  <span>Bloco {blk.blockIndex}</span>
                   <span className="text-xs font-mono opacity-85">
                     ({blk.startTimeFormatted} - {blk.endTimeFormatted})
                   </span>
@@ -513,7 +523,7 @@ export default function TranscriptViewer({
                     {isNextActive && (
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
                     )}
-                    <span>Parte {pendingIdx}</span>
+                    <span>Bloco {pendingIdx}</span>
                     <span className="text-xs font-mono opacity-80">
                       ({estStart} - {estEnd})
                     </span>
@@ -525,20 +535,20 @@ export default function TranscriptViewer({
 
         {/* Selected Block Summary Banner */}
         {activeBlockObj && (
-          <div className="rounded-xl bg-dark-input/80 border border-dark-border px-3.5 py-2.5 text-xs text-slate-200 flex flex-col gap-1">
+          <div className="rounded-lg bg-dark-input/80 border border-dark-border px-3.5 py-2.5 text-xs text-slate-200 flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="font-bold text-white">{activeBlockObj.title}</span>
               <span className="font-mono text-xs text-emerald-300">
-                Início: {activeBlockObj.startTimeFormatted} → Fim: {activeBlockObj.endTimeFormatted} ({activeBlockObj.segmentCount} legendas)
+                Início: {activeBlockObj.startTimeFormatted} → Término: {activeBlockObj.endTimeFormatted} ({activeBlockObj.segmentCount} parágrafos)
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap text-xs font-mono text-dark-muted">
               <span>
-                Pipeline: {activeBlockObj.pipelineVersion || 'v3.2-VAD-SYNC (gemini-3.8-flash)'}
+                Motor Forense: {activeBlockObj.pipelineVersion || 'v3.2-VAD-SYNC (gemini-3.8-flash)'}
               </span>
               <span>•</span>
               <span>
-                Prompt:{' '}
+                Diretriz:{' '}
                 {activeBlockObj.promptVersion ||
                   'PROMPT_AUDIO_VIDEO_TRANSCRIPTION v3 (OPT_V1_DIARIZATION_SURGICAL)'}
               </span>
@@ -563,10 +573,11 @@ export default function TranscriptViewer({
         {topSpacerHeight > 0 && (
           <div style={{ height: `${topSpacerHeight}px` }} aria-hidden="true" />
         )}
-        {visibleSegments.map((segment) => (
+        {visibleSegments.map((segment, idx) => (
           <TranscriptCueRow
             key={segment.id}
             segment={segment}
+            rowNumber={virtualStartIndex + idx + 1}
             isActive={activeSegmentIds.has(segment.id)}
             isPrimaryActive={segment.id === activeSegmentId}
             isEditing={editingId === segment.id}
@@ -583,11 +594,11 @@ export default function TranscriptViewer({
         )}
 
         {isTranscribing && activeBlockFilter === null && (
-          <div className="p-3.5 rounded-xl border status-badge-warning flex items-center justify-between gap-3 text-xs animate-pulse">
+          <div className="p-3.5 rounded-lg border status-badge-warning flex items-center justify-between gap-3 text-xs animate-pulse">
             <div className="flex items-center gap-2.5">
               <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
               <span>
-                Gerando legendas da <strong>Parte {Math.min(completedBlocks.length + 1, totalExpectedBlocks)} de {totalExpectedBlocks}</strong> no Vertex AI (Gemini 3.8 Flash)...
+                Lavrando degravação do <strong>Bloco {Math.min(completedBlocks.length + 1, totalExpectedBlocks)} de {totalExpectedBlocks}</strong> no motor forense...
               </span>
             </div>
             <span className="font-mono text-xs text-amber-300 font-bold shrink-0">

@@ -50,7 +50,20 @@ public class SystemSettingService {
     public SystemSettingDTO updateSetting(String key, UpdateSystemSettingRequest request) {
         SystemSettingEntity entity = SystemSettingEntity.findByKey(key);
         if (entity == null) {
-            throw new NotFoundException("Configuração do sistema não encontrada para a chave: " + key);
+            entity = new SystemSettingEntity();
+            entity.category = "GENERAL";
+            entity.key = key;
+            entity.value = request.value();
+            entity.valueType = "STRING";
+            entity.description = request.description() != null
+                    ? request.description()
+                    : "Parâmetro global do sistema (" + key + ").";
+            entity.isSecret = false;
+            entity.isReadOnly = false;
+            entity.persist();
+            eventProducer.emitConfigUpdated("SETTING", entity.key, "CREATED");
+            LOG.infof("System setting created: %s", entity.key);
+            return entity.toDTO();
         }
 
         if (entity.isReadOnly) {

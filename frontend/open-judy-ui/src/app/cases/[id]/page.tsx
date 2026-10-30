@@ -171,82 +171,88 @@ export default function CaseDetailPage() {
       {/* ========================================================================= */}
       {/* Top Card: Case Dossier Details */}
       {/* ========================================================================= */}
-      <div className="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-4">
+      <div className="bg-dark-card border border-dark-border rounded-lg p-5 shadow-sm space-y-4">
         {/* Navigation & Header Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-border/60 pb-3.5">
           <div className="flex items-center gap-3">
             <Link
               href="/cases"
-              className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-              title="Voltar para a lista de processos"
+              className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+              title="Voltar para o acervo de processos"
               aria-label="Voltar para a lista de processos"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-dark-muted font-medium">Autos do Processo</span>
-              <span className="text-sm font-black text-white font-mono tabular-nums">{judicialCase?.caseNumber || '0014238-89.2024.8.26.0100'}</span>
+              <span className="text-xs text-dark-muted font-semibold font-serif">Capa dos Autos Digitais • Nº Único CNJ:</span>
+              <span className="text-sm font-bold text-white font-mono tabular-nums">{judicialCase?.caseNumber || '0014238-89.2024.8.26.0100'}</span>
               <button
                 onClick={handleCopyCaseNumber}
                 className="p-1.5 rounded hover:bg-dark-input text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-                title="Copiar número do processo"
+                title="Copiar número único CNJ"
                 aria-label="Copiar número do processo"
               >
                 {copiedCaseNumber ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-dark-input border border-dark-border text-slate-300">
+                Sigilo: Público (Nível 0 — CNJ)
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link
               href="/hearings"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
             >
               <Scale className="w-3.5 h-3.5 text-crimson" />
-              <span>Audiências do Processo</span>
+              <span>Termos de Audiência</span>
             </Link>
 
             <Link
               href="/agents"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-xs text-slate-200 transition-colors font-medium min-h-[36px]"
             >
               <Bot className="w-3.5 h-3.5 text-sky-400" />
-              <span>Analisar no Agent Garden</span>
+              <span>Assessoria Jurisdicional (Res. CNJ 332)</span>
             </Link>
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-crimson hover:bg-crimson-dark text-white text-xs font-bold transition-colors shadow-md shadow-crimson/20 min-h-[36px]"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-crimson hover:bg-crimson-dark text-white text-xs font-semibold transition-colors shadow-sm min-h-[36px]"
             >
               <Plus className="w-4 h-4" />
-              <span>Anexar Peça</span>
+              <span>Juntar Peça aos Autos</span>
             </button>
           </div>
         </div>
 
         {/* Case Subject & Meta Grid (Distilled Hairlined Strip) */}
         <div className="space-y-3">
-          <h1 className="text-base sm:text-lg font-bold text-white leading-snug">
-            {judicialCase?.subject || judicialCase?.caseNumber || 'Processo Judicial'}
-          </h1>
+          <div>
+            <span className="text-[11px] text-dark-muted font-medium block">Classe Processual &amp; Assunto Principal (Tabelas Processuais Unificadas — TPU/CNJ):</span>
+            <h1 className="text-base sm:text-lg font-bold text-white leading-snug font-serif mt-0.5">
+              {judicialCase?.subject || judicialCase?.caseNumber || 'Ação de Procedimento Comum'}
+            </h1>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-dark-border/60 border-t border-dark-border/60 pt-3 text-xs">
             <div className="py-2 md:py-0 md:pr-4 space-y-1">
-              <span className="text-[11px] text-dark-muted font-semibold">Polo Ativo (Autor)</span>
+              <span className="text-[11px] text-dark-muted font-semibold">Polo Ativo (Autor / Requerente)</span>
               <div className="font-semibold text-white truncate">{judicialCase?.plaintiffName || '—'}</div>
             </div>
 
             <div className="py-2 md:py-0 md:px-4 space-y-1">
-              <span className="text-[11px] text-dark-muted font-semibold">Polo Passivo (Réu)</span>
+              <span className="text-[11px] text-dark-muted font-semibold">Polo Passivo (Réu / Requerido)</span>
               <div className="font-semibold text-white truncate">{judicialCase?.defendantName || '—'}</div>
             </div>
 
             <div className="py-2 md:py-0 md:pl-4 space-y-1">
-              <span className="text-[11px] text-dark-muted font-semibold">Juízo & Vara</span>
+              <span className="text-[11px] text-dark-muted font-semibold">Órgão Julgador &amp; Magistrado(a)</span>
               <div className="font-semibold text-white truncate">{judicialCase?.courtJurisdiction || '—'}</div>
               {judicialCase?.judgeName && (
-                <div className="text-[11px] text-dark-muted truncate">Juiz: {judicialCase.judgeName}</div>
+                <div className="text-[11px] text-dark-muted truncate">Magistrado(a): {judicialCase.judgeName}</div>
               )}
             </div>
           </div>
@@ -257,13 +263,13 @@ export default function CaseDetailPage() {
       {/* Linked Hearings Card Grid (with Prompt Version Badge) */}
       {/* ========================================================================= */}
       {caseHearings.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-3.5">
+        <div className="bg-dark-card border border-dark-border rounded-lg p-5 shadow-sm space-y-3.5">
           <div className="flex items-center justify-between gap-3 border-b border-dark-border pb-3">
             <div className="flex items-center gap-2.5">
               <Scale className="w-5 h-5 text-crimson" />
-              <h2 className="text-sm font-bold text-white">Audiências Vinculadas ao Processo</h2>
+              <h2 className="text-sm font-bold text-white font-serif">Termos de Audiência e Gravações Vinculadas (Res. CNJ nº 105/2010)</h2>
               <span className="text-xs font-mono text-dark-muted px-2 py-0.5 bg-dark-input rounded-md border border-dark-border tabular-nums">
-                {caseHearings.length} {caseHearings.length === 1 ? 'audiência' : 'audiências'}
+                {caseHearings.length} {caseHearings.length === 1 ? 'registro' : 'registros'}
               </span>
             </div>
             <Link
@@ -330,14 +336,14 @@ export default function CaseDetailPage() {
       {/* ========================================================================= */}
       {/* Bottom Card: Case Documents Explorer */}
       {/* ========================================================================= */}
-      <div className="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-4 flex-1 flex flex-col">
+      <div className="bg-dark-card border border-dark-border rounded-lg p-5 shadow-sm space-y-4 flex-1 flex flex-col">
         {/* Documents Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-border pb-3">
           <div className="flex items-center gap-2.5">
             <FileText className="w-5 h-5 text-crimson" />
-            <h2 className="text-sm font-bold text-white">Acervo Documental dos Autos</h2>
+            <h2 className="text-sm font-bold text-white font-serif">Rol de Documentos, Peças e Termos dos Autos</h2>
             <span className="text-xs font-mono text-dark-muted px-2 py-0.5 bg-dark-input rounded-md border border-dark-border tabular-nums">
-              {documents.length} peças anexadas
+              {documents.length} peças juntadas
             </span>
           </div>
 

@@ -89,23 +89,23 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-dark-card border border-dark-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150">
+      <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-dark-border bg-dark-bg/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-crimson/10 border border-crimson/30 text-crimson flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-crimson/10 border border-crimson/30 text-crimson flex items-center justify-center">
               <Upload className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Carregar Gravação de Audiência</h3>
-              <p className="text-xs text-dark-muted">Suporte a Áudio e Vídeo com Diarização Gemini Multimodal</p>
+              <h3 className="text-sm font-bold text-white">Incluir Registro Audiovisual de Audiência</h3>
+              <p className="text-xs text-dark-muted">Degravação Sincronizada em Conformidade com a Resolução CNJ nº 105/2010</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-            title="Fechar modal de upload"
-            aria-label="Fechar modal de upload de gravação"
+            className="p-2 rounded-lg text-dark-muted hover:text-white hover:bg-dark-pill transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
+            title="Fechar modal de inclusão de audiência"
+            aria-label="Fechar modal de inclusão de audiência"
           >
             <X className="w-4 h-4" />
           </button>
@@ -116,76 +116,76 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           {/* Media Type Selector Tabs */}
           <div>
             <label className="block text-slate-300 font-semibold mb-1.5">
-              Tipo de Gravação da Sessão
+              Modalidade do Registro Audiovisual (Res. CNJ nº 105/2010)
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setMediaType('VIDEO')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-colors min-h-[36px] ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-semibold transition-colors min-h-[36px] ${
                   mediaType === 'VIDEO'
                     ? 'bg-crimson/15 border-crimson text-white shadow-sm ring-1 ring-crimson/30'
                     : 'bg-dark-input border-dark-border text-dark-muted hover:text-slate-200'
                 }`}
               >
                 <Video className="w-4 h-4 text-crimson" />
-                <span>Gravação em Vídeo</span>
+                <span>Registro Audiovisual (Vídeo)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setMediaType('AUDIO')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-colors min-h-[36px] ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-semibold transition-colors min-h-[36px] ${
                   mediaType === 'AUDIO'
                     ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/30'
                     : 'bg-dark-input border-dark-border text-dark-muted hover:text-slate-200'
                 }`}
               >
                 <Music className="w-4 h-4 text-indigo-400" />
-                <span>Gravação em Áudio</span>
+                <span>Registro Fonográfico (Áudio)</span>
               </button>
             </div>
           </div>
 
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
-              Número do Processo (CNJ)
+              Numeração Única dos Autos (Res. CNJ nº 65/2008)
             </label>
             <input
               type="text"
               required
               value={caseNumber}
               onChange={(e) => setCaseNumber(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-crimson transition-colors"
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3.5 py-2 text-white font-mono focus:outline-none focus:border-crimson transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
-              Vara / Comarca / Jurisdição (Opcional)
+              Órgão Julgador / Vara / Comarca (Opcional)
             </label>
             <input
               type="text"
-              placeholder="Deixe em branco caso não informado"
+              placeholder="Ex: 3ª Vara Cível Central — Foro João Mendes Jr."
               value={courtVara}
               onChange={(e) => setCourtVara(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors"
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3.5 py-2 text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Tipo de Audiência</label>
+            <label className="block text-slate-300 font-semibold mb-1">Natureza do Ato Processual (TPU/CNJ)</label>
             <select
               value={hearingType}
               onChange={(e) => setHearingType(e.target.value)}
-              aria-label="Selecionar tipo de audiência"
-              className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-crimson transition-colors"
+              aria-label="Selecionar natureza da audiência"
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-crimson transition-colors"
             >
-              <option value="INSTRUCAO_E_JULGAMENTO">Instrução e Julgamento</option>
-              <option value="CONCILIACAO">Conciliação e Mediação</option>
-              <option value="CUSTODIA">Custódia</option>
-              <option value="UNA">Una (Trabalhista/Juizado)</option>
-              <option value="INTERROGATORIO">Interrogatório</option>
+              <option value="INSTRUCAO_E_JULGAMENTO">Audiência de Instrução e Julgamento (CPC Art. 358)</option>
+              <option value="CONCILIACAO">Audiência de Conciliação e Mediação (CPC Art. 334)</option>
+              <option value="CUSTODIA">Audiência de Custódia (Res. CNJ nº 213/2015)</option>
+              <option value="UNA">Audiência Una (Rito Trabalhista / Juizado Especial)</option>
+              <option value="INTERROGATORIO">Interrogatório Judicial (CPP Art. 185)</option>
             </select>
           </div>
 
@@ -193,21 +193,21 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           <div>
             <label className="block text-slate-300 font-semibold mb-1">
               {mediaType === 'VIDEO'
-                ? 'Arquivo de Vídeo (MP4, WebM, MKV, MOV)'
-                : 'Arquivo de Áudio (MP3, WAV, M4A, OGG, FLAC)'}
+                ? 'Arquivo Audiovisual (MP4, WebM, MKV, MOV)'
+                : 'Arquivo Fonográfico (MP3, WAV, M4A, OGG, FLAC)'}
             </label>
-            <label className="border-2 border-dashed border-dark-border hover:border-crimson/60 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-dark-bg/40 hover:bg-dark-bg/80 transition-colors">
+            <label className="border-2 border-dashed border-dark-border hover:border-crimson/60 rounded-lg p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-dark-bg/40 hover:bg-dark-bg/80 transition-colors">
               {mediaType === 'VIDEO' ? (
-                <Video className="w-8 h-8 text-crimson animate-bounce" />
+                <Video className="w-7 h-7 text-crimson" />
               ) : (
-                <Music className="w-8 h-8 text-indigo-400" />
+                <Music className="w-7 h-7 text-indigo-400" />
               )}
               <div className="text-center">
                 <span className="text-white font-semibold block truncate max-w-xs">
-                  {selectedFile ? selectedFile.name : `Clique para selecionar o ${mediaType === 'VIDEO' ? 'vídeo' : 'áudio'}`}
+                  {selectedFile ? selectedFile.name : `Selecionar arquivo de ${mediaType === 'VIDEO' ? 'vídeo' : 'áudio'} da sessão`}
                 </span>
                 <p className="text-[11px] text-dark-muted mt-0.5">
-                  ou arraste a gravação da audiência até aqui
+                  ou arraste o registro de mídia da audiência para esta área
                 </p>
               </div>
               <input
@@ -227,7 +227,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
           {isUploading && (
             <div className="space-y-1.5 pt-2">
               <div className="flex justify-between text-[11px] text-dark-muted">
-                <span>Enviando mídia e processando com Gemini Multimodal...</span>
+                <span>Autuando mídia e iniciando degravação fonográfica...</span>
                 <span className="text-crimson font-bold tabular-nums">{uploadProgress}%</span>
               </div>
               <div className="w-full h-2 bg-dark-input rounded-full overflow-hidden">
@@ -244,17 +244,17 @@ export default function UploadModal({ isOpen, onClose, onSuccess }: UploadModalP
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-slate-300 hover:text-white transition"
+              className="px-4 py-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-slate-300 hover:text-white transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isUploading}
-              className="px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-white font-bold shadow-md shadow-crimson/25 disabled:opacity-50 transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-crimson hover:bg-crimson-dark text-white font-bold shadow-sm disabled:opacity-50 transition-colors flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{isUploading ? 'Processando...' : 'Iniciar Transcrição IA'}</span>
+              <span>{isUploading ? 'Autuando...' : 'Autuar e Iniciar Degravação'}</span>
             </button>
           </div>
         </form>

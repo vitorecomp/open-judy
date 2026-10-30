@@ -63,8 +63,8 @@ export default function UserPreferencesModal({
   const [activeTab, setActiveTab] = useState<'ui' | 'audio' | 'ai' | 'notifications' | 'system'>('ui');
   const [formData, setFormData] = useState<UserConfiguration>(config);
   const [sysFormData, setSysFormData] = useState<SystemConfiguration>(systemConfig);
-  const [selectedAccent, setSelectedAccent] = useState<string>(config.accentColor || accentColor || '#e63946');
-  const [customHex, setCustomHex] = useState<string>(config.accentColor || accentColor || '#e63946');
+  const [selectedAccent, setSelectedAccent] = useState<string>(config.accentColor || accentColor || '#2563eb');
+  const [customHex, setCustomHex] = useState<string>(config.accentColor || accentColor || '#2563eb');
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -74,7 +74,7 @@ export default function UserPreferencesModal({
     if (!isOpen && !isPage) return;
     setFormData(config);
     setSysFormData(systemConfig);
-    const color = config.accentColor || systemConfig.accentColor || accentColor || '#e63946';
+    const color = config.accentColor || systemConfig.accentColor || accentColor || '#2563eb';
     setSelectedAccent(color);
     setCustomHex(color);
     if (initialTab) {
@@ -160,35 +160,32 @@ export default function UserPreferencesModal({
         <div>
           <div className="flex items-center gap-2 text-xs text-dark-muted mb-1">
             <Link href="/" className="hover:text-white transition-colors">
-              Dashboard
+              Gabinete Judicial
             </Link>
             <span>/</span>
             <span className="text-crimson font-semibold">
-              Preferências do Usuário &amp; Perfil RBAC
+              Credenciais Funcionais &amp; Preferências de Expediente
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2.5 flex-wrap">
             {activeTab === 'system' ? (
-              <Server className="w-6 h-6 text-emerald-400 shrink-0" />
+              <Server className="w-5 h-5 text-emerald-400 shrink-0" />
             ) : (
-              <Settings className="w-6 h-6 text-crimson shrink-0" />
+              <Settings className="w-5 h-5 text-crimson shrink-0" />
             )}
             <span>
               {activeTab === 'system'
-                ? 'Configurações Globais do Sistema Open Judy'
-                : 'Preferências do Usuário, Perfil RBAC & Tema'}
+                ? 'Administração de Infraestrutura Judiciária'
+                : 'Credenciais do Magistrado / Servidor e Preferências de Expediente'}
             </span>
-            <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-dark-card text-dark-muted border border-dark-border">
-              user-service :8085
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${currentPreset.badgeColor}`}>
+            <span className={`px-2.5 py-0.5 rounded text-xs font-bold border ${currentPreset.badgeColor}`}>
               {role} • {user.fullName}
             </span>
           </h1>
           <p className="text-xs text-dark-muted mt-0.5">
             {activeTab === 'system'
-              ? 'Gerencie parâmetros globais de infraestrutura, modelos Gemini, AlloyDB pgvector e retenção zero-trust'
-              : 'Personalize o perfil RBAC simulado, aparência visual (Dark/Light/System), reprodução de áudio 60fps e automações judiciais'}
+              ? 'Gerencie parâmetros globais de infraestrutura judiciária, modelos de linguagem, indexação vetorial e retenção CNJ'
+              : 'Configure o perfil funcional simulado (RBAC), tema de expediente (Escuro/Claro/Automático), reprodução audiovisual e assinatura digital ICP-Brasil'}
           </p>
         </div>
 
@@ -530,75 +527,75 @@ export default function UserPreferencesModal({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 items-stretch">
-              {/* Preset 1: Teal */}
+              {/* Preset 1: Judicial Blue (CNJ Default) */}
+              <button
+                type="button"
+                onClick={() => handleSelectAccent('#2563eb')}
+                className={`p-3.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left ${
+                  selectedAccent?.toLowerCase() === '#2563eb' || selectedAccent?.toLowerCase() === 'blue'
+                    ? 'bg-dark-input border-blue-500 ring-2 ring-blue-500/50 shadow-sm'
+                    : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-[#2563eb] shrink-0 ring-2 ring-white/20 shadow" />
+                  <span className="text-xs font-bold text-white truncate">Azul CNJ</span>
+                </div>
+                {(selectedAccent?.toLowerCase() === '#2563eb' || selectedAccent?.toLowerCase() === 'blue') && (
+                  <Check className="w-4 h-4 text-blue-400 shrink-0" />
+                )}
+              </button>
+
+              {/* Preset 2: Teal */}
               <button
                 type="button"
                 onClick={() => handleSelectAccent('#0d9488')}
-                className={`p-3.5 rounded-xl border flex items-center justify-between gap-2 transition-colors text-left ${
+                className={`p-3.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left ${
                   selectedAccent?.toLowerCase() === '#0d9488' || selectedAccent?.toLowerCase() === 'teal'
-                    ? 'bg-dark-input border-teal-500 ring-2 ring-teal-500/50 shadow-md shadow-teal-500/10'
+                    ? 'bg-dark-input border-teal-500 ring-2 ring-teal-500/50 shadow-sm'
                     : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-5 h-5 rounded-full bg-[#0d9488] shrink-0 ring-2 ring-white/20 shadow" />
-                  <span className="text-xs font-bold text-white truncate">Teal</span>
+                  <span className="text-xs font-bold text-white truncate">Esmeralda</span>
                 </div>
                 {(selectedAccent?.toLowerCase() === '#0d9488' || selectedAccent?.toLowerCase() === 'teal') && (
                   <Check className="w-4 h-4 text-teal-400 shrink-0" />
                 )}
               </button>
 
-              {/* Preset 2: Red / Crimson */}
+              {/* Preset 3: Red / Crimson */}
               <button
                 type="button"
                 onClick={() => handleSelectAccent('#e63946')}
-                className={`p-3.5 rounded-xl border flex items-center justify-between gap-2 transition-colors text-left ${
+                className={`p-3.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left ${
                   selectedAccent?.toLowerCase() === '#e63946' || selectedAccent?.toLowerCase() === 'red'
-                    ? 'bg-dark-input border-rose-500 ring-2 ring-rose-500/50 shadow-md shadow-rose-500/10'
+                    ? 'bg-dark-input border-rose-500 ring-2 ring-rose-500/50 shadow-sm'
                     : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="w-5 h-5 rounded-full bg-[#e63946] shrink-0 ring-2 ring-white/20 shadow" />
-                  <span className="text-xs font-bold text-white truncate">Crimson</span>
+                  <span className="text-xs font-bold text-white truncate">Carmim</span>
                 </div>
                 {(selectedAccent?.toLowerCase() === '#e63946' || selectedAccent?.toLowerCase() === 'red') && (
                   <Check className="w-4 h-4 text-rose-400 shrink-0" />
                 )}
               </button>
 
-              {/* Preset 3: Orange */}
-              <button
-                type="button"
-                onClick={() => handleSelectAccent('#ea580c')}
-                className={`p-3.5 rounded-xl border flex items-center justify-between gap-2 transition-colors text-left ${
-                  selectedAccent?.toLowerCase() === '#ea580c' || selectedAccent?.toLowerCase() === 'orange'
-                    ? 'bg-dark-input border-orange-500 ring-2 ring-orange-500/50 shadow-md shadow-orange-500/10'
-                    : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-[#ea580c] shrink-0 ring-2 ring-white/20 shadow" />
-                  <span className="text-xs font-bold text-white truncate">Orange</span>
-                </div>
-                {(selectedAccent?.toLowerCase() === '#ea580c' || selectedAccent?.toLowerCase() === 'orange') && (
-                  <Check className="w-4 h-4 text-orange-400 shrink-0" />
-                )}
-              </button>
-
               {/* Custom Hex Color Option */}
               <div
-                className={`p-3 rounded-xl border flex items-center gap-2 transition-colors ${
+                className={`p-3 rounded-lg border flex items-center gap-2 transition-colors ${
                   selectedAccent &&
-                  !['#0d9488', '#e63946', '#ea580c', 'teal', 'red', 'orange'].includes(selectedAccent.toLowerCase())
+                  !['#2563eb', '#0d9488', '#e63946', 'blue', 'teal', 'red'].includes(selectedAccent.toLowerCase())
                     ? 'bg-dark-input border-crimson ring-2 ring-crimson/50'
                     : 'bg-dark-bg/60 border-dark-border'
                 }`}
               >
                 <input
                   type="color"
-                  value={customHex.startsWith('#') && (customHex.length === 7 || customHex.length === 4) ? customHex : '#e63946'}
+                  value={customHex.startsWith('#') && (customHex.length === 7 || customHex.length === 4) ? customHex : '#2563eb'}
                   onChange={(e) => handleCustomHexChange(e.target.value)}
                   className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 shrink-0 p-0"
                   title="Escolher cor personalizada"

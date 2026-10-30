@@ -381,7 +381,7 @@ CREATE TABLE IF NOT EXISTS tb_notebooks (
     case_id UUID,
     case_number VARCHAR(64),
     emoji VARCHAR(16) DEFAULT '📓',
-    color VARCHAR(32) DEFAULT '#e63946',
+    color VARCHAR(32) DEFAULT '#2563eb',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

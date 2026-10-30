@@ -130,18 +130,18 @@ function formatProgressiveCueText(seg: TranscriptSegment, effectiveTimeMs: numbe
   return cueWindows[winIdx] || cueWindows[0];
 }
 
-const SUBTITLE_ROLE_STYLES: Record<ParticipantRole, { bg: string; text: string; border: string }> = {
-  MAGISTRADO: { bg: 'status-badge-danger', text: 'text-red-200', border: 'border-red-500/40' },
-  PROMOTOR: { bg: 'bg-rose-950/80', text: 'text-rose-200', border: 'border-rose-500/40' },
-  DEFENSOR_PUBLICO: { bg: 'bg-purple-950/80', text: 'text-purple-200', border: 'border-purple-500/40' },
-  ADVOGADO_AUTOR: { bg: 'bg-sky-950/80', text: 'text-sky-200', border: 'border-sky-500/40' },
-  ADVOGADO_REU: { bg: 'bg-indigo-950/80', text: 'text-indigo-200', border: 'border-indigo-500/40' },
-  AUTOR: { bg: 'status-badge-success', text: 'text-emerald-200', border: 'border-emerald-500/40' },
-  REU: { bg: 'bg-amber-950/80', text: 'text-amber-200', border: 'border-amber-500/40' },
-  TESTEMUNHA: { bg: 'bg-teal-950/80', text: 'text-teal-200', border: 'border-teal-500/40' },
-  PERITO: { bg: 'bg-cyan-950/80', text: 'text-cyan-200', border: 'border-cyan-500/40' },
-  ESCRIVAO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border' },
-  OUTRO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border' },
+const SUBTITLE_ROLE_STYLES: Record<ParticipantRole, { bg: string; text: string; border: string; label: string }> = {
+  MAGISTRADO: { bg: 'bg-amber-950/90', text: 'text-amber-300', border: 'border-amber-500/50', label: 'MAGISTRADO' },
+  PROMOTOR: { bg: 'bg-rose-950/90', text: 'text-rose-200', border: 'border-rose-500/40', label: 'MINISTÉRIO PÚBLICO' },
+  DEFENSOR_PUBLICO: { bg: 'bg-purple-950/90', text: 'text-purple-200', border: 'border-purple-500/40', label: 'DEFENSORIA PÚBLICA' },
+  ADVOGADO_AUTOR: { bg: 'bg-sky-950/90', text: 'text-sky-200', border: 'border-sky-500/40', label: 'ADVOGADO DO AUTOR' },
+  ADVOGADO_REU: { bg: 'bg-indigo-950/90', text: 'text-indigo-200', border: 'border-indigo-500/40', label: 'ADVOGADO DO RÉU' },
+  AUTOR: { bg: 'status-badge-success', text: 'text-emerald-200', border: 'border-emerald-500/40', label: 'PARTE AUTORA' },
+  REU: { bg: 'bg-amber-950/80', text: 'text-amber-200', border: 'border-amber-500/40', label: 'PARTE RÉ' },
+  TESTEMUNHA: { bg: 'bg-teal-950/90', text: 'text-teal-200', border: 'border-teal-500/40', label: 'TESTEMUNHA' },
+  PERITO: { bg: 'bg-cyan-950/90', text: 'text-cyan-200', border: 'border-cyan-500/40', label: 'PERITO JUDICIAL' },
+  ESCRIVAO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border', label: 'SECRETARIA' },
+  OUTRO: { bg: 'bg-dark-pill', text: 'text-slate-200', border: 'border-dark-border', label: 'DECLARANTE' },
 };
 
 export default function MediaPlayer({
@@ -458,14 +458,14 @@ export default function MediaPlayer({
       <div className="p-3.5 sm:p-4 bg-dark-bg/60 border-b border-dark-border/80 flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Left: Media Title & Mode Badges */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-dark-input border border-dark-border">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-input border border-dark-border">
             {viewMode === 'VIDEO' ? (
               <Video className="w-3.5 h-3.5 text-crimson" />
             ) : (
               <Music className="w-3.5 h-3.5 text-indigo-400" />
             )}
             <span className="text-xs font-bold text-white">
-              {viewMode === 'VIDEO' ? 'Vídeo da Audiência' : 'Áudio da Audiência'}
+              {viewMode === 'VIDEO' ? 'Registro Audiovisual (CNJ)' : 'Registro Fonográfico (CNJ)'}
             </span>
           </div>
 
@@ -481,11 +481,11 @@ export default function MediaPlayer({
         {/* Right: Mode Toggle, Speed & Controls */}
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Mode Switcher: Video vs Audio */}
-          <div className="flex items-center p-0.5 bg-dark-input rounded-xl border border-dark-border">
+          <div className="flex items-center p-0.5 bg-dark-input rounded-lg border border-dark-border">
             <button
               type="button"
               onClick={() => setViewMode('VIDEO')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors touch-target-expand ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors touch-target-expand ${
                 viewMode === 'VIDEO'
                   ? 'bg-crimson text-white shadow-sm'
                   : 'text-dark-muted hover:text-white'
@@ -498,7 +498,7 @@ export default function MediaPlayer({
             <button
               type="button"
               onClick={() => setViewMode('AUDIO')}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors touch-target-expand ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors touch-target-expand ${
                 viewMode === 'AUDIO'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-dark-muted hover:text-white'
@@ -514,7 +514,7 @@ export default function MediaPlayer({
           <button
             type="button"
             onClick={cyclePlaybackRate}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-bold text-white transition-colors min-h-[34px] touch-target-expand"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-xs font-bold text-white transition-colors min-h-[34px] touch-target-expand"
             title="Alterar velocidade de reprodução"
           >
             <FastForward className="w-3.5 h-3.5 text-crimson" />
@@ -522,16 +522,16 @@ export default function MediaPlayer({
           </button>
 
           {/* Subtitles CC Toggle & Size */}
-          <div className="flex items-center p-0.5 bg-dark-input rounded-xl border border-dark-border">
+          <div className="flex items-center p-0.5 bg-dark-input rounded-lg border border-dark-border">
             <button
               type="button"
               onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors touch-target-expand ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors touch-target-expand ${
                 subtitlesEnabled
                   ? 'bg-crimson text-white shadow-sm'
                   : 'text-dark-muted hover:text-white'
               }`}
-              title={subtitlesEnabled ? 'Desativar legendas (CC)' : 'Ativar legendas (CC)'}
+              title={subtitlesEnabled ? 'Desativar legendas taquigráficas (CC)' : 'Ativar legendas taquigráficas (CC)'}
             >
               <Subtitles className="w-3.5 h-3.5" />
               <span>CC</span>
@@ -554,14 +554,14 @@ export default function MediaPlayer({
           {/* Interactive Subtitle Sync Offset Control (±0.1s Fine-Tuning) */}
           {subtitlesEnabled && (
             <div
-              className="flex items-center gap-0.5 p-0.5 bg-dark-input rounded-xl border border-dark-border"
+              className="flex items-center gap-0.5 p-0.5 bg-dark-input rounded-lg border border-dark-border"
               title="Sincronia de Legenda: ajuste fino (±0.1s) persistido por audiência"
             >
               <button
                 type="button"
                 onClick={() => updateSubtitleOffset(activeOffsetMs - 100)}
                 aria-label="Atrasar legenda em 0.1 segundo"
-                className="px-2 py-1.5 rounded-lg text-xs font-mono font-bold text-dark-muted hover:text-white hover:bg-dark-pill transition-colors touch-target-expand"
+                className="px-2 py-1.5 rounded-md text-xs font-mono font-bold text-dark-muted hover:text-white hover:bg-dark-pill transition-colors touch-target-expand"
                 title="Atrasar legenda em 0.1s (-0.1s)"
               >
                 -0.1s
@@ -569,7 +569,7 @@ export default function MediaPlayer({
               <button
                 type="button"
                 onClick={() => updateSubtitleOffset(0)}
-                className={`px-2 py-1.5 rounded-lg text-xs font-mono font-bold transition-colors touch-target-expand ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-bold transition-colors touch-target-expand ${
                   activeOffsetMs !== 0
                     ? 'status-badge-warning border'
                     : 'text-slate-200 hover:text-white'
@@ -585,7 +585,7 @@ export default function MediaPlayer({
                 type="button"
                 onClick={() => updateSubtitleOffset(activeOffsetMs + 100)}
                 aria-label="Adiantar legenda em 0.1 segundo"
-                className="px-2 py-1.5 rounded-lg text-xs font-mono font-bold text-dark-muted hover:text-white hover:bg-dark-pill transition-colors touch-target-expand"
+                className="px-2 py-1.5 rounded-md text-xs font-mono font-bold text-dark-muted hover:text-white hover:bg-dark-pill transition-colors touch-target-expand"
                 title="Adiantar legenda em 0.1s (+0.1s)"
               >
                 +0.1s
@@ -595,7 +595,7 @@ export default function MediaPlayer({
                   type="button"
                   onClick={() => updateSubtitleOffset(0)}
                   aria-label="Resetar sincronia de legenda para 0.0s"
-                  className="px-2 py-1.5 rounded-lg text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/30 transition-colors touch-target-expand"
+                  className="px-2 py-1.5 rounded-md text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/30 transition-colors touch-target-expand"
                   title="Resetar sincronia de legenda para 0.0s"
                 >
                   Reset
@@ -609,7 +609,7 @@ export default function MediaPlayer({
             type="button"
             onClick={() => setIsMuted(!isMuted)}
             aria-label={isMuted ? 'Ativar som' : 'Silenciar áudio'}
-            className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[34px] min-w-[34px] flex items-center justify-center touch-target-expand"
+            className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[34px] min-w-[34px] flex items-center justify-center touch-target-expand"
             title={isMuted ? 'Desmutar' : 'Mutar'}
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-crimson" /> : <Volume2 className="w-4 h-4" />}
@@ -621,7 +621,7 @@ export default function MediaPlayer({
               type="button"
               onClick={() => setIsVideoExpanded(!isVideoExpanded)}
               aria-label={isVideoExpanded ? 'Recolher quadro de vídeo' : 'Expandir quadro de vídeo'}
-              className="p-2 rounded-xl bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[34px] min-w-[34px] flex items-center justify-center touch-target-expand"
+              className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill border border-dark-border text-dark-muted hover:text-white transition-colors min-h-[34px] min-w-[34px] flex items-center justify-center touch-target-expand"
               title={isVideoExpanded ? 'Recolher vídeo' : 'Expandir vídeo'}
             >
               {isVideoExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -641,14 +641,14 @@ export default function MediaPlayer({
         >
           {/* Active Speaker HUD Banner */}
           <div className="absolute top-3 left-3 z-20 flex items-center gap-2 pointer-events-none">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/90 border border-white/15 text-white text-xs font-medium shadow-lg">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/90 border border-white/15 text-white text-xs font-medium shadow-lg">
               <span className="w-2 h-2 rounded-full bg-crimson animate-pulse" />
-              <span className="font-mono text-red-400 font-bold">REC</span>
+              <span className="font-mono text-sky-400 font-bold">CNJ•AV</span>
               <span className="text-dark-muted">|</span>
               <span className="font-mono text-xs">{formatTime(currentPlaybackMs)}</span>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black/90 border border-white/15 text-white text-xs font-semibold shadow-lg">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md bg-black/90 border border-white/15 text-white text-xs font-semibold shadow-lg">
               <Camera className="w-3.5 h-3.5 text-crimson" />
               <span className="truncate max-w-xs">{filename}</span>
             </div>
@@ -667,15 +667,15 @@ export default function MediaPlayer({
                     : 'REAL_VIDEO'
                 )
               }
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/90 border border-white/15 text-xs font-semibold text-slate-200 hover:text-white transition-colors shadow-lg touch-target-expand"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-black/90 border border-white/15 text-xs font-semibold text-slate-200 hover:text-white transition-colors shadow-lg touch-target-expand"
             >
               <Layers className="w-3.5 h-3.5 text-crimson" />
               <span>
                 {cameraLayout === 'REAL_VIDEO'
-                  ? 'Vídeo Original (MP4)'
+                  ? 'Mídia Oficial (MP4)'
                   : cameraLayout === 'GRID'
-                  ? 'Visão em Grade (4 Câmeras)'
-                  : 'Foco no Orador'}
+                  ? 'Mosaico da Sala (4 Câmeras)'
+                  : 'Destaque do Declarante'}
               </span>
             </button>
           </div>
@@ -717,9 +717,9 @@ export default function MediaPlayer({
                 <button
                   type="button"
                   onClick={togglePlay}
-                  aria-label="Reproduzir vídeo da audiência"
-                  className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-crimson/90 hover:bg-crimson text-white flex items-center justify-center shadow-2xl shadow-crimson/50 transition-transform hover:scale-110 z-10"
-                  title="Reproduzir vídeo da audiência"
+                  aria-label="Reproduzir registro audiovisual da audiência"
+                  className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-crimson/90 hover:bg-crimson text-white flex items-center justify-center shadow-2xl shadow-crimson/40 transition-transform hover:scale-105 z-10"
+                  title="Reproduzir registro audiovisual da audiência"
                 >
                   <Play className="w-7 h-7 ml-1" />
                 </button>
@@ -741,26 +741,26 @@ export default function MediaPlayer({
                 return (
                   <div
                     key={`${spk.name}-${idx}`}
-                    className={`relative rounded-xl overflow-hidden bg-dark-card border transition-colors flex flex-col items-center justify-center ${
+                    className={`relative rounded-lg overflow-hidden bg-dark-card border transition-colors flex flex-col items-center justify-center ${
                       isSpeaking
                         ? 'border-crimson ring-2 ring-crimson/50 shadow-lg shadow-crimson/20'
                         : 'border-white/5 opacity-85'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-crimson/20 border border-crimson/40 text-red-300 flex items-center justify-center font-bold text-sm shadow-md mb-2">
-                      {initials || 'OJ'}
+                    <div className="w-12 h-12 rounded-full bg-crimson/20 border border-crimson/40 text-sky-200 flex items-center justify-center font-bold text-sm shadow-md mb-2">
+                      {initials || 'PJ'}
                     </div>
                     <span className="text-xs font-bold text-white tracking-wide px-2 text-center truncate max-w-full">
                       {spk.name}
                     </span>
                     <span className="text-xs text-dark-muted">{spk.role.replace(/_/g, ' ')}</span>
                     <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[11px] font-mono text-slate-200 border border-white/10">
-                      CAM 0{idx + 1} • {spk.role.replace(/_/g, ' ')}
+                      CANAL 0{idx + 1} • {spk.role.replace(/_/g, ' ')}
                     </div>
                     {isSpeaking && (
                       <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded bg-crimson text-[11px] font-bold text-white">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                        FALANDO
+                        COM A PALAVRA
                       </div>
                     )}
                   </div>
@@ -775,11 +775,11 @@ export default function MediaPlayer({
                   {activeSpeakerName.slice(0, 2).toUpperCase()}
                 </div>
                 <h4 className="text-sm sm:text-base font-bold text-white">{activeSpeakerName}</h4>
-                <p className="text-xs text-crimson font-semibold">
+                <p className="text-xs text-sky-300 font-semibold">
                   {activeSpeakerRole.replace(/_/g, ' ')}
                 </p>
                 {currentSegment?.text && (
-                  <p className="text-xs text-slate-300 bg-black/60 border border-white/10 p-3 rounded-xl line-clamp-2 italic">
+                  <p className="text-xs text-slate-300 bg-black/60 border border-white/10 p-3 rounded-lg line-clamp-2 italic">
                     &ldquo;{currentSegment.text}&rdquo;
                   </p>
                 )}
@@ -789,7 +789,7 @@ export default function MediaPlayer({
 
           {/* Cinema / Streaming Subtitle Overlay (Supports Single & Stacked Dual-Speaker Overlap) */}
           {subtitlesEnabled && activeSegments.length > 0 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[94%] sm:max-w-3xl px-4 py-2.5 rounded-2xl bg-black/95 border border-white/15 text-center z-20 shadow-2xl transition-opacity duration-100 space-y-2">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[94%] sm:max-w-3xl px-4 py-2.5 rounded-lg bg-black/95 border border-white/15 text-center z-20 shadow-2xl transition-opacity duration-100 space-y-2">
               {activeSegments.map((seg, idx) => {
                 const roleStyle = SUBTITLE_ROLE_STYLES[seg.speakerRole] || SUBTITLE_ROLE_STYLES.OUTRO;
                 const segText = formatProgressiveCueText(seg, effectiveTimeMs);
@@ -804,16 +804,16 @@ export default function MediaPlayer({
                   >
                     <div className="flex items-center justify-center gap-2 mb-1 flex-wrap">
                       <span
-                        className={`px-2 py-0.5 rounded-md text-xs font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}
+                        className={`px-2 py-0.5 rounded text-xs font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}
                       >
-                        {seg.speakerName} ({seg.speakerRole.replace(/_/g, ' ')})
+                        {seg.speakerName} ({roleStyle.label})
                       </span>
                       <span className="text-xs font-mono text-slate-300">
                         {seg.startTimeFormatted} – {seg.endTimeFormatted}
                       </span>
                       {idx === activeSegments.length - 1 && currentBlock && (
                         <span className="text-xs font-mono status-badge-success px-2 py-0.5 rounded border">
-                          Parte {currentBlock.blockIndex}/{blocks.length || 1}
+                          Bloco {currentBlock.blockIndex}/{blocks.length || 1}
                         </span>
                       )}
                     </div>

@@ -51,7 +51,7 @@ export default function NotebooksHubPage() {
         description: newDescription.trim(),
         caseNumber: newCaseNumber.trim() || undefined,
         emoji: newEmoji,
-        color: '#e63946'
+        color: '#2563eb'
       });
       setNotebooks((prev) => {
         const map = new Map<string, Notebook>();
@@ -79,32 +79,35 @@ export default function NotebooksHubPage() {
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-6 animate-in fade-in">
-      <div className="flex-1 max-w-7xl w-full mx-auto space-y-6">
+      <div className="flex-1 w-full space-y-6">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-card border border-dark-border p-6 rounded-2xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-dark-card border border-dark-border p-5 rounded-lg shadow-sm">
           <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-crimson shadow-lg shadow-crimson/25">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <span>Cadernos de Pesquisa & Chat Aberto</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-crimson/15 border border-crimson/30 text-red-400 font-semibold">
-                  Multi-Context Gemini
-                </span>
-              </h1>
+            <div className="flex items-center gap-2 text-xs text-dark-muted mb-1">
+              <Link href="/" className="hover:text-white transition-colors">Gabinete &amp; Expediente</Link>
+              <span>/</span>
+              <span className="text-white font-medium">Cadernos de Instrução (Res. CNJ nº 332/2020)</span>
             </div>
-            <p className="text-sm text-dark-muted max-w-2xl">
-              Crie cadernos judiciais temáticos, selecione blocos de vídeo (~256k tokens), petições e jurisprudências, e converse no Chat Aberto direcionando dinamicamente o contexto ativo.
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <BookOpen className="w-6 h-6 text-crimson shrink-0" />
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-serif">
+                Cadernos de Instrução e Pesquisa Probatória
+              </h1>
+              <span className="text-[11px] px-2.5 py-0.5 rounded bg-dark-input border border-dark-border text-slate-300 font-semibold">
+                Res. CNJ nº 332/2020
+              </span>
+            </div>
+            <p className="text-xs text-dark-muted max-w-2xl">
+              Organize cadernos de instrução processual, vincule blocos de degravação audiovisual, petições e laudos, e realize consultas fundamentadas com citação direta às fontes dos autos.
             </p>
           </div>
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-crimson hover:bg-crimson-hover text-white text-sm font-semibold shadow-lg shadow-crimson/25 transition active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-crimson hover:bg-crimson-dark text-white text-xs font-semibold shadow-sm transition-colors min-h-[38px]"
           >
             <Plus className="w-4 h-4" />
-            <span>Novo Caderno</span>
+            <span>Instaurar Caderno de Instrução</span>
           </button>
         </div>
 
@@ -114,10 +117,10 @@ export default function NotebooksHubPage() {
             <Search className="w-4 h-4 text-dark-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar caderno por título, descrição ou número do processo..."
+              placeholder="Buscar caderno por título, objeto probatório ou Nº Único CNJ..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-card border border-dark-border rounded-xl text-sm text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition"
+              className="w-full pl-10 pr-4 py-2 bg-dark-card border border-dark-border rounded-lg text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson transition-colors"
             />
           </div>
         </div>
@@ -130,22 +133,22 @@ export default function NotebooksHubPage() {
               <Link
                 key={nb.id}
                 href={`/notebooks/${nb.id}`}
-                className="group flex flex-col justify-between p-5 bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-crimson/50 rounded-2xl shadow-md hover:shadow-xl transition duration-200"
+                className="group flex flex-col justify-between p-5 bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-crimson/50 rounded-lg shadow-sm transition-colors duration-200"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-2xl p-2 rounded-xl bg-dark-input border border-dark-border group-hover:scale-110 transition">
-                      {nb.emoji || '📓'}
+                    <span className="text-xl p-2 rounded-md bg-dark-input border border-dark-border">
+                      {nb.emoji || '⚖️'}
                     </span>
                     {nb.caseNumber && (
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-dark-input text-slate-300 border border-dark-border">
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-dark-input text-slate-300 border border-dark-border tabular-nums">
                         {nb.caseNumber}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <h2 className="text-base font-bold text-white group-hover:text-red-400 transition line-clamp-1">
+                    <h2 className="text-base font-bold text-white group-hover:text-crimson transition-colors line-clamp-1 font-serif">
                       {nb.title}
                     </h2>
                     {nb.description && (
@@ -159,11 +162,11 @@ export default function NotebooksHubPage() {
                   <div className="pt-2 border-t border-dark-border/60 flex items-center gap-1.5 flex-wrap tabular-nums">
                     <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
                       <Layers className="w-3 h-3 text-crimson" />
-                      <span>{nb.sources.length} fontes</span>
+                      <span>{nb.sources.length} peças / registros</span>
                     </span>
                     <span className="text-dark-muted">•</span>
-                    <span className="text-[11px] font-mono text-red-300">
-                      ~{Math.round(totalTokens / 1000)}k tokens ativos
+                    <span className="text-[11px] font-mono text-slate-300">
+                      ~{Math.round(totalTokens / 1000)}k tokens indexados
                     </span>
                   </div>
                 </div>
@@ -171,9 +174,9 @@ export default function NotebooksHubPage() {
                 <div className="mt-4 pt-3 border-t border-dark-border/40 flex items-center justify-between text-xs text-dark-muted tabular-nums">
                   <span className="flex items-center gap-1">
                     <Bookmark className="w-3.5 h-3.5" />
-                    <span>{nb.notes.length} anotações</span>
+                    <span>{nb.notes.length} cotas / notas</span>
                   </span>
-                  <span className="flex items-center gap-1 text-crimson font-medium group-hover:translate-x-1 transition-transform">
+                  <span className="flex items-center gap-1 text-crimson font-semibold group-hover:translate-x-1 transition-transform">
                     <span>Abrir Caderno</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>

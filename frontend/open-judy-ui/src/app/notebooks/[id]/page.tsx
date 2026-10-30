@@ -188,14 +188,14 @@ export default function NotebookDetailPage() {
   };
 
   return (
-    <div className="lg:h-[calc(100vh-7rem)] lg:min-h-[640px] bg-dark-bg text-slate-100 flex flex-col rounded-2xl border border-dark-border overflow-hidden shadow-xl">
+    <div className="lg:h-[calc(100vh-7rem)] lg:min-h-[640px] bg-dark-bg text-slate-100 flex flex-col rounded-lg border border-dark-border overflow-hidden shadow-sm">
       {/* Sub-header Bar */}
       <div className="px-6 py-2.5 bg-dark-card border-b border-dark-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/notebooks"
             className="p-2 rounded-lg bg-dark-input hover:bg-dark-pill text-dark-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] touch-target-expand inline-flex items-center justify-center"
-            title="Voltar para Cadernos"
+            title="Voltar para Cadernos de Instrução"
             aria-label="Voltar para a lista de cadernos"
           >
             <ChevronLeft className="w-4 h-4" />

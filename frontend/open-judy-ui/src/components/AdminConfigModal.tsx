@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth, applyAccentColorToDOM } from '@/lib/auth-context';
+import { useAuth, applyAccentColorToDOM, applyThemeToDOM } from '@/lib/auth-context';
 import {
   PromptTemplate,
   AiModel,
@@ -41,7 +41,10 @@ import {
   Volume2,
   Key,
   Image as ImageIcon,
-  Palette
+  Palette,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 
 interface AdminConfigModalProps {
@@ -59,7 +62,21 @@ export default function AdminConfigModal({
   initialPromptCode,
   mode = 'modal',
 }: AdminConfigModalProps) {
-  const { role, permissions, switchProfile, adminConfigInitialTab, systemName, systemTagline, logoUrl, systemConfig, updateSystemConfig } = useAuth();
+  const {
+    role,
+    permissions,
+    switchProfile,
+    adminConfigInitialTab,
+    systemName,
+    systemTagline,
+    logoUrl,
+    config,
+    updateConfig,
+    accentColor,
+    setAccentColor,
+    systemConfig,
+    updateSystemConfig,
+  } = useAuth();
   const isAdmin = role === 'ADMIN' || permissions.canEditSystemConfig;
   const isPage = mode === 'page';
 
@@ -68,12 +85,13 @@ export default function AdminConfigModal({
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // System Branding state
+  // System Branding & Appearance state
   const [brandingName, setBrandingName] = useState(systemName || 'Open Judy');
-  const [brandingTagline, setBrandingTagline] = useState(systemTagline || 'IA Judiciária Zero-Trust');
+  const [brandingTagline, setBrandingTagline] = useState(systemTagline || 'PODER JUDICIÁRIO • CNJ');
   const [brandingLogoUrl, setBrandingLogoUrl] = useState(logoUrl || '');
-  const [brandingAccentColor, setBrandingAccentColor] = useState(systemConfig.accentColor || '#e63946');
-  const [brandingCustomHex, setBrandingCustomHex] = useState(systemConfig.accentColor || '#e63946');
+  const [brandingTheme, setBrandingTheme] = useState<string>(config?.theme || 'DARK');
+  const [brandingAccentColor, setBrandingAccentColor] = useState(accentColor || systemConfig.accentColor || '#2563eb');
+  const [brandingCustomHex, setBrandingCustomHex] = useState(accentColor || systemConfig.accentColor || '#2563eb');
   const [isSavingBranding, setIsSavingBranding] = useState(false);
 
   // Data states
@@ -103,19 +121,52 @@ export default function AdminConfigModal({
   const [editingNotification, setEditingNotification] = useState<NotificationType | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !isPage) return;
     setBrandingName(systemName || 'Open Judy');
-    setBrandingTagline(systemTagline || 'IA Judiciária Zero-Trust');
+    setBrandingTagline(systemTagline || 'PODER JUDICIÁRIO • CNJ');
     setBrandingLogoUrl(logoUrl || '');
-    const color = systemConfig.accentColor || '#e63946';
+    if (config?.theme) {
+      setBrandingTheme(config.theme.toUpperCase());
+    }
+    const color = accentColor || systemConfig.accentColor || '#2563eb';
     setBrandingAccentColor(color);
     setBrandingCustomHex(color);
-  }, [systemName, systemTagline, logoUrl, systemConfig.accentColor, isOpen]);
+  }, [systemName, systemTagline, logoUrl, config?.theme, accentColor, systemConfig.accentColor, isOpen, isPage]);
+
+  const handleAdminSelectTheme = async (themeMode: 'DARK' | 'LIGHT' | 'SYSTEM') => {
+    setBrandingTheme(themeMode);
+    applyThemeToDOM(themeMode);
+    await updateConfig({ theme: themeMode });
+    setSettings((prev) =>
+      prev.some((s) => s.key === 'system.theme')
+        ? prev.map((s) => (s.key === 'system.theme' ? { ...s, value: themeMode } : s))
+        : prev
+    );
+    try {
+      await api.updateSystemSetting('system.theme', { value: themeMode });
+    } catch (_) {}
+  };
+
+  const handleAdminSelectAccent = async (color: string) => {
+    setBrandingAccentColor(color);
+    setBrandingCustomHex(color);
+    applyAccentColorToDOM(color);
+    await setAccentColor(color);
+    setSettings((prev) =>
+      prev.map((s) => (s.key === 'system.accent_color' ? { ...s, value: color } : s))
+    );
+  };
 
   const handleSaveBranding = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsSavingBranding(true);
     try {
+      applyThemeToDOM(brandingTheme);
+      applyAccentColorToDOM(brandingAccentColor);
+      await updateConfig({
+        theme: brandingTheme,
+        accentColor: brandingAccentColor,
+      });
       await updateSystemConfig({
         systemName: brandingName,
         systemTagline: brandingTagline,
@@ -126,7 +177,16 @@ export default function AdminConfigModal({
       await api.updateSystemSetting('system.tagline', { value: brandingTagline });
       await api.updateSystemSetting('system.logo_url', { value: brandingLogoUrl });
       await api.updateSystemSetting('system.accent_color', { value: brandingAccentColor });
-      showSuccess('Identidade visual, logo e cor de destaque atualizadas com sucesso!');
+      setSettings((prev) =>
+        prev.map((s) => {
+          if (s.key === 'system.name') return { ...s, value: brandingName };
+          if (s.key === 'system.tagline') return { ...s, value: brandingTagline };
+          if (s.key === 'system.logo_url') return { ...s, value: brandingLogoUrl };
+          if (s.key === 'system.accent_color') return { ...s, value: brandingAccentColor };
+          return s;
+        })
+      );
+      showSuccess('Identidade visual, tema e cor de destaque atualizados com sucesso!');
     } catch (err) {
       console.error(err);
     } finally {
@@ -174,7 +234,18 @@ export default function AdminConfigModal({
       setModels(modelsData || []);
       setDashboards(dashboardsData || []);
       setNotifications(notifsData || []);
-      setSettings(settingsData || []);
+      const loadedSettings = settingsData || [];
+      const savedLocalAccent =
+        typeof window !== 'undefined' ? localStorage.getItem('openjudy_accent_color') : null;
+      const settingAccent = loadedSettings.find((s: SystemSetting) => s.key === 'system.accent_color')?.value;
+      const effectiveAccent = savedLocalAccent || settingAccent || accentColor || '#2563eb';
+      setBrandingAccentColor(effectiveAccent);
+      setBrandingCustomHex(effectiveAccent);
+      setSettings(
+        loadedSettings.map((s: SystemSetting) =>
+          s.key === 'system.accent_color' ? { ...s, value: effectiveAccent } : s
+        )
+      );
     } catch (e) {
       console.error('Falha ao carregar configurações do config-service:', e);
     } finally {
@@ -303,6 +374,17 @@ export default function AdminConfigModal({
     try {
       await api.updateSystemSetting(key, { value });
       setSettings((prev) => prev.map((s) => (s.key === key ? { ...s, value } : s)));
+      if (key === 'system.accent_color') {
+        setBrandingAccentColor(value);
+        setBrandingCustomHex(value);
+        applyAccentColorToDOM(value);
+        await setAccentColor(value);
+      } else if (key === 'system.theme') {
+        const mode = value.toUpperCase() as 'DARK' | 'LIGHT' | 'SYSTEM';
+        setBrandingTheme(mode);
+        applyThemeToDOM(mode);
+        await updateConfig({ theme: mode });
+      }
       showSuccess(`Configuração '${key}' salva!`);
     } catch (e) {
       console.error(e);
@@ -328,7 +410,7 @@ export default function AdminConfigModal({
             <button
               type="button"
               onClick={() => switchProfile('ADMIN')}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors min-h-[38px]"
+              className="px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-xs font-bold text-white transition-colors min-h-[38px]"
             >
               Alternar para Perfil Admin TI (CNJ)
             </button>
@@ -378,34 +460,34 @@ export default function AdminConfigModal({
           }
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-crimson/15 border border-crimson/40 text-crimson flex items-center justify-center shrink-0">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
               {isPage && (
                 <div className="flex items-center gap-2 text-xs text-dark-muted mb-1">
                   <a href="/" className="hover:text-white transition-colors">
-                    Dashboard
+                    Gabinete Judicial
                   </a>
                   <span>/</span>
-                  <span className="text-emerald-400 font-semibold">
-                    Administração • Configurações do Sistema
+                  <span className="text-crimson font-semibold">
+                    Administração Judiciária • Governança de IA (Res. CNJ nº 332/2020)
                   </span>
                 </div>
               )}
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Painel de Configurações do Sistema
+                <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                  Administração Judiciária — Governança de Modelos e Prompts (Res. CNJ nº 332/2020)
                 </h1>
-                <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-dark-pill text-emerald-300 border border-emerald-500/30">
-                  config-service :8086
+                <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded bg-crimson/15 text-crimson-light border border-crimson/40">
+                  Res. CNJ nº 332/2020
                 </span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full status-badge-success border">
-                  ADMIN MASTER
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded status-badge-success border">
+                  ADMINISTRAÇÃO JUDICIÁRIA
                 </span>
               </div>
               <p className="text-xs text-dark-muted mt-0.5">
-                Central de gerenciamento para Prompts de IA, Modelos LLM/Embeddings, Dashboards Judiciais e Tipos de Notificações.
+                Governança institucional de Modelos de Linguagem (LLMs), Matrizes de Prompts Forenses, Painéis de Gabinete e Identidade Visual do Tribunal.
               </p>
             </div>
           </div>
@@ -506,12 +588,12 @@ export default function AdminConfigModal({
             onClick={() => setActiveTab('settings')}
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 min-h-[38px] ${
               activeTab === 'settings'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-crimson text-white shadow-sm'
                 : 'text-dark-muted hover:text-slate-200 hover:bg-dark-input'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Parâmetros Globais</span>
+            <span>Parâmetros Globais &amp; Tema</span>
             <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/25 text-white font-mono tabular-nums">
               {settings.length}
             </span>
@@ -873,33 +955,33 @@ export default function AdminConfigModal({
           )}
 
           {/* ================================================================= */}
-          {/* TAB 5: SYSTEM SETTINGS & BRANDING */}
+          {/* TAB 5: SYSTEM SETTINGS, THEME & BRANDING */}
           {/* ================================================================= */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              {/* SYSTEM IDENTITY & LOGO BRANDING CARD */}
-              <div className="p-5 rounded-2xl bg-dark-bg/80 border border-emerald-500/30 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-dark-border/60 pb-3">
+              {/* SYSTEM IDENTITY, THEME MODE & ACCENT COLOR BRANDING CARD */}
+              <div className="p-5 rounded-2xl bg-dark-bg/80 border border-crimson/40 shadow-xl space-y-5">
+                <div className="flex items-center justify-between border-b border-dark-border/60 pb-3 flex-wrap gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-crimson/15 border border-crimson/40 text-crimson flex items-center justify-center">
                       <Palette className="w-4 h-4" />
                     </div>
                     <div>
                       <h3 className="text-xs font-bold text-white">
-                        Identidade Visual & Marca do Sistema (Whitelabel)
+                        Identidade Visual, Tema &amp; Marca do Sistema (Whitelabel Institucional)
                       </h3>
                       <p className="text-[11px] text-dark-muted">
-                        Defina o nome oficial, o slogan institucional e a logo exibidos na barra lateral, cabeçalho e termos de audiência.
+                        Defina o nome oficial, o slogan institucional, o modo de tema (Escuro / Claro / Sistema) e a cor de destaque exibidos em todo o Tribunal.
                       </p>
                     </div>
                   </div>
 
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-dark-pill text-emerald-300 border border-emerald-500/30">
-                    system.name & system.logo_url
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-crimson/15 text-crimson-light border border-crimson/40">
+                    system.theme &amp; system.accent_color
                   </span>
                 </div>
 
-                <form onSubmit={handleSaveBranding} className="space-y-4">
+                <form onSubmit={handleSaveBranding} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Field 1: System Name */}
                     <div>
@@ -911,7 +993,7 @@ export default function AdminConfigModal({
                         value={brandingName}
                         onChange={(e) => setBrandingName(e.target.value)}
                         placeholder="Ex: Open Judy, Tribunal AI..."
-                        className="w-full bg-dark-input border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                        className="w-full bg-dark-input border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-crimson font-bold"
                         required
                       />
                     </div>
@@ -925,8 +1007,8 @@ export default function AdminConfigModal({
                         type="text"
                         value={brandingTagline}
                         onChange={(e) => setBrandingTagline(e.target.value)}
-                        placeholder="Ex: IA Judiciária Zero-Trust"
-                        className="w-full bg-dark-input border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                        placeholder="Ex: PODER JUDICIÁRIO • CNJ"
+                        className="w-full bg-dark-input border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-crimson"
                       />
                     </div>
 
@@ -942,104 +1024,219 @@ export default function AdminConfigModal({
                           value={brandingLogoUrl}
                           onChange={(e) => setBrandingLogoUrl(e.target.value)}
                           placeholder="https://exemplo.gov.br/logo.svg ou PNG"
-                          className="w-full pl-9 pr-3.5 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-emerald-500 font-mono"
+                          className="w-full pl-9 pr-3.5 py-2 bg-dark-input border border-dark-border rounded-xl text-xs text-white placeholder-dark-muted focus:outline-none focus:border-crimson font-mono"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* System Theme Mode Selection Row (DARK / LIGHT / SYSTEM) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+                      <Sun className="w-4 h-4 text-amber-400" />
+                      <span>Modo de Tema Global da Interface (Escuro / Claro / Automático)</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleAdminSelectTheme('DARK')}
+                        className={`p-3 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingTheme === 'DARK'
+                            ? 'bg-dark-input border-crimson ring-2 ring-crimson/50 shadow-sm'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Moon className="w-4 h-4 text-sky-400 shrink-0" />
+                          <div>
+                            <span className="text-xs font-bold text-white block">Escuro Judiciário (Dark)</span>
+                            <span className="text-[11px] text-dark-muted block">Alto contraste para salas de audiência</span>
+                          </div>
+                        </div>
+                        {brandingTheme === 'DARK' && (
+                          <Check className="w-4 h-4 text-crimson shrink-0" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdminSelectTheme('LIGHT')}
+                        className={`p-3 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingTheme === 'LIGHT'
+                            ? 'bg-dark-input border-crimson ring-2 ring-crimson/50 shadow-sm'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                          <div>
+                            <span className="text-xs font-bold text-white block">Claro Institucional (Light)</span>
+                            <span className="text-[11px] text-dark-muted block">Leitura diurna de autos e despachos</span>
+                          </div>
+                        </div>
+                        {brandingTheme === 'LIGHT' && (
+                          <Check className="w-4 h-4 text-crimson shrink-0" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdminSelectTheme('SYSTEM')}
+                        className={`p-3 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingTheme === 'SYSTEM'
+                            ? 'bg-dark-input border-crimson ring-2 ring-crimson/50 shadow-sm'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Monitor className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <div>
+                            <span className="text-xs font-bold text-white block">Automático (Sistema)</span>
+                            <span className="text-[11px] text-dark-muted block">Sincronizado com o sistema operacional</span>
+                          </div>
+                        </div>
+                        {brandingTheme === 'SYSTEM' && (
+                          <Check className="w-4 h-4 text-crimson shrink-0" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   {/* Accent Color Selection Row */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
-                      <Palette className="w-4 h-4 text-emerald-400" />
+                      <Palette className="w-4 h-4 text-crimson" />
                       <span>Cor de Destaque Global do Sistema (Accent Color)</span>
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {/* Teal */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {/* 1. Judicial Blue (CNJ Recommended) */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setBrandingAccentColor('#0d9488');
-                          setBrandingCustomHex('#0d9488');
-                          applyAccentColorToDOM('#0d9488');
-                        }}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition text-left ${
+                        onClick={() => handleAdminSelectAccent('#2563eb')}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingAccentColor?.toLowerCase() === '#2563eb' || brandingAccentColor?.toLowerCase() === 'blue'
+                            ? 'bg-dark-input border-blue-500 ring-2 ring-blue-500/50 shadow-sm'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-4 h-4 rounded-full bg-[#2563eb] shrink-0 ring-2 ring-white/20 shadow" />
+                          <span className="text-xs font-bold text-white truncate">Azul CNJ</span>
+                        </div>
+                        {(brandingAccentColor?.toLowerCase() === '#2563eb' || brandingAccentColor?.toLowerCase() === 'blue') && (
+                          <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        )}
+                      </button>
+
+                      {/* 2. Teal / Emerald */}
+                      <button
+                        type="button"
+                        onClick={() => handleAdminSelectAccent('#0d9488')}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
                           brandingAccentColor?.toLowerCase() === '#0d9488' || brandingAccentColor?.toLowerCase() === 'teal'
-                            ? 'bg-dark-input border-teal-500 ring-2 ring-teal-500/50 shadow-md shadow-teal-500/10'
+                            ? 'bg-dark-input border-teal-500 ring-2 ring-teal-500/50 shadow-sm'
                             : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-4 h-4 rounded-full bg-[#0d9488] shrink-0 ring-2 ring-white/20 shadow" />
-                          <span className="text-xs font-bold text-white truncate">Teal</span>
+                          <span className="text-xs font-bold text-white truncate">Verde Esmeralda</span>
                         </div>
                         {(brandingAccentColor?.toLowerCase() === '#0d9488' || brandingAccentColor?.toLowerCase() === 'teal') && (
                           <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                         )}
                       </button>
 
-                      {/* Red */}
+                      {/* 3. Crimson / Red */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setBrandingAccentColor('#e63946');
-                          setBrandingCustomHex('#e63946');
-                          applyAccentColorToDOM('#e63946');
-                        }}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition text-left ${
-                          brandingAccentColor?.toLowerCase() === '#e63946' || brandingAccentColor?.toLowerCase() === 'red'
-                            ? 'bg-dark-input border-rose-500 ring-2 ring-rose-500/50 shadow-md shadow-rose-500/10'
+                        onClick={() => handleAdminSelectAccent('#e63946')}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingAccentColor?.toLowerCase() === '#e63946' ||
+                          brandingAccentColor?.toLowerCase() === '#e11d48' ||
+                          brandingAccentColor?.toLowerCase() === 'red' ||
+                          brandingAccentColor?.toLowerCase() === 'crimson'
+                            ? 'bg-dark-input border-rose-500 ring-2 ring-rose-500/50 shadow-sm'
                             : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-4 h-4 rounded-full bg-[#e63946] shrink-0 ring-2 ring-white/20 shadow" />
-                          <span className="text-xs font-bold text-white truncate">Red</span>
+                          <span className="text-xs font-bold text-white truncate">Carmim Clássico</span>
                         </div>
-                        {(brandingAccentColor?.toLowerCase() === '#e63946' || brandingAccentColor?.toLowerCase() === 'red') && (
+                        {(brandingAccentColor?.toLowerCase() === '#e63946' ||
+                          brandingAccentColor?.toLowerCase() === '#e11d48' ||
+                          brandingAccentColor?.toLowerCase() === 'red' ||
+                          brandingAccentColor?.toLowerCase() === 'crimson') && (
                           <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                         )}
                       </button>
 
-                      {/* Orange */}
+                      {/* 4. Purple / Violet */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setBrandingAccentColor('#ea580c');
-                          setBrandingCustomHex('#ea580c');
-                          applyAccentColorToDOM('#ea580c');
-                        }}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition text-left ${
-                          brandingAccentColor?.toLowerCase() === '#ea580c' || brandingAccentColor?.toLowerCase() === 'orange'
-                            ? 'bg-dark-input border-orange-500 ring-2 ring-orange-500/50 shadow-md shadow-orange-500/10'
+                        onClick={() => handleAdminSelectAccent('#7c3aed')}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingAccentColor?.toLowerCase() === '#7c3aed' || brandingAccentColor?.toLowerCase() === 'purple'
+                            ? 'bg-dark-input border-purple-500 ring-2 ring-purple-500/50 shadow-sm'
                             : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-4 h-4 rounded-full bg-[#ea580c] shrink-0 ring-2 ring-white/20 shadow" />
-                          <span className="text-xs font-bold text-white truncate">Orange</span>
+                          <span className="w-4 h-4 rounded-full bg-[#7c3aed] shrink-0 ring-2 ring-white/20 shadow" />
+                          <span className="text-xs font-bold text-white truncate">Violeta Regimental</span>
                         </div>
-                        {(brandingAccentColor?.toLowerCase() === '#ea580c' || brandingAccentColor?.toLowerCase() === 'orange') && (
-                          <Check className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                        {(brandingAccentColor?.toLowerCase() === '#7c3aed' || brandingAccentColor?.toLowerCase() === 'purple') && (
+                          <Check className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                         )}
                       </button>
 
-                      {/* Custom Hex */}
+                      {/* 5. Sovereign Gold / Amber */}
+                      <button
+                        type="button"
+                        onClick={() => handleAdminSelectAccent('#d97706')}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 transition-colors text-left cursor-pointer ${
+                          brandingAccentColor?.toLowerCase() === '#d97706' || brandingAccentColor?.toLowerCase() === 'amber'
+                            ? 'bg-dark-input border-amber-500 ring-2 ring-amber-500/50 shadow-sm'
+                            : 'bg-dark-bg/60 border-dark-border hover:border-dark-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-4 h-4 rounded-full bg-[#d97706] shrink-0 ring-2 ring-white/20 shadow" />
+                          <span className="text-xs font-bold text-white truncate">Ouro Soberano</span>
+                        </div>
+                        {(brandingAccentColor?.toLowerCase() === '#d97706' || brandingAccentColor?.toLowerCase() === 'amber') && (
+                          <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        )}
+                      </button>
+
+                      {/* 6. Custom Hex */}
                       <div
-                        className={`p-2 rounded-xl border flex items-center gap-2 transition ${
+                        className={`p-2 rounded-lg border flex items-center gap-2 transition-colors ${
                           brandingAccentColor &&
-                          !['#0d9488', '#e63946', '#ea580c', 'teal', 'red', 'orange'].includes(brandingAccentColor.toLowerCase())
-                            ? 'bg-dark-input border-emerald-500 ring-2 ring-emerald-500/50'
+                          ![
+                            '#2563eb',
+                            '#0d9488',
+                            '#e63946',
+                            '#e11d48',
+                            '#7c3aed',
+                            '#d97706',
+                            'blue',
+                            'teal',
+                            'red',
+                            'crimson',
+                            'purple',
+                            'amber',
+                          ].includes(brandingAccentColor.toLowerCase())
+                            ? 'bg-dark-input border-crimson ring-2 ring-crimson/50'
                             : 'bg-dark-bg/60 border-dark-border'
                         }`}
                       >
                         <input
                           type="color"
-                          value={brandingCustomHex.startsWith('#') && (brandingCustomHex.length === 7 || brandingCustomHex.length === 4) ? brandingCustomHex : '#e63946'}
+                          value={brandingCustomHex.startsWith('#') && (brandingCustomHex.length === 7 || brandingCustomHex.length === 4) ? brandingCustomHex : '#2563eb'}
                           onChange={(e) => {
-                            setBrandingCustomHex(e.target.value);
-                            setBrandingAccentColor(e.target.value);
-                            applyAccentColorToDOM(e.target.value);
+                            handleAdminSelectAccent(e.target.value);
                           }}
                           className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 shrink-0 p-0"
                           title="Escolher cor personalizada"
@@ -1050,8 +1247,7 @@ export default function AdminConfigModal({
                           onChange={(e) => {
                             setBrandingCustomHex(e.target.value);
                             if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(e.target.value)) {
-                              setBrandingAccentColor(e.target.value);
-                              applyAccentColorToDOM(e.target.value);
+                              handleAdminSelectAccent(e.target.value);
                             }
                           }}
                           placeholder="#HEX"
@@ -1084,29 +1280,31 @@ export default function AdminConfigModal({
                         type="button"
                         onClick={() => {
                           setBrandingName('Open Judy');
-                          setBrandingTagline('');
+                          setBrandingTagline('PODER JUDICIÁRIO • CNJ');
                           setBrandingLogoUrl('');
+                          handleAdminSelectTheme('DARK');
+                          handleAdminSelectAccent('#2563eb');
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-dark-pill hover:bg-dark-input text-xs text-dark-muted hover:text-white border border-dark-border transition"
+                        className="px-3 py-1.5 rounded-xl bg-dark-pill hover:bg-dark-input text-xs text-dark-muted hover:text-white border border-dark-border transition-colors"
                       >
-                        Restaurar Padrão
+                        Restaurar Padrão CNJ
                       </button>
 
                       <button
                         type="submit"
                         disabled={isSavingBranding}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md shadow-emerald-600/25 transition disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-crimson hover:bg-crimson-dark text-xs font-bold text-white shadow-md shadow-crimson/25 transition-colors disabled:opacity-50"
                       >
                         <Save className="w-3.5 h-3.5" />
-                        <span>{isSavingBranding ? 'Salvando Marca...' : 'Salvar Nome e Logo'}</span>
+                        <span>{isSavingBranding ? 'Salvando Marca & Tema...' : 'Salvar Identidade & Tema'}</span>
                       </button>
                     </div>
                   </div>
                 </form>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/40 flex items-center gap-3 text-xs text-emerald-200">
-                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-crimson/10 border border-crimson/30 flex items-center gap-3 text-xs text-slate-200">
+                <ShieldCheck className="w-5 h-5 text-crimson shrink-0" />
                 <span>
                   Propriedades chave-valor globais mantidas na tabela <code>tb_system_settings</code> do <strong>config-service</strong>.
                 </span>
@@ -1120,7 +1318,7 @@ export default function AdminConfigModal({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-emerald-400">{s.key}</span>
+                        <span className="font-mono text-xs font-bold text-crimson-light">{s.key}</span>
                         <span className="text-[11px] uppercase font-bold px-1.5 py-0.5 rounded bg-dark-pill text-dark-muted border border-dark-border">
                           {s.category}
                         </span>
@@ -1132,6 +1330,7 @@ export default function AdminConfigModal({
 
                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                       <input
+                        key={`${s.key}-${s.value}`}
                         type="text"
                         defaultValue={s.value}
                         aria-label={`Valor de ${s.key}`}
@@ -1140,7 +1339,7 @@ export default function AdminConfigModal({
                             handleUpdateSetting(s.key, e.target.value);
                           }
                         }}
-                        className="bg-dark-bg border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 w-full sm:w-64"
+                        className="bg-dark-bg border border-dark-border rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-crimson w-full sm:w-64"
                       />
                     </div>
                   </div>
